@@ -1,0 +1,56 @@
+{
+  "project_info": {
+    "project_number": "685168729318",
+    "firebase_url": "https://scorepatner-default-rtdb.firebaseio.com",
+    "project_id": "scorepatner",
+    "storage_bucket": "scorepatner.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:685168729318:android:e979c84585d13ab4976f27",
+        "android_client_info": {
+          "package_name": "com.scorepatner"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "685168729318-fni16940m006c6h6rdnvuijd19cc52jc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.scorepatner",
+            "certificate_hash": "471a132b480ad95c429aaf71a8fa4376ff971a50"
+          }
+        },
+        {
+          "client_id": "685168729318-1alvpokvlbduor0s3q16btu6qnfc59fc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjKeVyf8_rojAcyYSLLMYQTxhf672YLZk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "685168729318-1alvpokvlbduor0s3q16btu6qnfc59fc.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "685168729318-m9o4u1b552vpsbvs59kovo6c2i25cgsh.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.scorepartner.ScorePartner",
+                "app_store_id": "010407"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

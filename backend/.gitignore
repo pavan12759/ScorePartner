@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Firebase Admin Secrets
+*.pem
+*.key
+serviceAccountKey.json
+firebase-adminsdk*.json
+
+# OS files
+.DS_Store
+Thumbs.db

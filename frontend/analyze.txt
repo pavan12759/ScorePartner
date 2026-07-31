@@ -1,0 +1,60 @@
+﻿Analyzing 2 items...                                            
+
+warning - Unused import: 'package:cloud_firestore/cloud_firestore.dart' - lib\presentation\screens\profile\profile_screen.dart:7:8 - unused_import
+warning - Unused import: '../../../data/services/auth_service.dart' - lib\presentation\screens\profile\profile_screen.dart:13:8 - unused_import
+warning - Unused import: '../matches/create_match_screen.dart' - lib\presentation\screens\profile\profile_screen.dart:23:8 - unused_import
+warning - Unused import: '../chat/chat_list_screen.dart' - lib\presentation\screens\profile\profile_screen.dart:24:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\profile\profile_screen.dart:203:81 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\profile\profile_screen.dart:328:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\profile\profile_screen.dart:357:60 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\profile\profile_screen.dart:359:79 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\profile\profile_screen.dart:397:71 - deprecated_member_use
+warning - Dead code - lib\presentation\screens\profile\profile_screen.dart:452:45 - dead_code
+warning - The left operand can't be null, so the right operand is never executed - lib\presentation\screens\profile\profile_screen.dart:452:48 - dead_null_aware_expression
+warning - The left operand can't be null, so the right operand is never executed - lib\presentation\screens\profile\profile_screen.dart:453:51 - dead_null_aware_expression
+warning - Dead code - lib\presentation\screens\profile\profile_screen.dart:465:45 - dead_code
+warning - The left operand can't be null, so the right operand is never executed - lib\presentation\screens\profile\profile_screen.dart:465:48 - dead_null_aware_expression
+warning - The left operand can't be null, so the right operand is never executed - lib\presentation\screens\profile\profile_screen.dart:466:51 - dead_null_aware_expression
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\profile\profile_screen.dart:487:49 - deprecated_member_use
+   info - Unnecessary use of string interpolation - lib\presentation\screens\profile\profile_screen.dart:510:25 - unnecessary_string_interpolations
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\profile\profile_screen.dart:707:31 - deprecated_member_use
+warning - The declaration '_buildStatColumn' isn't referenced - lib\presentation\screens\profile\profile_screen.dart:729:10 - unused_element
+warning - The declaration '_buildSocialIcon' isn't referenced - lib\presentation\screens\profile\profile_screen.dart:752:10 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\profile\profile_screen.dart:756:22 - deprecated_member_use
+warning - The declaration '_buildInfoItem' isn't referenced - lib\presentation\screens\profile\profile_screen.dart:907:10 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\profile\profile_screen.dart:962:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\profile\profile_screen.dart:990:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\profile\profile_screen.dart:1010:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\profile\profile_screen.dart:1025:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\profile\profile_screen.dart:1045:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\profile\profile_screen.dart:1067:50 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\presentation\screens\profile\profile_screen.dart:1309:9 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\presentation\screens\profile\profile_screen.dart:1336:21 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\presentation\screens\profile\profile_screen.dart:1337:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\presentation\screens\profile\profile_screen.dart:1342:30 - use_build_context_synchronously
+   info - Unnecessary use of multiple underscores - lib\presentation\screens\profile\profile_screen.dart:1387:25 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\presentation\screens\profile\profile_screen.dart:1387:29 - unnecessary_underscores
+   info - Don't use 'BuildContext's across async gaps - lib\presentation\screens\profile\profile_screen.dart:1416:58 - use_build_context_synchronously
+warning - The declaration '_buildActionCards' isn't referenced - lib\presentation\screens\profile\profile_screen.dart:1475:10 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\profile\profile_screen.dart:1557:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\profile\profile_screen.dart:1568:30 - deprecated_member_use
+warning - The declaration '_buildDetailedStats' isn't referenced - lib\presentation\screens\profile\profile_screen.dart:1627:10 - unused_element
+   info - Unnecessary use of string interpolation - lib\presentation\screens\profile\profile_screen.dart:1692:61 - unnecessary_string_interpolations
+   info - Unnecessary use of string interpolation - lib\presentation\screens\profile\profile_screen.dart:1693:42 - unnecessary_string_interpolations
+   info - Unnecessary use of string interpolation - lib\presentation\screens\profile\profile_screen.dart:1709:38 - unnecessary_string_interpolations
+   info - Unnecessary use of string interpolation - lib\presentation\screens\profile\profile_screen.dart:1712:54 - unnecessary_string_interpolations
+warning - The declaration '_buildRecentMatches' isn't referenced - lib\presentation\screens\profile\profile_screen.dart:1933:10 - unused_element
+warning - The declaration '_buildMatchCard' isn't referenced - lib\presentation\screens\profile\profile_screen.dart:2058:10 - unused_element
+warning - The declaration '_buildTournamentsSection' isn't referenced - lib\presentation\screens\profile\profile_screen.dart:2133:10 - unused_element
+warning - The declaration '_buildRewardsSection' isn't referenced - lib\presentation\screens\profile\profile_screen.dart:2221:10 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\screens\profile\profile_screen.dart:2428:55 - deprecated_member_use
+   info - 'Share' is deprecated and shouldn't be used. Use SharePlus instead - lib\presentation\screens\profile\profile_screen.dart:2487:13 - deprecated_member_use
+   info - 'shareXFiles' is deprecated and shouldn't be used. Use SharePlus.instance.share() instead - lib\presentation\screens\profile\profile_screen.dart:2487:19 - deprecated_member_use
+warning - Unused import: 'data/services/stats_service.dart' - lib\recalculate_user_stats_script.dart:5:8 - unused_import
+warning - Unused import: 'data/models/user_model.dart' - lib\recalculate_user_stats_script.dart:6:8 - unused_import
+warning - Unused import: 'data/models/achievement_model.dart' - lib\recalculate_user_stats_script.dart:7:8 - unused_import
+warning - The value of the local variable 'topScorerId' isn't used - lib\recalculate_user_stats_script.dart:97:16 - unused_local_variable
+warning - The value of the local variable 'topRuns' isn't used - lib\recalculate_user_stats_script.dart:98:12 - unused_local_variable
+warning - The value of the local variable 'topWicketTakerId' isn't used - lib\recalculate_user_stats_script.dart:99:16 - unused_local_variable
+warning - The value of the local variable 'topWickets' isn't used - lib\recalculate_user_stats_script.dart:100:12 - unused_local_variable
+
