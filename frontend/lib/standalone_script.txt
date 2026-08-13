@@ -1,9 +1,0 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/widgets.dart';
-
-// Since we are running this outside the normal Flutter app lifecycle,
-// we need to initialize Firebase first. Note: This script is intended to be run
-// within the context of a Flutter test driver or integration test if it relies on
-// flutter/widgets.dart and Firebase plugins. To keep it simple, we will just use the UI side
-// hot reload to run the script instead of standalone terminal.
