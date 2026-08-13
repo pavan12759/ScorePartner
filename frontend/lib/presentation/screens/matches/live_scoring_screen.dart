@@ -10,6 +10,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../widgets/dialogs/manage_access_dialog.dart';
 import 'tabs/match_scoring_tab.dart';
 import '../broadcast/go_live_screen.dart';
+import '../../widgets/state/scorepartner_skeleton.dart';
+import '../../widgets/state/scorepartner_empty_state.dart';
+import '../../widgets/state/scorepartner_error_state.dart';
 
 class LiveScoringScreen extends StatelessWidget {
   final String matchId;
@@ -111,11 +114,42 @@ class LiveScoringScreen extends StatelessWidget {
             stream: FirebaseDataService.instance.streamMatch(matchId),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24.w),
+                    child: ScorePartnerSkeleton(
+                      width: double.infinity,
+                      height: 300.h,
+                      borderRadius: 16.r,
+                    ),
+                  ),
+                );
+              }
+              
+              if (snapshot.hasError) {
+                return Center(
+                  child: Card(
+                    margin: EdgeInsets.all(24.w),
+                    color: Colors.white,
+                    child: ScorePartnerErrorState(
+                      message: snapshot.error.toString(),
+                    ),
+                  ),
+                );
               }
               
               if (!snapshot.hasData || snapshot.data == null) {
-                return const Center(child: Text("Match not found", style: TextStyle(color: Colors.white)));
+                return Center(
+                  child: Card(
+                    margin: EdgeInsets.all(24.w),
+                    color: Colors.white,
+                    child: ScorePartnerEmptyState(
+                      title: 'Match not found',
+                      description: 'This match may have been deleted or is unavailable.',
+                      icon: Icons.sports_cricket,
+                    ),
+                  ),
+                );
               }
               
               final match = snapshot.data!;

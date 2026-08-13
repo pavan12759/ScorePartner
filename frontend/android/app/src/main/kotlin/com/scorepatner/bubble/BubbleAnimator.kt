@@ -4,6 +4,8 @@ import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.content.Context
+import android.animation.ArgbEvaluator
+import android.graphics.Color
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -21,62 +23,83 @@ class BubbleAnimator(private val context: Context) {
     private val settings = BubbleSettingsManager(context)
 
     /**
-     * Four — green pulse ring expansion.
+     * Four — green flash pulse.
      */
-    fun animateFour(view: View) {
-        val scaleX = ObjectAnimator.ofFloat(view, View.SCALE_X, 1f, 1.3f, 1f).apply {
+    fun animateFour(view: FloatingBubbleView) {
+        val green = Color.parseColor("#4CAF50")
+        
+        val scaleX = ObjectAnimator.ofFloat(view, View.SCALE_X, 1f, 1.05f, 1f).apply {
             duration = 400
-            interpolator = OvershootInterpolator(2f)
+            interpolator = OvershootInterpolator(1f)
         }
-        val scaleY = ObjectAnimator.ofFloat(view, View.SCALE_Y, 1f, 1.3f, 1f).apply {
+        val scaleY = ObjectAnimator.ofFloat(view, View.SCALE_Y, 1f, 1.05f, 1f).apply {
             duration = 400
-            interpolator = OvershootInterpolator(2f)
+            interpolator = OvershootInterpolator(1f)
         }
+        
+        val colorAnim = ValueAnimator.ofObject(ArgbEvaluator(), Color.WHITE, green, Color.WHITE).apply {
+            duration = 400
+            addUpdateListener { animator -> 
+                view.setFlashColor(animator.animatedValue as Int)
+            }
+        }
+        
         AnimatorSet().apply {
-            playTogether(scaleX, scaleY)
+            playTogether(scaleX, scaleY, colorAnim)
             start()
         }
     }
 
     /**
-     * Six — golden burst with larger scale.
+     * Six — golden burst flash.
      */
-    fun animateSix(view: View) {
-        val scaleX = ObjectAnimator.ofFloat(view, View.SCALE_X, 1f, 1.5f, 1f).apply {
+    fun animateSix(view: FloatingBubbleView) {
+        val gold = Color.parseColor("#FFC107")
+        
+        val scaleX = ObjectAnimator.ofFloat(view, View.SCALE_X, 1f, 1.1f, 1f).apply {
             duration = 500
-            interpolator = OvershootInterpolator(3f)
+            interpolator = OvershootInterpolator(2f)
         }
-        val scaleY = ObjectAnimator.ofFloat(view, View.SCALE_Y, 1f, 1.5f, 1f).apply {
+        val scaleY = ObjectAnimator.ofFloat(view, View.SCALE_Y, 1f, 1.1f, 1f).apply {
             duration = 500
-            interpolator = OvershootInterpolator(3f)
+            interpolator = OvershootInterpolator(2f)
         }
-        val rotation = ObjectAnimator.ofFloat(view, View.ROTATION, 0f, 15f, -15f, 0f).apply {
+        
+        val colorAnim = ValueAnimator.ofObject(ArgbEvaluator(), Color.WHITE, gold, Color.WHITE).apply {
             duration = 500
+            addUpdateListener { animator -> 
+                view.setFlashColor(animator.animatedValue as Int)
+            }
         }
+        
         AnimatorSet().apply {
-            playTogether(scaleX, scaleY, rotation)
+            playTogether(scaleX, scaleY, colorAnim)
             start()
         }
     }
 
     /**
-     * Wicket — red shake + optional vibration.
+     * Wicket — red shake flash.
      */
-    fun animateWicket(view: View) {
+    fun animateWicket(view: FloatingBubbleView) {
+        val red = Color.parseColor("#F44336")
+        
         val shake = ObjectAnimator.ofFloat(
             view, View.TRANSLATION_X,
             0f, -10f, 10f, -8f, 8f, -5f, 5f, 0f
         ).apply {
             duration = 500
         }
-        val scaleDown = ObjectAnimator.ofFloat(view, View.SCALE_X, 1f, 0.9f, 1f).apply {
-            duration = 300
+        
+        val colorAnim = ValueAnimator.ofObject(ArgbEvaluator(), Color.WHITE, red, Color.WHITE).apply {
+            duration = 500
+            addUpdateListener { animator -> 
+                view.setFlashColor(animator.animatedValue as Int)
+            }
         }
-        val scaleDownY = ObjectAnimator.ofFloat(view, View.SCALE_Y, 1f, 0.9f, 1f).apply {
-            duration = 300
-        }
+        
         AnimatorSet().apply {
-            playTogether(shake, scaleDown, scaleDownY)
+            playTogether(shake, colorAnim)
             start()
         }
 

@@ -15,8 +15,8 @@ import android.view.animation.AccelerateDecelerateInterpolator
  * Horizontal floating card that shows detailed live score info.
  * Displayed when the user single-taps the collapsed bubble.
  *
- * Shows: Teams, Score, Overs, CRR, RRR, Live Status,
- * Current Batters, Current Bowler, Last Ball, Live Viewers, Total Views.
+ * Shows: Teams, Score, Overs, CRR, Target Info,
+ * Current Batters, Current Bowler, This Over balls, Live Viewers.
  */
 @SuppressLint("ViewConstructor")
 class ExpandedScoreCardView(
@@ -30,14 +30,11 @@ class ExpandedScoreCardView(
     private val tvTeam1Score: TextView
     private val tvTeam2Name: TextView
     private val tvTeam2Score: TextView
-    private val tvOvers: TextView
-    private val tvCrr: TextView
-    private val tvRrr: TextView
-    private val tvStatus: TextView
+    private val tvStats: TextView // CRR / RRR / Target
     private val tvBatter1: TextView
     private val tvBatter2: TextView
     private val tvBowler: TextView
-    private val tvLastBall: TextView
+    private val thisOverContainer: LinearLayout
     private val tvViewers: TextView
     private val tvTotalViews: TextView
     private val tvReconnecting: TextView
@@ -47,7 +44,6 @@ class ExpandedScoreCardView(
 
     // Colors
     private val primaryOrange = Color.parseColor("#FF8D48")
-    private val lightOrangeBg = Color.parseColor("#FFF5EE")
     private val darkText = Color.parseColor("#1A1A2E")
     private val greyText = Color.parseColor("#666666")
     private val greenColor = Color.parseColor("#4CAF50")
@@ -59,79 +55,79 @@ class ExpandedScoreCardView(
         clipChildren = false
         clipToPadding = false
 
-        // Auto-dismiss after 10 seconds
-        postDelayed({ dismiss() }, 10000)
+        // Auto-dismiss after 15 seconds
+        postDelayed({ dismiss() }, 15000)
 
         // Card container with glassmorphism styling
         cardContainer = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dpToPx(14f), dpToPx(10f), dpToPx(14f), dpToPx(10f))
+            setPadding(dpToPx(16f), dpToPx(14f), dpToPx(16f), dpToPx(14f))
             setBackgroundColor(Color.TRANSPARENT)
         }
 
-        // Build the card layout
         // ── Row 1: Match Header ──
-        tvMatchHeader = createText("🏏 Team A vs Team B", 11f, primaryOrange, true)
+        tvMatchHeader = createText("🏏 Team A vs Team B • LIVE", 11f, primaryOrange, true)
         cardContainer.addView(tvMatchHeader)
-        cardContainer.addView(createSpacer(3))
+        cardContainer.addView(createSpacer(6))
 
-        // ── Row 2: Team 1 score ──
+        // ── Row 2: Team 1 score (Batting) ──
         val team1Row = createHorizontalRow()
-        tvTeam1Name = createText("Team 1", 12f, darkText, true)
-        tvTeam1Score = createText("0/0 (0.0)", 12f, darkText, true)
+        tvTeam1Name = createText("Team 1", 14f, darkText, true)
+        tvTeam1Score = createText("0/0 (0.0 ov)", 14f, darkText, true)
         team1Row.addView(tvTeam1Name, createWeightParams(1f))
         team1Row.addView(tvTeam1Score)
         cardContainer.addView(team1Row)
+        cardContainer.addView(createSpacer(2))
 
-        // ── Row 3: Team 2 score ──
+        // ── Row 3: Team 2 score (Bowling) ──
         val team2Row = createHorizontalRow()
         tvTeam2Name = createText("Team 2", 12f, greyText, false)
-        tvTeam2Score = createText("0/0 (0.0)", 12f, greyText, false)
+        tvTeam2Score = createText("0/0 (0.0 ov)", 12f, greyText, false)
         team2Row.addView(tvTeam2Name, createWeightParams(1f))
         team2Row.addView(tvTeam2Score)
         cardContainer.addView(team2Row)
-        cardContainer.addView(createSpacer(4))
+        cardContainer.addView(createSpacer(6))
 
-        // ── Row 4: CRR / RRR / Status ──
-        val statsRow = createHorizontalRow()
-        tvCrr = createText("CRR: 0.00", 9f, greyText, false)
-        tvRrr = createText("", 9f, primaryOrange, false)
-        tvOvers = createText("", 9f, greyText, false)
-        tvStatus = createText("● LIVE", 9f, greenColor, true)
-        statsRow.addView(tvCrr, createWeightParams(1f))
-        statsRow.addView(tvRrr)
-        statsRow.addView(createHSpacer(8))
-        statsRow.addView(tvStatus)
-        cardContainer.addView(statsRow)
+        // ── Row 4: Stats / Target ──
+        tvStats = createText("CRR: 0.00", 11f, primaryOrange, false)
+        cardContainer.addView(tvStats)
         cardContainer.addView(createDivider())
 
         // ── Row 5: Current Batters ──
         val battersRow = createHorizontalRow()
-        tvBatter1 = createText("🏏 Batter 1*", 9f, darkText, false)
-        tvBatter2 = createText("Batter 2", 9f, greyText, false)
+        tvBatter1 = createText("🏏 Batter 1*", 11f, darkText, false)
+        tvBatter2 = createText("Batter 2", 11f, greyText, false)
         battersRow.addView(tvBatter1, createWeightParams(1f))
         battersRow.addView(tvBatter2)
         cardContainer.addView(battersRow)
+        cardContainer.addView(createSpacer(4))
 
-        // ── Row 6: Bowler + Last Ball ──
-        val bowlerRow = createHorizontalRow()
-        tvBowler = createText("⚾ Bowler", 9f, darkText, false)
-        tvLastBall = createText("Last: -", 9f, greyText, false)
-        bowlerRow.addView(tvBowler, createWeightParams(1f))
-        bowlerRow.addView(tvLastBall)
-        cardContainer.addView(bowlerRow)
+        // ── Row 6: Bowler ──
+        tvBowler = createText("⚾ Bowler", 11f, darkText, false)
+        cardContainer.addView(tvBowler)
+        cardContainer.addView(createSpacer(6))
+
+        // ── Row 7: This Over ──
+        val thisOverRow = createHorizontalRow()
+        thisOverRow.addView(createText("This Over: ", 11f, greyText, false))
+        thisOverContainer = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        thisOverRow.addView(thisOverContainer)
+        cardContainer.addView(thisOverRow)
         cardContainer.addView(createDivider())
 
-        // ── Row 7: Viewers ──
+        // ── Row 8: Viewers ──
         val viewerRow = createHorizontalRow()
-        tvViewers = createText("👁 0 watching", 8f, greyText, false)
-        tvTotalViews = createText("📊 0 views", 8f, greyText, false)
+        tvViewers = createText("👁 0 watching", 10f, greyText, false)
+        tvTotalViews = createText("📊 0 views", 10f, greyText, false)
         viewerRow.addView(tvViewers, createWeightParams(1f))
         viewerRow.addView(tvTotalViews)
         cardContainer.addView(viewerRow)
 
         // ── Reconnecting banner (hidden by default) ──
-        tvReconnecting = createText("⏳ Reconnecting...", 9f, redColor, true).apply {
+        tvReconnecting = createText("⏳ Reconnecting...", 10f, redColor, true).apply {
             visibility = View.GONE
             setBackgroundColor(Color.parseColor("#20F44336"))
             setPadding(dpToPx(4f), dpToPx(2f), dpToPx(4f), dpToPx(2f))
@@ -140,7 +136,7 @@ class ExpandedScoreCardView(
 
         // Wrap card in a styled frame
         addView(cardContainer, LayoutParams(
-            dpToPx(280f), LayoutParams.WRAP_CONTENT
+            dpToPx(300f), LayoutParams.WRAP_CONTENT
         ).apply {
             gravity = Gravity.CENTER
         })
@@ -154,7 +150,7 @@ class ExpandedScoreCardView(
     override fun dispatchDraw(canvas: Canvas) {
         // Draw glassmorphism background
         val rect = RectF(0f, 0f, width.toFloat(), height.toFloat())
-        val cornerRadius = dpToPx(16f).toFloat()
+        val cornerRadius = dpToPx(20f).toFloat()
 
         // Shadow
         val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -166,7 +162,7 @@ class ExpandedScoreCardView(
 
         // White background with slight transparency
         val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#F5FFFFFF")
+            color = Color.parseColor("#FAFFFFFF")
         }
         canvas.drawRoundRect(rect, cornerRadius, cornerRadius, bgPaint)
 
@@ -193,56 +189,82 @@ class ExpandedScoreCardView(
         val team2Wickets = (data["team2Wickets"] as? Number)?.toInt() ?: 0
         val team2Overs = (data["team2Overs"] as? Number)?.toDouble() ?: 0.0
         val crr = (data["crr"] as? Number)?.toDouble() ?: 0.0
-        val rrr = (data["rrr"] as? Number)?.toDouble() ?: 0.0
         val status = data["status"] as? String ?: "live"
         val currentBattingTeam = data["currentBattingTeam"] as? String ?: "team1"
         val batter1 = data["batter1"] as? String ?: "-"
         val batter2 = data["batter2"] as? String ?: "-"
         val bowler = data["bowler"] as? String ?: "-"
-        val lastBall = data["lastBall"] as? String ?: "-"
         val liveViewers = (data["liveViewers"] as? Number)?.toInt() ?: 0
         val totalViews = (data["totalViews"] as? Number)?.toInt() ?: 0
+        
+        val targetInfo = data["targetInfo"] as? String ?: ""
+        @Suppress("UNCHECKED_CAST")
+        val thisOver = data["thisOver"] as? List<String> ?: emptyList()
 
-        tvMatchHeader.text = "🏏 $team1Name vs $team2Name"
+        val statusText = if (status == "live") "LIVE 🟢" else status.uppercase()
+        tvMatchHeader.text = "🏏 $team1Name vs $team2Name • $statusText"
 
         // Highlight batting team
         val isTeam1Batting = currentBattingTeam == "team1"
         tvTeam1Name.text = team1Name
-        tvTeam1Score.text = "$team1Runs/$team1Wickets (${formatOvers(team1Overs)})"
+        tvTeam1Score.text = "$team1Runs/$team1Wickets (${formatOvers(team1Overs)} ov)"
         tvTeam1Name.setTextColor(if (isTeam1Batting) darkText else greyText)
         tvTeam1Score.setTextColor(if (isTeam1Batting) darkText else greyText)
         tvTeam1Name.paint.isFakeBoldText = isTeam1Batting
+        tvTeam1Score.paint.isFakeBoldText = isTeam1Batting
 
         tvTeam2Name.text = team2Name
-        tvTeam2Score.text = "$team2Runs/$team2Wickets (${formatOvers(team2Overs)})"
+        tvTeam2Score.text = "$team2Runs/$team2Wickets (${formatOvers(team2Overs)} ov)"
         tvTeam2Name.setTextColor(if (!isTeam1Batting) darkText else greyText)
         tvTeam2Score.setTextColor(if (!isTeam1Batting) darkText else greyText)
         tvTeam2Name.paint.isFakeBoldText = !isTeam1Batting
+        tvTeam2Score.paint.isFakeBoldText = !isTeam1Batting
 
-        tvCrr.text = "CRR: ${String.format("%.2f", crr)}"
-        tvRrr.text = if (rrr > 0) "RRR: ${String.format("%.2f", rrr)}" else ""
-
-        when (status) {
-            "live" -> {
-                tvStatus.text = "● LIVE"
-                tvStatus.setTextColor(greenColor)
-            }
-            "completed" -> {
-                tvStatus.text = "✓ COMPLETED"
-                tvStatus.setTextColor(greyText)
-            }
-            else -> {
-                tvStatus.text = status.uppercase()
-                tvStatus.setTextColor(greyText)
-            }
+        if (targetInfo.isNotEmpty()) {
+            tvStats.text = "CRR: ${String.format("%.2f", crr)}  •  $targetInfo"
+        } else {
+            tvStats.text = "CRR: ${String.format("%.2f", crr)}"
         }
 
         tvBatter1.text = "🏏 $batter1*"
         tvBatter2.text = batter2
         tvBowler.text = "⚾ $bowler"
-        tvLastBall.text = "Last: $lastBall"
         tvViewers.text = "👁 $liveViewers watching"
         tvTotalViews.text = "📊 $totalViews views"
+        
+        updateThisOver(thisOver)
+    }
+    
+    private fun updateThisOver(balls: List<String>) {
+        thisOverContainer.removeAllViews()
+        for (ball in balls) {
+            val tv = TextView(context).apply {
+                text = ball
+                setTextColor(Color.WHITE)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+                gravity = Gravity.CENTER
+                setPadding(dpToPx(4f), dpToPx(1f), dpToPx(4f), dpToPx(1f))
+                
+                val bgColor = when (ball) {
+                    "4" -> Color.parseColor("#4CAF50") // Green
+                    "6" -> Color.parseColor("#FFC107") // Gold
+                    "W" -> Color.parseColor("#F44336") // Red
+                    else -> Color.parseColor("#9E9E9E") // Grey
+                }
+                
+                // Draw rounded rect background
+                background = object : android.graphics.drawable.ShapeDrawable(android.graphics.drawable.shapes.RoundRectShape(FloatArray(8) { dpToPx(4f).toFloat() }, null, null)) {
+                    init { paint.color = bgColor }
+                }
+                
+                layoutParams = LinearLayout.LayoutParams(
+                    dpToPx(18f), dpToPx(18f)
+                ).apply {
+                    marginEnd = dpToPx(4f)
+                }
+            }
+            thisOverContainer.addView(tv)
+        }
     }
 
     fun showReconnecting(show: Boolean) {
@@ -332,8 +354,8 @@ class ExpandedScoreCardView(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 dpToPx(1f)
             ).apply {
-                topMargin = dpToPx(4f)
-                bottomMargin = dpToPx(4f)
+                topMargin = dpToPx(6f)
+                bottomMargin = dpToPx(6f)
             }
             setBackgroundColor(Color.parseColor("#15000000"))
         }

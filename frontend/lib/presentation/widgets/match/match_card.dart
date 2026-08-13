@@ -5,6 +5,7 @@ import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:scorepatner/data/models/match_model.dart';
 import 'package:scorepatner/data/models/team_model.dart';
 import 'package:scorepatner/data/services/firebase_data_service.dart';
+import 'package:scorepatner/presentation/widgets/match/pin_live_score_button.dart';
 
 class MatchCard extends StatelessWidget {
   final MatchModel? match; // Nullable for skeleton/loading state
@@ -186,23 +187,28 @@ class MatchCard extends StatelessWidget {
                 SizedBox(height: 6.h),
                 
                 // Footer
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          _getStatusText(match!).toUpperCase(),
-                          style: TextStyle(
-                            color: AppTheme.primaryOrange,
-                            fontSize: 10.sp,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _getStatusText(match!).toUpperCase(),
+                        style: TextStyle(
+                          color: AppTheme.primaryOrange,
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.bold,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
-                  ),
+                    ),
+                    if (isLive)
+                      PinLiveScoreButton(
+                        matchId: match!.id,
+                        team1Name: match!.team1Name,
+                        team2Name: match!.team2Name,
+                        isLive: true,
+                        iconOnly: true,
+                      ),
+                  ],
                 ),
               ],
             ),

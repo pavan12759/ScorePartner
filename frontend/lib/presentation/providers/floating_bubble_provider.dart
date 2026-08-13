@@ -81,7 +81,12 @@ class FloatingBubbleProvider extends ChangeNotifier {
   /// - `false` if user denied permission or cancelled
   /// - throws on unexpected errors
   Future<bool> pinMatch(String matchId) async {
-    if (!isSupported || !_isEnabled) return false;
+    if (!isSupported) return false;
+
+    // If they explicitly tap Pin, we should auto-enable the feature if it was disabled
+    if (!_isEnabled) {
+      await setEnabled(true);
+    }
 
     _isLoading = true;
     notifyListeners();

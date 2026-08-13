@@ -12,6 +12,7 @@ import '../../../widgets/player_selection_dialogs.dart';
 import '../../../widgets/match_initialization_dialog.dart';
 import '../../matches/match_highlights_generator_screen.dart';
 import '../../../widgets/dialogs/super_over_tie_dialog.dart';
+import '../poster/match_summary_poster_screen.dart';
 
 
 class MatchScoringTab extends StatefulWidget {
@@ -521,6 +522,30 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
                 ),
                 SizedBox(height: 12.h),
               ],
+              // Match Summary Poster button (visible to all users for completed matches)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx); // Close dialog first
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MatchSummaryPosterScreen(matchId: match.id),
+                      ),
+                    );
+                  },
+                  icon: Icon(Icons.image),
+                  label: const Text('MATCH SUMMARY POSTER'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.deepPurple,
+                    side: BorderSide(color: Colors.deepPurple, width: 2),
+                    padding: EdgeInsets.symmetric(vertical: 16.h),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                  ),
+                ),
+              ),
+              SizedBox(height: 12.h),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -2131,6 +2156,41 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
     TeamScore battingScore,
     TeamScore bowlingScore,
   ) async {
+    // Check if free hit
+    bool isFreeHit = false;
+    for (int i = match.ballByBall.length - 1; i >= 0; i--) {
+      final b = match.ballByBall[i];
+      if (b.extraType == 'no-ball') {
+        isFreeHit = true;
+        break;
+      }
+      if (b.isLegalBall) {
+        break;
+      }
+    }
+    
+    if (isFreeHit) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Potential Free Hit!'),
+          content: const Text('The previous delivery was a No-Ball. If this match has the Free Hit rule enabled, the batter can generally only be dismissed via Run Out.\n\nAre you sure you want to proceed with recording a wicket?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Proceed'),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true || !context.mounted) return;
+    }
+
     // 0. Get current batsmen
     final currentBatters = battingScore.batters.where((b) => b.isPlaying && !b.isOut).toList();
     if (currentBatters.length < 2) return; // Should not happen

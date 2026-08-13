@@ -8,6 +8,8 @@ import 'package:scorepatner/presentation/screens/matches/create_match_screen.dar
 import 'package:scorepatner/presentation/screens/matches/live_scoring_screen.dart';
 import 'package:scorepatner/presentation/screens/matches/match_detail_screen.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:scorepatner/presentation/widgets/state/scorepartner_skeleton.dart';
+import 'package:scorepatner/presentation/widgets/state/scorepartner_empty_state.dart';
 
 class ManageMatchesScreen extends StatefulWidget {
   const ManageMatchesScreen({super.key});
@@ -161,7 +163,18 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
         ),
       ),
         body: _isLoading 
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryOrange))
+          ? ListView.builder(
+              padding: EdgeInsets.all(16.w),
+              itemCount: 4,
+              itemBuilder: (_, __) => Padding(
+                padding: EdgeInsets.only(bottom: 12.h),
+                child: ScorePartnerSkeleton(
+                  width: double.infinity,
+                  height: 140.h,
+                  borderRadius: 16.r,
+                ),
+              ),
+            )
           : TabBarView(
           children: [
             _buildMatchList('live'),
@@ -225,50 +238,37 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
       case 'ongoing':
         icon = Icons.sports_cricket_outlined;
         title = 'No live matches';
-        subtitle = 'Start a match to see it here';
+        subtitle = 'Start a match to see it here.';
         break;
       case 'scheduled':
       case 'upcoming':
         icon = Icons.event_outlined;
         title = 'No upcoming matches';
-        subtitle = 'Create a match to schedule it';
+        subtitle = 'Create a match to schedule it.';
         break;
       default:
         icon = Icons.history;
         title = 'No completed matches';
-        subtitle = 'Completed matches will appear here';
+        subtitle = 'Completed matches will appear here.';
     }
 
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: EdgeInsets.all(24.w),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 48.sp, color: Colors.grey[400]),
-          ),
-          SizedBox(height: 20.h),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            subtitle,
-            style: TextStyle(color: Colors.grey[600], fontSize: 14.sp),
-          ),
-        ],
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 24.w),
+      child: ScorePartnerEmptyState(
+        title: title,
+        description: subtitle,
+        icon: icon,
+        primaryButtonText: 'Create Match',
+        onPrimaryAction: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CreateMatchScreen()),
+          ).then((_) => _fetchMatches());
+        },
       ),
     );
   }
+
 
   Widget _buildMatchCard(MatchModel match) {
     Color statusColor;

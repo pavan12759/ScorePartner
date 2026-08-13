@@ -30,6 +30,7 @@ import '../../../data/services/viewer_service.dart';
 import '../../widgets/match/pin_live_score_button.dart';
 import '../broadcast/broadcast_tab.dart';
 import '../broadcast/go_live_screen.dart';
+import '../matches/poster/match_summary_poster_screen.dart';
 
 class MatchDetailScreen extends StatefulWidget {
   final String matchId;
@@ -347,6 +348,35 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                             SizedBox(height: 16.h),
                           ],
                           MvpRatingCard(match: match),
+                          // Match Summary Poster (available to all users when match is completed)
+                          if (match.status == 'past' ||
+                              match.result != null) ...[
+                            SizedBox(height: 16.h),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        MatchSummaryPosterScreen(
+                                          matchId: match.id,
+                                        ),
+                                  ),
+                                );
+                              },
+                              icon: Icon(Icons.image),
+                              label: const Text('Match Summary Poster'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.deepPurple,
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.symmetric(vertical: 14.h),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
+                                elevation: 2,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),

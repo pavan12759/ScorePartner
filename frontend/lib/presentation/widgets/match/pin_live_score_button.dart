@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:scorepatner/presentation/providers/floating_bubble_provider.dart';
+import 'package:scorepatner/data/services/floating_bubble_channel.dart';
 
 /// A reusable button/icon for pinning a live match to the floating bubble.
 ///
@@ -44,9 +45,21 @@ class PinLiveScoreButton extends StatelessWidget {
 
         if (iconOnly) {
           return IconButton(
-            icon: Icon(
-              isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-              color: isPinned ? AppTheme.primaryOrange : Colors.black87,
+            icon: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+              child: provider.isLoading
+                  ? SizedBox(
+                      key: const ValueKey('loading'),
+                      width: 20.w,
+                      height: 20.h,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(
+                      isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                      key: ValueKey(isPinned),
+                      color: isPinned ? AppTheme.primaryOrange : Colors.black87,
+                    ),
             ),
             tooltip: isPinned ? 'Unpin Live Score' : 'Pin Live Score',
             onPressed: provider.isLoading
@@ -63,7 +76,8 @@ class PinLiveScoreButton extends StatelessWidget {
                 ? null
                 : () => _handleTap(context, provider, isPinned, isOtherPinned),
             borderRadius: BorderRadius.circular(12.r),
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
               padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
               decoration: BoxDecoration(
                 color: isPinned
@@ -79,32 +93,40 @@ class PinLiveScoreButton extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (provider.isLoading)
-                    SizedBox(
-                      width: 16.w,
-                      height: 16.h,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppTheme.primaryOrange,
-                      ),
-                    )
-                  else
-                    Icon(
-                      isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-                      size: 16.sp,
-                      color: isPinned
-                          ? AppTheme.primaryOrange
-                          : Colors.grey.shade700,
-                    ),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: provider.isLoading
+                        ? SizedBox(
+                            key: const ValueKey('loading'),
+                            width: 16.w,
+                            height: 16.h,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppTheme.primaryOrange,
+                            ),
+                          )
+                        : Icon(
+                            isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                            key: ValueKey(isPinned),
+                            size: 16.sp,
+                            color: isPinned
+                                ? AppTheme.primaryOrange
+                                : Colors.grey.shade700,
+                          ),
+                  ),
                   SizedBox(width: 8.w),
-                  Text(
-                    isPinned ? 'Pinned ✓' : '📌 Pin Live Score',
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w600,
-                      color: isPinned
-                          ? AppTheme.primaryOrange
-                          : Colors.grey.shade700,
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: Text(
+                      isPinned ? 'Pinned ✓' : '📌 Pin Live Score',
+                      key: ValueKey(isPinned),
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                        color: isPinned
+                            ? AppTheme.primaryOrange
+                            : Colors.grey.shade700,
+                      ),
                     ),
                   ),
                 ],
@@ -156,8 +178,19 @@ class PinLiveScoreButton extends StatelessWidget {
         ),
       );
     } else {
-      // Permission denied or error
-      _showPermissionExplanation(context);
+      // It failed, could be permission or foreground service error.
+      // If permission is clearly denied, show explanation.
+      final hasPerm = await FloatingBubbleChannel.instance.checkOverlayPermission();
+      if (!hasPerm && context.mounted) {
+        _showPermissionExplanation(context);
+      } else if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to pin match. Check permissions or restart app.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

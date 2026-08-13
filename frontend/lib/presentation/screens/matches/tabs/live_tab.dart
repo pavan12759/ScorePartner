@@ -8,6 +8,7 @@ import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:scorepatner/data/services/firebase_data_service.dart';
 import 'package:scorepatner/presentation/screens/profile/player_profile_screen.dart';
 import 'package:scorepatner/presentation/widgets/match_initialization_dialog.dart';
+import 'package:scorepatner/presentation/screens/matches/poster/match_summary_poster_screen.dart';
 
 class LiveTab extends StatefulWidget {
   final MatchModel match;
@@ -246,15 +247,18 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
           _buildLiveCommentaryFeed(),
           SizedBox(height: 24.h),
           
-          // Share Button
+          // Share Match Summary Poster Button
           ElevatedButton.icon(
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Share summary feature coming soon!')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MatchSummaryPosterScreen(matchId: match.id),
+                ),
               );
             },
-            icon: Icon(Icons.share, color: Colors.white),
-            label: Text('Share Match Summary', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp)),
+            icon: Icon(Icons.auto_awesome, color: Colors.white),
+            label: Text('Match Summary Poster', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp)),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryOrange,
               foregroundColor: Colors.white,

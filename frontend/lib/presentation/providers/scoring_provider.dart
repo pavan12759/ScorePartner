@@ -173,8 +173,8 @@ class ScoringProvider extends ChangeNotifier {
         _swapStrike();
       }
       
-      // 2. Swap for wicket crossing
-      if (isWicket && crossed) {
+      // 2. Swap for wicket crossing (Except for Caught out under new ICC rules)
+      if (isWicket && crossed && wicketType != 'caught') {
         _swapStrike();
       }
       

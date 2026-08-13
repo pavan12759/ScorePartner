@@ -7,9 +7,27 @@ import 'package:scorepatner/data/models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import 'chat_screen.dart';
 import 'dart:convert';
+import '../../widgets/state/scorepartner_skeleton.dart';
+import '../../widgets/state/scorepartner_empty_state.dart';
+import '../../widgets/state/scorepartner_error_state.dart';
+import '../../../core/theme/app_theme.dart';
 
-class ChatListScreen extends StatelessWidget {
+class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
+
+  @override
+  State<ChatListScreen> createState() => _ChatListScreenState();
+}
+
+class _ChatListScreenState extends State<ChatListScreen> {
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +41,16 @@ class ChatListScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Future: Open contacts or search screen to start new chat
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Search users to start a new chat!')),
+          );
+        },
+        backgroundColor: AppTheme.primaryOrange,
+        child: const Icon(Icons.message, color: Colors.white),
+      ),
       appBar: AppBar(
         title: const Text(
           'Messages',
@@ -86,43 +114,64 @@ class ChatListScreen extends StatelessWidget {
             ),
           ),
           
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseDataService.instance.getUserChats(currentUserId),
+          Column(
+            children: [
+              // Search Bar
+              Padding(
+                padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 8.h),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (val) {
+                    setState(() {
+                      _searchQuery = val.trim().toLowerCase();
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Search conversations...',
+                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24.r),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseDataService.instance.getUserChats(currentUserId),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator(color: Color(0xFFA0522D)));
-              }
-
-              if (snapshot.hasError) {
-                return Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.w),
-                    child: SelectableText(
-                      'Error loading chats: ${snapshot.error}',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.redAccent),
+                return ListView.builder(
+                  padding: EdgeInsets.all(16.w),
+                  itemCount: 4,
+                  itemBuilder: (_, __) => Padding(
+                    padding: EdgeInsets.only(bottom: 12.h),
+                    child: ScorePartnerSkeleton(
+                      width: double.infinity,
+                      height: 80.h,
+                      borderRadius: 12.r,
                     ),
                   ),
                 );
               }
 
+              if (snapshot.hasError) {
+                return Padding(
+                  padding: EdgeInsets.all(24.w),
+                  child: ScorePartnerErrorState(message: snapshot.error.toString()),
+                );
+              }
+
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.chat_bubble_outline, size: 64.sp, color: Colors.grey[400]),
-                      SizedBox(height: 16.h),
-                      Text(
-                        'No messages yet',
-                        style: TextStyle(color: Colors.grey[500], fontSize: 16.sp),
-                      ),
-                      SizedBox(height: 8.h),
-                      Text(
-                        'Visit a player profile to start chatting',
-                        style: TextStyle(color: Colors.grey[400], fontSize: 12.sp),
-                      ),
-                    ],
+                return Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24.w),
+                  child: ScorePartnerEmptyState(
+                    title: 'No messages yet',
+                    description: 'Visit a player profile to start chatting.',
+                    icon: Icons.chat_bubble_outline,
                   ),
                 );
               }
@@ -188,8 +237,16 @@ class ChatListScreen extends StatelessWidget {
                       }
 
                       final otherUser = userSnapshot.data!;
+                      if (_searchQuery.isNotEmpty && !otherUser.name.toLowerCase().contains(_searchQuery)) {
+                        return const SizedBox.shrink();
+                      }
+
                       final lastMessage = chatData['lastMessage'] ?? '';
                       final lastMessageTime = (chatData['lastMessageTime'] as Timestamp?)?.toDate();
+                      
+                      // Example unread logic: you can hook this up to actual backend fields
+                      final bool hasUnread = chatData['lastMessageSenderId'] != currentUserId && 
+                                             chatData['isLastMessageRead'] == false;
                       
                       // Simple time formatting
                       String timeText = '';
@@ -224,17 +281,20 @@ class ChatListScreen extends StatelessWidget {
                           clipBehavior: Clip.antiAlias,
                           child: ListTile(
                             contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                          leading: CircleAvatar(
-                            radius: 26,
-                            backgroundColor: const Color(0xFFA0522D).withOpacity(0.1),
-                            backgroundImage: getProfileImageProvider(otherUser.profileImageUrl),
-                            child: otherUser.profileImageUrl.isEmpty
-                                ? Text(
-                                    otherUser.name.isNotEmpty ? otherUser.name[0].toUpperCase() : '?',
-                                    style: TextStyle(color: const Color(0xFFA0522D), fontWeight: FontWeight.bold),
-                                  )
-                                : null,
-                          ),
+                          leading: (() {
+                            final imgProvider = getProfileImageProvider(otherUser.profileImageUrl);
+                            return CircleAvatar(
+                              radius: 26,
+                              backgroundColor: const Color(0xFFA0522D).withOpacity(0.1),
+                              backgroundImage: imgProvider,
+                              child: imgProvider == null
+                                  ? Text(
+                                      otherUser.name.isNotEmpty ? otherUser.name[0].toUpperCase() : '?',
+                                      style: TextStyle(color: const Color(0xFFA0522D), fontWeight: FontWeight.bold),
+                                    )
+                                  : null,
+                            );
+                          })(),
                           title: Text(
                             otherUser.name,
                             style: TextStyle(
@@ -249,9 +309,30 @@ class ChatListScreen extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(color: Colors.grey[600]),
                           ),
-                          trailing: Text(
-                            timeText,
-                            style: TextStyle(color: Colors.grey[500], fontSize: 12.sp),
+                          trailing: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                timeText,
+                                style: TextStyle(
+                                  color: hasUnread ? AppTheme.primaryOrange : Colors.grey[500], 
+                                  fontSize: 12.sp,
+                                  fontWeight: hasUnread ? FontWeight.bold : FontWeight.normal,
+                                ),
+                              ),
+                              if (hasUnread) ...[
+                                SizedBox(height: 4.h),
+                                Container(
+                                  width: 8.w,
+                                  height: 8.w,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.redAccent,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ]
+                            ],
                           ),
                           onTap: () {
                             Navigator.push(
@@ -268,12 +349,15 @@ class ChatListScreen extends StatelessWidget {
                         ),
                       ),
                     );
-                  },
+                    },
                   );
                 },
               );
             },
           ),
+        ),
+      ],
+    ),
         ],
       ),
     );

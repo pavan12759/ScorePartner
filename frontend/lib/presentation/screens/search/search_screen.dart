@@ -11,6 +11,9 @@ import 'dart:math';
 import '../tournament/tournament_details_screen.dart';
 import '../matches/match_detail_screen.dart';
 import '../matches/live_scoring_screen.dart';
+import '../../widgets/state/scorepartner_skeleton.dart';
+import '../../widgets/state/scorepartner_empty_state.dart';
+import '../../widgets/state/scorepartner_error_state.dart';
 
 /// Search screen to search for tournaments, players, and matches
 class SearchScreen extends StatefulWidget {
@@ -156,9 +159,24 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
       future: FirebaseDataService.instance.searchTournaments(_searchQuery),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return ListView.builder(
+            padding: EdgeInsets.all(16.w),
+            itemCount: 4,
+            itemBuilder: (_, __) => Padding(
+              padding: EdgeInsets.only(bottom: 12.h),
+              child: ScorePartnerSkeleton(
+                width: double.infinity,
+                height: 88.h,
+                borderRadius: 16.r,
+              ),
+            ),
+          );
         }
         
+        if (snapshot.hasError) {
+          return ScorePartnerErrorState(message: snapshot.error.toString());
+        }
+
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return _buildEmptyState('No tournaments found', Icons.emoji_events_outlined);
         }
@@ -294,9 +312,24 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
       future: _searchPlayers(_searchQuery),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return ListView.builder(
+            padding: EdgeInsets.all(16.w),
+            itemCount: 4,
+            itemBuilder: (_, __) => Padding(
+              padding: EdgeInsets.only(bottom: 12.h),
+              child: ScorePartnerSkeleton(
+                width: double.infinity,
+                height: 88.h,
+                borderRadius: 16.r,
+              ),
+            ),
+          );
         }
         
+        if (snapshot.hasError) {
+          return ScorePartnerErrorState(message: snapshot.error.toString());
+        }
+
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return _buildEmptyState('No players found', Icons.person_outline);
         }
@@ -461,9 +494,24 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
       future: FirebaseDataService.instance.searchMatches(_searchQuery),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return ListView.builder(
+            padding: EdgeInsets.all(16.w),
+            itemCount: 4,
+            itemBuilder: (_, __) => Padding(
+              padding: EdgeInsets.only(bottom: 12.h),
+              child: ScorePartnerSkeleton(
+                width: double.infinity,
+                height: 140.h,
+                borderRadius: 16.r,
+              ),
+            ),
+          );
         }
         
+        if (snapshot.hasError) {
+          return ScorePartnerErrorState(message: snapshot.error.toString());
+        }
+
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return _buildEmptyState('No matches found', Icons.sports_cricket);
         }
@@ -610,22 +658,12 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   }
 
   Widget _buildEmptyState(String message, IconData icon) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 64.sp, color: Colors.grey[400]),
-          SizedBox(height: 16.h),
-          Text(
-            message,
-            style: TextStyle(color: Colors.grey[600], fontSize: 16.sp),
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            'Try a different search term',
-            style: TextStyle(color: Colors.grey[500], fontSize: 14.sp),
-          ),
-        ],
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 24.w),
+      child: ScorePartnerEmptyState(
+        title: message,
+        description: 'Try a different search term.',
+        icon: icon,
       ),
     );
   }

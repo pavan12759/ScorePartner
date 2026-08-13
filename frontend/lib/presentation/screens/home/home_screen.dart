@@ -13,6 +13,9 @@ import '../../providers/theme_provider.dart';
 import '../chat/chat_list_screen.dart';
 import '../notifications/notifications_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../widgets/state/scorepartner_skeleton.dart';
+import '../../widgets/state/scorepartner_empty_state.dart';
+import '../../widgets/state/scorepartner_error_state.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -209,6 +212,14 @@ class HomeScreen extends StatelessWidget {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return _buildLoadingList();
                     }
+                    if (snapshot.hasError) {
+                      return Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16.w),
+                        child: ScorePartnerErrorState(
+                          message: snapshot.error.toString(),
+                        ),
+                      );
+                    }
                     if (!snapshot.hasData || snapshot.data!.isEmpty) {
                       return _buildEmptyMatchState('NO LIVE MATCHES RIGHT NOW');
                     }
@@ -237,6 +248,14 @@ class HomeScreen extends StatelessWidget {
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return _buildLoadingList();
+                    }
+                    if (snapshot.hasError) {
+                      return Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16.w),
+                        child: ScorePartnerErrorState(
+                          message: snapshot.error.toString(),
+                        ),
+                      );
                     }
                     if (!snapshot.hasData || snapshot.data!.isEmpty) {
                       return _buildEmptyMatchState('NO PAST MATCHES');
@@ -895,22 +914,14 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildEmptyMatchState(String message) {
     return Center(
-      child: Card(
-        margin: EdgeInsets.symmetric(horizontal: 16.w),
-        child: Container(
-          width: 280.w,
-          padding: EdgeInsets.symmetric(vertical: 32.h),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.sports_cricket, size: 48.sp, color: Colors.grey),
-            SizedBox(height: 12.h),
-              Text(
-                message, 
-                style: TextStyle(color: Colors.grey, fontSize: 12.sp, fontWeight: FontWeight.bold, letterSpacing: 0.5), 
-                textAlign: TextAlign.center
-              ),
-            ],
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16.w),
+        child: SizedBox(
+          width: 300.w,
+          child: ScorePartnerEmptyState(
+            title: message,
+            description: 'Start a new match or join an ongoing one.',
+            icon: Icons.sports_cricket,
           ),
         ),
       ),
@@ -919,10 +930,17 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildLoadingList() {
     return ListView.builder(
-      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      padding: EdgeInsets.zero,
       scrollDirection: Axis.horizontal,
       itemCount: 3,
-      itemBuilder: (_, __) => const MatchCard(match: null, onTap: _emptyTap),
+      itemBuilder: (_, __) => Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16.w),
+        child: ScorePartnerSkeleton(
+          width: 280.w,
+          height: 200.h,
+          borderRadius: 16.r,
+        ),
+      ),
     );
   }
 
@@ -1563,18 +1581,40 @@ class _MatchesNearYouSection extends StatelessWidget {
                 future: dataService.getMatchesNearMe(position.latitude, position.longitude),
                 builder: (context, matchSnapshot) {
                   if (matchSnapshot.connectionState == ConnectionState.waiting) {
-                    return Center(
-                      child: CircularProgressIndicator(color: AppTheme.primaryOrange),
+                    return ListView.builder(
+                      padding: EdgeInsets.zero,
+                      scrollDirection: Axis.horizontal,
+                      itemCount: 3,
+                      itemBuilder: (_, __) => Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16.w),
+                        child: ScorePartnerSkeleton(
+                          width: 280.w,
+                          height: 200.h,
+                          borderRadius: 16.r,
+                        ),
+                      ),
+                    );
+                  }
+                  if (matchSnapshot.hasError) {
+                    return Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.w),
+                      child: ScorePartnerErrorState(
+                        message: matchSnapshot.error.toString(),
+                        onRetry: () {}, // Handled by standard pull-to-refresh ideally
+                      ),
                     );
                   }
                   if (!matchSnapshot.hasData || matchSnapshot.data!.isEmpty) {
                     return Center(
-                      child: Text(
-                        'NO MATCHES NEAR YOU',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14.sp,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16.w),
+                        child: SizedBox(
+                          width: 300.w,
+                          child: ScorePartnerEmptyState(
+                            title: 'NO MATCHES NEAR YOU',
+                            description: 'Be the first to start a match in your area!',
+                            icon: Icons.location_off,
+                          ),
                         ),
                       ),
                     );

@@ -15,7 +15,7 @@ class AuthService {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
 
   final StreamController<UserModel?> _authStateController =
       StreamController<UserModel?>.broadcast();
@@ -144,23 +144,32 @@ class AuthService {
     
     debugPrint('🔐 Verifying OTP...');
     
-    final credential = PhoneAuthProvider.credential(
-      verificationId: _verificationId!,
-      smsCode: otp,
-    );
-    
-    final userCredential = await _auth.signInWithCredential(credential);
-    
-    if (userCredential.user == null) {
-      throw Exception('Sign in failed');
+    try {
+      final credential = PhoneAuthProvider.credential(
+        verificationId: _verificationId!,
+        smsCode: otp,
+      );
+      
+      final userCredential = await _auth.signInWithCredential(credential);
+      
+      if (userCredential.user == null) {
+        throw Exception('Sign in failed');
+      }
+      
+      _currentUser = await _loadUserProfile(userCredential.user!);
+      _authStateController.add(_currentUser);
+      _verificationId = null;
+      
+      debugPrint('✅ Phone OTP verified successfully');
+      return _currentUser!;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'invalid-verification-code' || e.code == 'invalid-credential') {
+        throw Exception('Invalid OTP');
+      }
+      throw Exception(e.message ?? 'Failed to verify OTP');
+    } catch (e) {
+      throw Exception('Failed to verify OTP: $e');
     }
-    
-    _currentUser = await _loadUserProfile(userCredential.user!);
-    _authStateController.add(_currentUser);
-    _verificationId = null;
-    
-    debugPrint('✅ Phone OTP verified successfully');
-    return _currentUser!;
   }
 
   // ==================== EMAIL AUTHENTICATION ====================
@@ -177,13 +186,9 @@ class AuthService {
     // Create account with email and send password reset, or use email+OTP simulation
     
     try {
-      // Check if user exists
-      final methods = await _auth.fetchSignInMethodsForEmail(email);
-      
-      if (methods.isEmpty) {
-        // New user - create with temporary password (will be changed)
-        debugPrint('📧 Creating new user account for $email');
-      }
+      // Note: fetchSignInMethodsForEmail is removed in newer Firebase Auth.
+      // We proceed directly - the sign-in/sign-up step will handle new vs existing users.
+      debugPrint('📧 Checking email: $email');
       
       // For now, we'll use a simple approach - email OTP will be verified in the next step
       debugPrint('📧 Email verification initiated for $email');
@@ -279,7 +284,10 @@ class AuthService {
           errorMessage = 'No account found with this email. Please sign up.';
           break;
         case 'wrong-password':
-          errorMessage = 'Incorrect password. Please try again.';
+        case 'invalid-credential':
+        case 'INVALID_LOGIN_CREDENTIALS':
+        case 'invalid_login_credentials':
+          errorMessage = 'Invalid email or password. Please try again.';
           break;
         case 'email-already-in-use':
           errorMessage = 'An account already exists with this email. Please sign in.';
@@ -291,7 +299,11 @@ class AuthService {
           errorMessage = 'Invalid email address.';
           break;
         default:
-          errorMessage = e.message ?? 'Authentication failed';
+          if (e.message != null && e.message!.toLowerCase().contains('supplied auth credentials')) {
+            errorMessage = 'Invalid email or password. Please try again.';
+          } else {
+            errorMessage = e.message ?? 'Authentication failed';
+          }
       }
       throw Exception(errorMessage);
     } catch (e) {
@@ -307,19 +319,18 @@ class AuthService {
     debugPrint('🔵 Starting Google Sign-In...');
     
     try {
-      // Trigger the Google Sign-In flow
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      // Trigger the Google Sign-In flow (7.x API)
+      final GoogleSignInAccount? googleUser = await _googleSignIn.authenticate();
       
       if (googleUser == null) {
         throw Exception('Google Sign-In cancelled');
       }
       
       // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
       
-      // Create a new credential
+      // Create a new credential (v7.x: accessToken no longer available, use idToken only)
       final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
       
@@ -378,7 +389,7 @@ class AuthService {
     debugPrint('👋 Signing out...');
     
     try {
-      await _googleSignIn.signOut();
+      await _googleSignIn.disconnect();
     } catch (e) {
       debugPrint('Google sign-out error: $e');
     }

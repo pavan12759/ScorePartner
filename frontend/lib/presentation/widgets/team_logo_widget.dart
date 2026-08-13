@@ -25,7 +25,7 @@ class TeamLogoWidget extends StatelessWidget {
   });
 
   /// Generate a consistent gradient from team name
-  static List<Color> _gradientForName(String name) {
+  static List<Color> gradientForName(String name) {
     final hash = name.hashCode.abs();
     final gradients = [
       [AppTheme.primaryOrange, AppTheme.deepOrange],
@@ -143,7 +143,7 @@ class TeamLogoWidget extends StatelessWidget {
   }
 
   Widget _buildInitialsAvatar() {
-    final gradient = _gradientForName(teamName);
+    final gradient = gradientForName(teamName);
     final initials = _getInitials(teamName);
 
     return Container(

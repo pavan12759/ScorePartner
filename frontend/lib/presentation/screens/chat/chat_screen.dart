@@ -6,13 +6,16 @@ import 'package:provider/provider.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
+import 'dart:convert';
 import 'package:scorepatner/data/services/firebase_data_service.dart';
+import 'package:scorepatner/data/models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:scorepatner/presentation/widgets/typing_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:scorepatner/presentation/widgets/voice_message_player.dart';
 import 'package:flutter/foundation.dart';
+import 'package:scorepatner/presentation/screens/profile/player_profile_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -429,79 +432,88 @@ class _ChatScreenState extends State<ChatScreen> {
                   });
                 },
               )
-            : Row(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppTheme.primaryOrange, width: 1.5.w),
-                    ),
-                    child: CircleAvatar(
-                      radius: 18,
-                      backgroundColor: Color(0xFFEEEEEE),
-                      child: Icon(Icons.person, size: 20.sp, color: Colors.grey),
-                      // backgroundImage: NetworkImage(...) // Future: Player Image
-                    ),
-                  ),
-                  SizedBox(width: 12.w),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.otherUserName,
-                        style: TextStyle(
-                          color: Colors.black, // Dark text on white
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16.sp,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      StreamBuilder<DocumentSnapshot>(
-                        stream: _chatStream,
-                        builder: (context, chatSnapshot) {
-                          // Check for Typing Status
-                          if (chatSnapshot.hasData && chatSnapshot.data!.exists) {
-                            final data = chatSnapshot.data!.data() as Map<String, dynamic>?;
-                            final typingUsers = List<String>.from(data?['typingUsers'] ?? []);
-                            if (typingUsers.contains(widget.otherUserId)) {
-                              return Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    'Typing ',
-                                    style: TextStyle(
-                                      color: AppTheme.primaryOrange,
-                                      fontSize: 11.sp,
-                                      fontWeight: FontWeight.bold,
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                  ),
-                                  TypingIndicator(dotColor: AppTheme.primaryOrange, dotSize: 4.0),
-                                ],
-                              );
-                            }
-                          }
+            : FutureBuilder<UserModel?>(
+                future: FirebaseDataService.instance.getUserById(widget.otherUserId),
+                builder: (context, userSnapshot) {
+                  final user = userSnapshot.data;
+                  final imageUrl = user?.profileImageUrl ?? '';
+                  
+                  ImageProvider? imgProvider;
+                  if (imageUrl.isNotEmpty) {
+                    if (imageUrl.trim().startsWith('data:')) {
+                      try {
+                        final base64Str = imageUrl.split(',').last.trim();
+                        imgProvider = MemoryImage(base64Decode(base64Str));
+                      } catch (_) {}
+                    } else {
+                      imgProvider = NetworkImage(imageUrl);
+                    }
+                  }
 
-                          // Fallback to Online Status
-                          return StreamBuilder<bool>(
-                            stream: _userPresenceStream,
-                            builder: (context, snapshot) {
-                              final isOnline = snapshot.data ?? false;
-                              return Text(
-                                isOnline ? 'Online' : 'Offline',
-                                style: TextStyle(
-                                  color: isOnline ? AppTheme.primaryOrange : Colors.grey,
-                                  fontSize: 11.sp,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ],
+                  return GestureDetector(
+                    onTap: () {
+                      if (user != null) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PlayerProfileScreen(player: user),
+                          ),
+                        );
+                      }
+                    },
+                    behavior: HitTestBehavior.opaque,
+                    child: Row(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppTheme.primaryOrange, width: 1.5.w),
+                          ),
+                          child: CircleAvatar(
+                            radius: 18,
+                            backgroundColor: const Color(0xFFEEEEEE),
+                            backgroundImage: imgProvider,
+                            child: imgProvider == null
+                                ? Text(
+                                    widget.otherUserName.isNotEmpty ? widget.otherUserName[0].toUpperCase() : '?',
+                                    style: TextStyle(color: AppTheme.primaryOrange, fontWeight: FontWeight.bold, fontSize: 14.sp),
+                                  )
+                                : null,
+                          ),
+                        ),
+                        SizedBox(width: 12.w),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.otherUserName,
+                              style: TextStyle(
+                                color: Colors.black, // Dark text on white
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16.sp,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            StreamBuilder<bool>(
+                              stream: _userPresenceStream,
+                              builder: (context, snapshot) {
+                                final isOnline = snapshot.data ?? false;
+                                return Text(
+                                  isOnline ? 'Online' : 'Offline',
+                                  style: TextStyle(
+                                    color: isOnline ? AppTheme.primaryOrange : Colors.grey,
+                                    fontSize: 11.sp,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -713,13 +725,20 @@ class _ChatScreenState extends State<ChatScreen> {
                                               ),
                                             ),
                                           if (isDeleted)
-                                            Text(
-                                              'This message was deleted',
-                                              style: TextStyle(
-                                                fontStyle: FontStyle.italic,
-                                                color: Colors.grey,
-                                                fontSize: 14.sp,
-                                              ),
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.block, color: Colors.grey, size: 14.sp),
+                                                SizedBox(width: 6.w),
+                                                Text(
+                                                  'Dead ball! (Message deleted)',
+                                                  style: TextStyle(
+                                                    fontStyle: FontStyle.italic,
+                                                    color: Colors.grey,
+                                                    fontSize: 13.sp,
+                                                  ),
+                                                ),
+                                              ],
                                             )
                                           else if (data['type'] == 'image')
                                             GestureDetector(
@@ -773,9 +792,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                               if (isMe && !isDeleted) ...[
                                                 SizedBox(width: 4.w),
                                                 Icon(
-                                                  Icons.check,
+                                                  (data['isRead'] == true) ? Icons.sports_cricket : Icons.sports_baseball, // Bat for read, Ball for sent
                                                   size: 14.sp,
-                                                  color: Colors.white70, 
+                                                  color: (data['isRead'] == true) ? Colors.blue : Colors.white70, 
                                                 ),
                                               ],
                                             ],
@@ -815,6 +834,39 @@ class _ChatScreenState extends State<ChatScreen> {
                       );
                   },
                 ),
+              ),
+              
+              // Typing Indicator Bubble
+              StreamBuilder<DocumentSnapshot>(
+                stream: _chatStream,
+                builder: (context, chatSnapshot) {
+                  if (chatSnapshot.hasData && chatSnapshot.data!.exists) {
+                    final data = chatSnapshot.data!.data() as Map<String, dynamic>?;
+                    final typingUsers = List<String>.from(data?['typingUsers'] ?? []);
+                    if (typingUsers.contains(widget.otherUserId)) {
+                      return Padding(
+                        padding: EdgeInsets.only(left: 16.w, bottom: 8.h),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(20.r),
+                                topRight: Radius.circular(20.r),
+                                bottomRight: Radius.circular(20.r),
+                                bottomLeft: Radius.circular(4.r),
+                              ),
+                            ),
+                            child: TypingIndicator(dotColor: Colors.grey[600]!, dotSize: 6.0),
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                  return const SizedBox.shrink();
+                },
               ),
               
               // Input Bar
@@ -862,71 +914,121 @@ class _ChatScreenState extends State<ChatScreen> {
                 margin: EdgeInsets.only(left: 16.w, right: 16.w, top: 8.h, bottom: 24.h),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(30.r),
+                  borderRadius: BorderRadius.circular(32.r),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 15,
-                      offset: Offset(0, 5),
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: Offset(0, -2),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 20,
+                      offset: Offset(0, 8),
                     ),
                   ],
                 ),
                 child: SafeArea(
                   top: false,
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.add_a_photo_outlined, color: AppTheme.primaryOrange),
-                        onPressed: () => _pickImage(ImageSource.gallery),
-                      ),
-                      Expanded(
-                        child: TextField(
+                  child: Padding(
+                    padding: EdgeInsets.all(12.w),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Text Field area
+                        TextField(
                           controller: _messageController,
                           onChanged: _onTextChanged,
-                          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          maxLines: 4,
+                          minLines: 1,
                           decoration: InputDecoration(
                             hintText: 'Message...',
-                            hintStyle: TextStyle(color: Colors.grey[500]),
+                            hintStyle: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 16.sp,
+                            ),
                             border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 14.h),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                            isDense: true,
                           ),
                           textCapitalization: TextCapitalization.sentences,
                         ),
-                      ),
-                      if (_messageController.text.trim().isNotEmpty)
-                        Padding(
-                          padding: EdgeInsets.only(right: 6.w),
-                          child: GestureDetector(
-                            onTap: _sendMessage,
-                            child: Container(
-                              width: 40.w,
-                              height: 40.w,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: _bubbleGradient,
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
+                        SizedBox(height: 12.h),
+                        // Bottom Row Actions
+                        Row(
+                          children: [
+                            // Plus Button
+                            GestureDetector(
+                              onTap: () => _pickImage(ImageSource.gallery),
+                              child: Container(
+                                width: 44.w,
+                                height: 44.w,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFF3F2EE),
+                                  shape: BoxShape.circle,
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: _bubbleGradient.first.withOpacity(0.4),
-                                    blurRadius: 6,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                Icons.send_rounded, 
-                                color: Colors.white, 
-                                size: 20.sp
+                                child: Icon(Icons.add, color: Colors.black87, size: 24.sp),
                               ),
                             ),
-                          ),
-                        )
-                      else
-                        SizedBox(width: 16.w),
-                    ],
+                            SizedBox(width: 12.w),
+                            // Pill Button
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3F2EE),
+                                borderRadius: BorderRadius.circular(24.r),
+                              ),
+                              child: Text(
+                                'ScorePartner Chat',
+                                style: TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            // Send/Action Button
+                            GestureDetector(
+                              onTap: _messageController.text.trim().isNotEmpty ? _sendMessage : null,
+                              child: Container(
+                                width: 44.w,
+                                height: 44.w,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFF3F2EE),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: _messageController.text.trim().isNotEmpty 
+                                    ? Padding(
+                                        padding: EdgeInsets.only(left: 4.w), // Slight left padding to center the paper airplane visually
+                                        child: Icon(
+                                          Icons.send_rounded,
+                                          color: Colors.black87,
+                                          size: 20.sp,
+                                        ),
+                                      )
+                                    : Center(
+                                        child: Container(
+                                          width: 14.sp,
+                                          height: 14.sp,
+                                          decoration: BoxDecoration(
+                                            border: Border.all(color: Colors.black87, width: 2),
+                                            borderRadius: BorderRadius.circular(4.r),
+                                          ),
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

@@ -207,7 +207,11 @@ class AuthProvider extends ChangeNotifier {
   }
 
   void _setError(String error) {
-    _errorMessage = error;
+    if (error.startsWith('Exception: ')) {
+      _errorMessage = error.replaceFirst('Exception: ', '');
+    } else {
+      _errorMessage = error;
+    }
     notifyListeners();
   }
 

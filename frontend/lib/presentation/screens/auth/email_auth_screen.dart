@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
@@ -21,6 +21,12 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
   bool _isLogin = true;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Provider.of<AuthProvider>(context, listen: false).clearError();
+  }
 
   @override
   void dispose() {
@@ -219,12 +225,22 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
                   decoration: BoxDecoration(
                     color: Colors.red.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8.r),
+                    border: Border.all(color: Colors.red.withOpacity(0.3)),
                   ),
                   child: Row(
                     children: [
                       Icon(Icons.error_outline, color: Colors.red, size: 20.sp),
                       SizedBox(width: 8.w),
-                      Expanded(child: Text(errorMessage, style: TextStyle(color: Colors.red, fontSize: 13.sp))),
+                      Expanded(
+                        child: Text(
+                          errorMessage, 
+                          style: TextStyle(
+                            color: Colors.red, 
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w500,
+                          )
+                        )
+                      ),
                     ],
                   ),
                 ),

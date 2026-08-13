@@ -24,8 +24,8 @@ class TtsCommentaryService {
     if (_isInitialized) return;
     try {
       await _tts.setLanguage('en-IN');
-      await _tts.setSpeechRate(0.5);
-      await _tts.setPitch(1.1);
+      await _tts.setSpeechRate(0.7); // Increased from 0.5 for better pacing
+      await _tts.setPitch(1.0); // Normalized pitch for clarity
       await _tts.setVolume(1.0);
       _isInitialized = true;
       debugPrint('🔊 TTS Commentary Service initialized');

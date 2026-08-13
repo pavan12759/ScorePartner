@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.scorepatner"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = "25.2.9519653"
 
     compileOptions {

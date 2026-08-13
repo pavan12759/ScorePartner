@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -37,7 +37,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Scan QR Code'),
-        backgroundColor: Colors.transparent, // Overlay style
+        backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
@@ -47,10 +47,10 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               builder: (context, state, child) {
                 switch (state.torchState) {
                   case TorchState.off:
-                  case TorchState.unavailable: // Handle unavailable
+                  case TorchState.unavailable:
                     return Icon(Icons.flash_off, color: Colors.grey);
                   case TorchState.on:
-                  case TorchState.auto: // Handle auto
+                  case TorchState.auto:
                     return Icon(Icons.flash_on, color: Colors.yellow);
                 }
               },
@@ -65,6 +65,8 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                   case CameraFacing.front:
                     return Icon(Icons.camera_front);
                   case CameraFacing.back:
+                    return Icon(Icons.camera_rear);
+                  default:
                     return Icon(Icons.camera_rear);
                 }
               },

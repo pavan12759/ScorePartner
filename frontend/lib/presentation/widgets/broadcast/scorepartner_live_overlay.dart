@@ -5,9 +5,23 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../data/models/match_model.dart';
 import '../../../core/broadcast/overlay_theme_data.dart';
 
-/// Flagship Live Broadcast Overlay for "ScorePartner Live+".
-/// Inspired by modern high-energy cricket broadcast design philosophy (clean, colorful, glassmorphic).
-/// Uses large team logo visual identity instead of team name text beside scores.
+/// Flagship Live Broadcast Overlay — Cricbuzz / ICC Live Score inspired.
+/// 
+/// Architecture:
+///   ┌─────────────────────────────────────────────────────────┐
+///   │  TOP: Tournament • Match Format • Venue • LIVE badge   │
+///   ├─────────────────────────────────────────────────────────┤
+///   │                     (spacer)                            │
+///   ├─────────────────────────────────────────────────────────┤
+///   │  MATCH SITUATION BAR: CRR • RRR • Target • Need        │
+///   ├─────────────┬───────────────────────────┬───────────────┤
+///   │  TEAM 1     │    BATSMEN + BOWLER       │  THIS OVER    │
+///   │  Score/Wkts │    Striker  / Non-striker  │  Ball pills   │
+///   │  Overs      │    Current Bowler figures  │               │
+///   ├─────────────┤                           ├───────────────┤
+///   │  TEAM 2     │                           │               │
+///   │  Score/Wkts │                           │               │
+///   └─────────────┴───────────────────────────┴───────────────┘
 class ScorePartnerLiveOverlay extends StatefulWidget {
   final MatchModel match;
   final OverlayThemeData? theme;
@@ -28,308 +42,92 @@ class ScorePartnerLiveOverlay extends StatefulWidget {
 }
 
 class _ScorePartnerLiveOverlayState extends State<ScorePartnerLiveOverlay>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _pulseController;
+  late AnimationController _liveDotController;
+  late Animation<double> _liveDotAnimation;
 
   @override
   void initState() {
     super.initState();
     _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
+    _liveDotController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+    _liveDotAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
+      CurvedAnimation(parent: _liveDotController, curve: Curves.easeInOut),
+    );
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
+    _liveDotController.dispose();
     super.dispose();
   }
 
+  OverlayThemeData get _theme =>
+      widget.theme ?? OverlayThemes.scorePartnerLivePlus;
+
   @override
   Widget build(BuildContext context) {
-    final isBattingTeam1 = widget.match.currentBattingTeam == 'team1';
-    final battingScore = isBattingTeam1
-        ? widget.match.team1Score
-        : widget.match.team2Score;
-    final bowlingScore = isBattingTeam1
-        ? widget.match.team2Score
-        : widget.match.team1Score;
-    final battingTeamName = isBattingTeam1
-        ? widget.match.team1Name
-        : widget.match.team2Name;
-    final bowlingTeamName = isBattingTeam1
-        ? widget.match.team2Name
-        : widget.match.team1Name;
-
-    // Striker and Non-Striker
-    final strikerList = battingScore.batters
-        .where((b) => b.playerId == widget.match.currentStrikerId)
-        .toList();
-    final nonStrikerList = battingScore.batters
-        .where((b) => b.playerId == widget.match.currentNonStrikerId)
-        .toList();
-
-    final striker = strikerList.isNotEmpty ? strikerList.first : null;
-    final nonStriker = nonStrikerList.isNotEmpty ? nonStrikerList.first : null;
-
-    // Current Bowler
-    final bowlerList = bowlingScore.bowlers
-        .where((b) => b.playerId == widget.match.currentBowlerId)
-        .toList();
-    final bowler = bowlerList.isNotEmpty ? bowlerList.first : null;
-
-    // Ball history for last 6 balls
-    final recentBalls = _getCurrentOverBalls();
-
     return Column(
       children: [
-        // 1. TOP TELEMETRY BAR
-        _buildTopBar(),
-
+        // TOP HEADER BAR
+        _buildTopHeaderBar(),
         const Spacer(),
-
-        // 2. MAIN CENTER HUD (LEFT TEAM, CENTER STATS, RIGHT TEAM)
-        _buildMainHUD(
-          battingTeamName: battingTeamName,
-          bowlingTeamName: bowlingTeamName,
-          battingScore: battingScore,
-          bowlingScore: bowlingScore,
-          striker: striker,
-          nonStriker: nonStriker,
-          bowler: bowler,
-          recentBalls: recentBalls,
-        ),
-        SizedBox(height: 8.h),
+        // MAIN SCOREBOARD
+        _buildMainScoreboard(),
+        SizedBox(height: 6.h),
       ],
     );
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 1. TOP BAR
+  // TOP HEADER BAR — Tournament, Format, Venue, LIVE
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  Widget _buildTopBar() {
-    final theme = widget.theme ?? OverlayThemes.scorePartnerLivePlus;
-
+  Widget _buildTopHeaderBar() {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12.r),
+        borderRadius: BorderRadius.circular(10.r),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 3.h),
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
             decoration: BoxDecoration(
-              color: const Color(0xCC0F172A),
-              borderRadius: BorderRadius.circular(12.r),
-              border: Border.all(color: Colors.white.withOpacity(0.12)),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 8),
-              ],
+              color: const Color(0xE60D1117),
+              borderRadius: BorderRadius.circular(10.r),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.08),
+                width: 0.5,
+              ),
             ),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                // The wide bar has several fixed telemetry groups. Switch before
-                // the center match-details slot becomes too narrow on scaled web
-                // viewports and embedded half-screen previews.
-                if (constraints.maxWidth < 1000) {
-                  return _buildCompactTopBar(constraints.maxWidth);
+                if (constraints.maxWidth < 260) {
+                  return _buildCompactTopBar();
                 }
-
-                final showLiveIndicator = constraints.maxWidth >= 240;
-                final showTelemetry = constraints.maxWidth >= 500;
-
                 return Row(
                   children: [
-                    // ScorePartner Live+ Brand Badge
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 8.w,
-                        vertical: 2.h,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [theme.primaryColor, theme.gradientEnd],
-                        ),
-                        borderRadius: BorderRadius.circular(8.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: theme.primaryColor.withOpacity(0.5),
-                            blurRadius: 6,
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.bolt, color: Colors.white, size: 12.sp),
-                          if (constraints.maxWidth >= 220) ...[
-                            SizedBox(width: 3.w),
-                            Text(
-                              'SCOREPARTNER LIVE+',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 9.sp,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    SizedBox(width: 10.w),
-
-                    // Match details (Tournament / Venue / Format)
-                    Expanded(
-                      child: Row(
-                        children: [
-                          if (widget.match.tournamentName != null &&
-                              widget.match.tournamentName!.isNotEmpty) ...[
-                            Flexible(
-                              child: Text(
-                                widget.match.tournamentName!.toUpperCase(),
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 9.sp,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            Text(
-                              ' • ',
-                              style: TextStyle(
-                                color: Colors.white38,
-                                fontSize: 9.sp,
-                              ),
-                            ),
-                          ],
-                          Flexible(
-                            child: Text(
-                              '${widget.match.matchFormat.toUpperCase()} MATCH',
-                              style: TextStyle(
-                                color: theme.highlightColor,
-                                fontSize: 9.sp,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (widget.match.ground.isNotEmpty) ...[
-                            Text(
-                              ' • ',
-                              style: TextStyle(
-                                color: Colors.white38,
-                                fontSize: 9.sp,
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                widget.match.ground,
-                                style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 9.sp,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-
-                    // LIVE Indicator Pulsing
-                    if (showLiveIndicator)
-                      FadeTransition(
-                        opacity: _pulseController,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 6.w,
-                            vertical: 2.h,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEF4444),
-                            borderRadius: BorderRadius.circular(4.r),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFEF4444).withOpacity(0.6),
-                                blurRadius: 6,
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 5.w,
-                                height: 5.w,
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              SizedBox(width: 3.w),
-                              Text(
-                                'LIVE',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 8.sp,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                    if (showTelemetry) ...[
+                    // Brand badge
+                    _buildBrandBadge(constraints.maxWidth),
+                    SizedBox(width: 8.w),
+                    // Match info
+                    Expanded(child: _buildMatchInfoRow()),
+                    SizedBox(width: 6.w),
+                    // LIVE indicator
+                    _buildLiveBadge(),
+                    if (constraints.maxWidth >= 500) ...[
                       SizedBox(width: 8.w),
-
-                      // Viewer Count Badge
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.visibility,
-                            color: Colors.white70,
-                            size: 10.sp,
-                          ),
-                          SizedBox(width: 3.w),
-                          Text(
-                            _formatViewerCount(widget.viewerCount),
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 9.sp,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      SizedBox(width: 8.w),
-
-                      // HD 60FPS Badge
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 5.w,
-                          vertical: 1.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4.r),
-                          border: Border.all(color: Colors.white24, width: 0.5),
-                        ),
-                        child: Text(
-                          widget.networkQuality,
-                          style: TextStyle(
-                            color: const Color(0xFF10B981),
-                            fontSize: 7.sp,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
+                      _buildViewerBadge(),
+                      SizedBox(width: 6.w),
+                      _buildQualityBadge(),
                     ],
                   ],
                 );
@@ -341,20 +139,14 @@ class _ScorePartnerLiveOverlayState extends State<ScorePartnerLiveOverlay>
     );
   }
 
-  Widget _buildCompactTopBar(double maxWidth) {
-    final theme = widget.theme ?? OverlayThemes.scorePartnerLivePlus;
-    final showBrandIcon = maxWidth >= 48;
-    final showLiveIndicator = maxWidth >= 150;
-
+  Widget _buildCompactTopBar() {
     return Row(
       children: [
-        if (showBrandIcon) ...[
-          Icon(Icons.bolt, color: theme.primaryColor, size: 16),
-          const SizedBox(width: 4),
-        ],
+        Icon(Icons.bolt, color: _theme.primaryColor, size: 14),
+        const SizedBox(width: 4),
         Expanded(
           child: Text(
-            _compactTopBarDetails(),
+            _compactMatchInfo(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
@@ -364,271 +156,398 @@ class _ScorePartnerLiveOverlayState extends State<ScorePartnerLiveOverlay>
             ),
           ),
         ),
-        if (showLiveIndicator) ...[
-          const SizedBox(width: 4),
-          FadeTransition(
-            opacity: _pulseController,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEF4444),
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: const Text(
-                'LIVE',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 7,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ),
-        ],
+        const SizedBox(width: 4),
+        _buildLiveBadge(),
       ],
     );
   }
 
-  String _compactTopBarDetails() {
-    final tournamentName = widget.match.tournamentName;
-    if (tournamentName != null && tournamentName.isNotEmpty) {
-      return '${widget.match.matchFormat.toUpperCase()} - $tournamentName';
+  Widget _buildBrandBadge(double parentWidth) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_theme.primaryColor, _theme.gradientEnd],
+        ),
+        borderRadius: BorderRadius.circular(6.r),
+        boxShadow: [
+          BoxShadow(
+            color: _theme.primaryColor.withOpacity(0.4),
+            blurRadius: 6,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.bolt, color: Colors.white, size: 10.sp),
+          if (parentWidth >= 300) ...[
+            SizedBox(width: 3.w),
+            Text(
+              'SCOREPARTNER LIVE+',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 8.sp,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMatchInfoRow() {
+    final parts = <String>[];
+    if (widget.match.tournamentName != null &&
+        widget.match.tournamentName!.isNotEmpty) {
+      parts.add(widget.match.tournamentName!.toUpperCase());
     }
-    return '${widget.match.matchFormat.toUpperCase()} MATCH';
+    parts.add('${widget.match.matchFormat.toUpperCase()} MATCH');
+    if (widget.match.ground.isNotEmpty) {
+      parts.add(widget.match.ground);
+    }
+
+    return Text(
+      parts.join(' • '),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        color: Colors.white54,
+        fontSize: 8.sp,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.3,
+      ),
+    );
+  }
+
+  Widget _buildLiveBadge() {
+    return AnimatedBuilder(
+      animation: _liveDotAnimation,
+      builder: (context, child) {
+        return Container(
+          padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFFEF4444),
+                const Color(0xFFDC2626),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(4.r),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFEF4444)
+                    .withOpacity(0.3 + _liveDotAnimation.value * 0.3),
+                blurRadius: 8,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 5.w,
+                height: 5.w,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(_liveDotAnimation.value),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              SizedBox(width: 3.w),
+              Text(
+                'LIVE',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 8.sp,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildViewerBadge() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.visibility, color: Colors.white54, size: 10.sp),
+        SizedBox(width: 3.w),
+        Text(
+          _formatViewerCount(widget.viewerCount),
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 8.sp,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQualityBadge() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(3.r),
+        border: Border.all(color: Colors.white12, width: 0.5),
+      ),
+      child: Text(
+        widget.networkQuality,
+        style: TextStyle(
+          color: const Color(0xFF10B981),
+          fontSize: 7.sp,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 2. MAIN CENTER HUD
+  // MAIN SCOREBOARD — Cricbuzz/ICC inspired layered bottom bar
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  Widget _buildMainHUD({
-    required String battingTeamName,
-    required String bowlingTeamName,
-    required TeamScore battingScore,
-    required TeamScore bowlingScore,
-    required BatterStats? striker,
-    required BatterStats? nonStriker,
-    required BowlerStats? bowler,
-    required List<BallEvent> recentBalls,
-  }) {
-    final theme = widget.theme ?? OverlayThemes.scorePartnerLivePlus;
+  Widget _buildMainScoreboard() {
+    final isBattingTeam1 = widget.match.currentBattingTeam == 'team1';
+    final team1Score = widget.match.team1Score;
+    final team2Score = widget.match.team2Score;
+    final team1Name = widget.match.team1Name;
+    final team2Name = widget.match.team2Name;
+    final battingScore = isBattingTeam1 ? team1Score : team2Score;
+    final bowlingScore = isBattingTeam1 ? team2Score : team1Score;
+    final battingName = isBattingTeam1 ? team1Name : team2Name;
+    final bowlingName = isBattingTeam1 ? team2Name : team1Name;
+
+    // Striker and Non-Striker
+    final striker = battingScore.batters
+        .where((b) => b.playerId == widget.match.currentStrikerId)
+        .toList();
+    final nonStriker = battingScore.batters
+        .where((b) => b.playerId == widget.match.currentNonStrikerId)
+        .toList();
+    final currentStriker = striker.isNotEmpty ? striker.first : null;
+    final currentNonStriker = nonStriker.isNotEmpty ? nonStriker.first : null;
+
+    // Current Bowler
+    final bowlerList = bowlingScore.bowlers
+        .where((b) => b.playerId == widget.match.currentBowlerId)
+        .toList();
+    final bowler = bowlerList.isNotEmpty ? bowlerList.first : null;
+
+    // Ball history for this over
+    final recentBalls = _getCurrentOverBalls();
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      padding: EdgeInsets.symmetric(horizontal: 12.w),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final useCompactLayout =
-              constraints.maxWidth < 900 ||
-              theme.layoutType == 'half_screen_compact';
-          final useUltraCompactLayout = constraints.maxWidth < 180;
+          final isUltraCompact = constraints.maxWidth < 200;
+          final isCompact = constraints.maxWidth < 700;
 
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(16.r),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(
-                sigmaX: theme.glassBlur > 0 ? theme.glassBlur : 12.0,
-                sigmaY: theme.glassBlur > 0 ? theme.glassBlur : 12.0,
-              ),
-              child: Container(
-                height: max(36.0, 44.h),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      theme.backgroundColor.withOpacity(theme.transparency),
-                      theme.gradientStart.withOpacity(theme.transparency),
-                      theme.gradientEnd.withOpacity(theme.transparency),
-                    ],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // MATCH SITUATION BAR (CRR, RRR, Target, Need)
+              _buildMatchSituationBar(battingScore),
+              SizedBox(height: 2.h),
+              // MAIN SCORE STRIP
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12.r),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(
+                    sigmaX: _theme.glassBlur > 0 ? _theme.glassBlur : 14.0,
+                    sigmaY: _theme.glassBlur > 0 ? _theme.glassBlur : 14.0,
                   ),
-                  borderRadius: BorderRadius.circular(16.r),
-                  border: Border.all(
-                    color: theme.borderColor,
-                    width: theme.borderWidth > 0 ? theme.borderWidth : 1.0,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (theme.hasGlow ? theme.glowColor : Colors.black)
-                          .withOpacity(0.4),
-                      blurRadius: theme.shadowBlur > 0
-                          ? theme.shadowBlur
-                          : 12.0,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: useUltraCompactLayout
-                    ? _buildUltraCompactMainHUD(
-                        battingScore: battingScore,
-                        bowlingScore: bowlingScore,
-                      )
-                    : useCompactLayout
-                    ? _buildCompactMainHUD(
-                        battingTeamName: battingTeamName,
-                        bowlingTeamName: bowlingTeamName,
-                        battingScore: battingScore,
-                        bowlingScore: bowlingScore,
-                        bowler: bowler,
-                      )
-                    : Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _buildLeftTeamPanel(battingTeamName, battingScore),
-                          _buildPanelDivider(),
-                          Expanded(
-                            flex: 6,
-                            child: _buildCenterPanel(striker, nonStriker),
-                          ),
-                          _buildPanelDivider(),
-                          _buildRightTeamPanel(
-                            bowlingTeamName,
-                            bowler,
-                            recentBalls,
-                          ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          _theme.backgroundColor
+                              .withOpacity(_theme.transparency),
+                          _theme.gradientEnd
+                              .withOpacity(_theme.transparency * 0.9),
                         ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
                       ),
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(
+                        color: _theme.borderColor.withOpacity(0.15),
+                        width: 0.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.5),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                        if (_theme.hasGlow)
+                          BoxShadow(
+                            color: _theme.glowColor.withOpacity(0.2),
+                            blurRadius: _theme.glowRadius,
+                            spreadRadius: 1,
+                          ),
+                      ],
+                    ),
+                    child: isUltraCompact
+                        ? _buildUltraCompactScore(
+                            team1Name, team2Name,
+                            team1Score, team2Score,
+                            isBattingTeam1)
+                        : isCompact
+                            ? _buildCompactScoreStrip(
+                                battingName, bowlingName,
+                                battingScore,
+                                currentStriker,
+                                bowler,
+                                recentBalls,
+                              )
+                            : _buildFullScoreStrip(
+                                battingName, bowlingName,
+                                battingScore,
+                                currentStriker,
+                                currentNonStriker,
+                                bowler,
+                                recentBalls,
+                              ),
+                  ),
+                ),
               ),
-            ),
+            ],
           );
         },
       ),
     );
   }
 
-  Widget _buildUltraCompactMainHUD({
-    required TeamScore battingScore,
-    required TeamScore bowlingScore,
-  }) {
-    return Row(
-      children: [
-        Expanded(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              '${battingScore.runs}/${battingScore.wickets}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
+  // ━━━ MATCH SITUATION BAR ━━━
+
+  Widget _buildMatchSituationBar(TeamScore battingScore) {
+    final crr = widget.match.currentRunRate;
+    final rrr = widget.match.requiredRunRate;
+    final target = widget.match.target;
+    final isSecondInnings = widget.match.currentInnings == 2;
+
+    final chips = <Widget>[];
+    chips.add(_buildSituationChip('CRR', crr.toStringAsFixed(2),
+        const Color(0xFF38BDF8)));
+    if (isSecondInnings && rrr > 0) {
+      chips.add(_buildSituationChip('RRR', rrr.toStringAsFixed(2),
+          rrr > crr ? const Color(0xFFF43F5E) : const Color(0xFF22C55E)));
+    }
+    if (target != null && isSecondInnings) {
+      chips.add(
+          _buildSituationChip('TARGET', '$target', const Color(0xFFFACC15)));
+    }
+    if (isSecondInnings && widget.match.runsRequired > 0) {
+      chips.add(_buildSituationChip(
+          'NEED',
+          '${widget.match.runsRequired} off ${widget.match.ballsRemaining}',
+          const Color(0xFFF97316)));
+    }
+    chips.add(_buildSituationChip(
+        'OVERS', '${widget.match.oversPerSide}', Colors.white38));
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8.r),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 3.h),
+          decoration: BoxDecoration(
+            color: const Color(0xCC0A0F1A),
+            borderRadius: BorderRadius.circular(8.r),
+            border: Border.all(color: Colors.white.withOpacity(0.06)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: chips,
           ),
         ),
-        Container(width: 1, height: 22, color: Colors.white24),
-        Expanded(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              '${bowlingScore.runs}/${bowlingScore.wickets}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildCompactMainHUD({
-    required String battingTeamName,
-    required String bowlingTeamName,
-    required TeamScore battingScore,
-    required TeamScore bowlingScore,
-    required BowlerStats? bowler,
-  }) {
-    final theme = widget.theme ?? OverlayThemes.scorePartnerLivePlus;
-
-    return Row(
-      children: [
-        Expanded(
-          child: _buildCompactTeamSummary(
-            teamCode: _getTeamCode(battingTeamName),
-            primaryText: '${battingScore.runs}/${battingScore.wickets}',
-            secondaryText: '${battingScore.oversDisplay} OVS',
-            accentColor: theme.primaryColor,
-          ),
-        ),
-        _buildPanelDivider(),
-        Expanded(
-          child: _buildCompactTeamSummary(
-            teamCode: _getTeamCode(bowlingTeamName),
-            primaryText: bowler == null
-                ? '${bowlingScore.runs}/${bowlingScore.wickets}'
-                : '${bowler.wickets}-${bowler.runs}',
-            secondaryText: bowler == null
-                ? '${bowlingScore.oversDisplay} OVS'
-                : '${bowler.oversDisplay} OVS',
-            accentColor: theme.highlightColor,
-            label: bowler?.playerName,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCompactTeamSummary({
-    required String teamCode,
-    required String primaryText,
-    required String secondaryText,
-    required Color accentColor,
-    String? label,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Row(
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: accentColor.withOpacity(0.25),
-              border: Border.all(color: accentColor, width: 1.2),
-            ),
-            child: Text(
-              teamCode,
-              maxLines: 1,
-              overflow: TextOverflow.clip,
+  Widget _buildSituationChip(String label, String value, Color accentColor) {
+    return Flexible(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 3.w),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$label ',
               style: TextStyle(
-                color: Colors.white,
-                fontSize: 8,
-                fontWeight: FontWeight.w900,
+                color: Colors.white38,
+                fontSize: 7.sp,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
               ),
             ),
-          ),
-          const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                value,
+                style: TextStyle(
+                  color: accentColor,
+                  fontSize: 8.sp,
+                  fontWeight: FontWeight.w900,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ━━━ ULTRA COMPACT (< 200px width) ━━━
+
+  Widget _buildUltraCompactScore(String battingName, String bowlingName,
+      TeamScore battingScore, TeamScore bowlingScore, bool isBattingTeam1) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
           Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label ?? primaryText,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+            child: _buildMiniTeamScore(
+                battingName, battingScore, _theme.primaryColor, true),
+          ),
+          Container(
+              width: 1, height: 28.h, color: Colors.white.withOpacity(0.12)),
+          Expanded(
+            child: Center(
+              child: Container(
+                width: 24.h,
+                height: 24.h,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _theme.highlightColor.withOpacity(0.15),
+                  border: Border.all(
+                    color: _theme.highlightColor.withOpacity(0.4),
+                    width: 1,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  bowlingName.isNotEmpty
+                      ? bowlingName.substring(0, 1).toUpperCase()
+                      : 'T',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                Text(
-                  label == null
-                      ? secondaryText
-                      : '$primaryText  $secondaryText',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: accentColor,
-                    fontSize: 7,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],
@@ -636,186 +555,495 @@ class _ScorePartnerLiveOverlayState extends State<ScorePartnerLiveOverlay>
     );
   }
 
-  /// LEFT TEAM PANEL: Compact Team Logo, Score, Overs, CRR, Powerplay
-  Widget _buildLeftTeamPanel(String teamName, TeamScore score) {
-    final teamCode = _getTeamCode(teamName);
-    final crr = widget.match.currentRunRate;
-    final theme = widget.theme ?? OverlayThemes.scorePartnerLivePlus;
-
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [theme.gradientStart, theme.gradientEnd],
-        ),
-      ),
-      child: Row(
+  Widget _buildMiniTeamScore(
+      String name, TeamScore score, Color accent, bool isBatting) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 4.w),
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Compact Team Logo Badge
-          Container(
-            width: 30.h,
-            height: 30.h,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [theme.primaryColor, theme.highlightColor],
-              ),
-              border: Border.all(color: Colors.white, width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.primaryColor.withOpacity(0.5),
-                  blurRadius: 6,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isBatting)
+                Container(
+                  width: 4,
+                  height: 4,
+                  margin: const EdgeInsets.only(right: 3),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF22C55E),
+                    shape: BoxShape.circle,
+                  ),
                 ),
-              ],
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              teamCode,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 10.sp,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.5,
+              Text(
+                _getTeamCode(name),
+                style: TextStyle(
+                  color: isBatting ? accent : accent.withOpacity(0.6),
+                  fontSize: 8,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
+            ],
+          ),
+          Text(
+            '${score.runs}/${score.wickets}',
+            style: TextStyle(
+              color: isBatting ? Colors.white : Colors.white70,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
             ),
           ),
-          SizedBox(width: 8.w),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Score Runs / Wickets
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
+        ],
+      ),
+    );
+  }
+
+  // ━━━ COMPACT SCORE STRIP (< 700px) ━━━
+
+  Widget _buildCompactScoreStrip(
+    String battingName,
+    String bowlingName,
+    TeamScore battingScore,
+    BatterStats? striker,
+    BowlerStats? bowler,
+    List<BallEvent> recentBalls,
+  ) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // BATTING TEAM only (TV Style)
+          Expanded(
+            flex: 4,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    '${score.runs}/${score.wickets}',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  SizedBox(width: 4.w),
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 4.w,
-                      vertical: 1.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF38BDF8).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(3.r),
-                    ),
-                    child: Text(
-                      '${score.oversDisplay} OVS',
-                      style: TextStyle(
-                        color: const Color(0xFF38BDF8),
-                        fontSize: 8.sp,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
+                  _buildCompactTeamRow(
+                    teamName: battingName,
+                    score: battingScore,
+                    accentColor: _theme.primaryColor,
+                    isBatting: true,
                   ),
                 ],
               ),
-              Row(
+            ),
+          ),
+          // Vertical divider
+          Container(width: 0.5, color: Colors.white.withOpacity(0.1)),
+          // PLAYERS + OVER BALLS + BOWLING TEAM BADGE
+          Expanded(
+            flex: 6,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+              child: Row(
                 children: [
-                  Text(
-                    'CRR: ${crr.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      color: Colors.white60,
-                      fontSize: 8.sp,
-                      fontWeight: FontWeight.w600,
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (striker != null || bowler != null)
+                          Row(
+                            children: [
+                              if (striker != null)
+                                Expanded(
+                                  child: _buildCompactPlayerInfo(
+                                    name: striker.playerName,
+                                    stat: '${striker.runs}(${striker.balls})',
+                                    icon: Icons.sports_cricket,
+                                    isStrike: true,
+                                  ),
+                                ),
+                              if (bowler != null) ...[
+                                Container(
+                                  width: 1,
+                                  height: 12.h,
+                                  color: Colors.white.withOpacity(0.08),
+                                  margin: EdgeInsets.symmetric(horizontal: 4.w),
+                                ),
+                                Expanded(
+                                  child: _buildCompactPlayerInfo(
+                                    name: bowler.playerName,
+                                    stat:
+                                        '${bowler.wickets}-${bowler.runs}(${bowler.oversDisplay})',
+                                    icon: Icons.sports_baseball,
+                                    isStrike: false,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        SizedBox(height: 3.h),
+                        // This over balls row
+                        Row(
+                          children: [
+                            Text(
+                              'THIS OVER ',
+                              style: TextStyle(
+                                color: Colors.white24,
+                                fontSize: 6.sp,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            ...recentBalls.take(6).map((b) => _buildBallEventPill(b)),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  SizedBox(width: 6.w),
+                  SizedBox(width: 8.w),
+                  // Bowling Team Badge (Far Right)
                   Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 4.w,
-                      vertical: 1.h,
-                    ),
+                    width: 24.h,
+                    height: 24.h,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                      shape: BoxShape.circle,
+                      color: _theme.highlightColor.withOpacity(0.15),
+                      border: Border.all(
+                        color: _theme.highlightColor.withOpacity(0.4),
+                        width: 1,
                       ),
-                      borderRadius: BorderRadius.circular(3.r),
                     ),
+                    alignment: Alignment.center,
                     child: Text(
-                      'P1',
+                      bowlingName.isNotEmpty
+                          ? bowlingName.substring(0, 1).toUpperCase()
+                          : 'T',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 7.sp,
+                        fontSize: 10.sp,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                   ),
+                  SizedBox(width: 6.w),
+                  // Bowling team color strip
+                  Container(
+                    width: 3.w,
+                    height: 24.h,
+                    decoration: BoxDecoration(
+                      color: _theme.highlightColor,
+                      borderRadius: BorderRadius.circular(1.5),
+                    ),
+                  ),
                 ],
               ),
-            ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  /// CENTER PANEL: Striker & Non-Striker with avatars, Runs(Balls), SR, Target
-  Widget _buildCenterPanel(BatterStats? striker, BatterStats? nonStriker) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w),
+  Widget _buildCompactTeamRow({
+    required String teamName,
+    required TeamScore score,
+    required Color accentColor,
+    required bool isBatting,
+  }) {
+    return Row(
+      children: [
+        // Team color strip
+        Container(
+          width: 3.w,
+          height: 16.h,
+          decoration: BoxDecoration(
+            color: accentColor,
+            borderRadius: BorderRadius.circular(1.5),
+          ),
+        ),
+        SizedBox(width: 5.w),
+        // Batting indicator
+        if (isBatting)
+          Container(
+            width: 4.w,
+            height: 4.w,
+            margin: EdgeInsets.only(right: 3.w),
+            decoration: const BoxDecoration(
+              color: Color(0xFF22C55E),
+              shape: BoxShape.circle,
+            ),
+          )
+        else
+          SizedBox(width: 7.w),
+        // Team code
+        Text(
+          _getTeamCode(teamName),
+          style: TextStyle(
+            color: isBatting ? Colors.white : Colors.white54,
+            fontSize: 9.sp,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const Spacer(),
+        // Score
+        Text(
+          '${score.runs}/${score.wickets}',
+          style: TextStyle(
+            color: isBatting ? Colors.white : Colors.white70,
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        SizedBox(width: 4.w),
+        // Overs
+        Text(
+          '(${score.oversDisplay})',
+          style: TextStyle(
+            color: isBatting ? accentColor : Colors.white30,
+            fontSize: 7.sp,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+
+
+  Widget _buildCompactPlayerInfo({
+    required String name,
+    required String stat,
+    required IconData icon,
+    required bool isStrike,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (isStrike)
+          Container(
+            width: 4.w,
+            height: 4.w,
+            margin: EdgeInsets.only(right: 3.w),
+            decoration: const BoxDecoration(
+              color: Color(0xFF22C55E),
+              shape: BoxShape.circle,
+            ),
+          ),
+        Icon(
+          icon,
+          color: isStrike
+              ? const Color(0xFF22C55E)
+              : const Color(0xFFEF4444).withOpacity(0.7),
+          size: 9.sp,
+        ),
+        SizedBox(width: 3.w),
+        Expanded(
+          child: Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isStrike ? Colors.white : Colors.white60,
+              fontSize: 8.sp,
+              fontWeight: isStrike ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ),
+        Text(
+          stat,
+          style: TextStyle(
+            color: isStrike ? const Color(0xFFFACC15) : Colors.white54,
+            fontSize: 8.sp,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ━━━ FULL SCORE STRIP (>= 700px width — landscape/desktop) ━━━
+
+  Widget _buildFullScoreStrip(
+    String battingName,
+    String bowlingName,
+    TeamScore battingScore,
+    BatterStats? striker,
+    BatterStats? nonStriker,
+    BowlerStats? bowler,
+    List<BallEvent> recentBalls,
+  ) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ━━ LEFT: BATTING TEAM ONLY ━━
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+            alignment: Alignment.center,
+            child: _buildTeamScoreRow(
+              name: battingName,
+              score: battingScore,
+              accentColor: _theme.primaryColor,
+              isBatting: true,
+            ),
+          ),
+          // Vertical separator
+          Container(width: 0.5, color: Colors.white.withOpacity(0.08)),
+          // ━━ CENTER: BATSMEN ━━
+          Expanded(
+            flex: 5,
+            child: _buildBatsmenPanel(striker, nonStriker),
+          ),
+          // Vertical separator
+          Container(width: 0.5, color: Colors.white.withOpacity(0.08)),
+          // ━━ RIGHT: BOWLER + THIS OVER ━━
+          _buildBowlerAndOverPanel(bowler, recentBalls, bowlingName),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildTeamScoreRow({
+    required String name,
+    required TeamScore score,
+    required Color accentColor,
+    required bool isBatting,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Color accent strip (Cricbuzz-style)
+        Container(
+          width: 3.w,
+          height: 22.h,
+          decoration: BoxDecoration(
+            color: accentColor,
+            borderRadius: BorderRadius.circular(1.5),
+            boxShadow: [
+              BoxShadow(
+                color: accentColor.withOpacity(0.4),
+                blurRadius: 3,
+              ),
+            ],
+          ),
+        ),
+        SizedBox(width: 6.w),
+        // Team initials circle
+        Container(
+          width: 24.h,
+          height: 24.h,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isBatting ? accentColor.withOpacity(0.15) : Colors.white.withOpacity(0.05),
+            border: Border.all(
+              color: isBatting ? accentColor.withOpacity(0.4) : Colors.white.withOpacity(0.1),
+              width: 1,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            _getTeamCode(name).substring(0, min(2, _getTeamCode(name).length)),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 8.sp,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+        SizedBox(width: 6.w),
+        // Score column
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  '${score.runs}',
+                  style: TextStyle(
+                    color: isBatting ? Colors.white : Colors.white70,
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                Text(
+                  '/${score.wickets}',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(isBatting ? 0.6 : 0.4),
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(width: 4.w),
+                Container(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(3.r),
+                  ),
+                  child: Text(
+                    '${score.oversDisplay} OV',
+                    style: TextStyle(
+                      color: accentColor,
+                      fontSize: 7.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ━━━ BATSMEN PANEL ━━━
+
+  Widget _buildBatsmenPanel(
+      BatterStats? striker, BatterStats? nonStriker) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
       child: Row(
         children: [
-          // STRIKER
+          // Striker
           if (striker != null)
             Expanded(
-              child: _buildPlayerCard(
-                name: striker.playerName,
-                runs: striker.runs,
-                balls: striker.balls,
-                fours: striker.fours,
-                sixes: striker.sixes,
+              child: _buildBatterCard(
+                batter: striker,
                 isOnStrike: true,
               ),
             ),
-
           if (striker != null && nonStriker != null)
             Container(
-              width: 1,
-              height: 22.h,
-              color: Colors.white.withOpacity(0.12),
+              width: 0.5,
+              height: 24.h,
+              color: Colors.white.withOpacity(0.08),
               margin: EdgeInsets.symmetric(horizontal: 6.w),
             ),
-
-          // NON-STRIKER
+          // Non-striker
           if (nonStriker != null)
             Expanded(
-              child: _buildPlayerCard(
-                name: nonStriker.playerName,
-                runs: nonStriker.runs,
-                balls: nonStriker.balls,
-                fours: nonStriker.fours,
-                sixes: nonStriker.sixes,
+              child: _buildBatterCard(
+                batter: nonStriker,
                 isOnStrike: false,
               ),
             ),
-
-          // PARTNERSHIP & TARGET INFOS
-          if (widget.match.target != null) ...[
+          // Target info (second innings)
+          if (widget.match.target != null &&
+              widget.match.currentInnings == 2) ...[
             Container(
-              width: 1,
-              height: 22.h,
-              color: Colors.white.withOpacity(0.12),
+              width: 0.5,
+              height: 24.h,
+              color: Colors.white.withOpacity(0.08),
               margin: EdgeInsets.symmetric(horizontal: 6.w),
             ),
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   'TGT',
                   style: TextStyle(
-                    color: Colors.white38,
+                    color: Colors.white30,
                     fontSize: 7.sp,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.8,
@@ -825,7 +1053,7 @@ class _ScorePartnerLiveOverlayState extends State<ScorePartnerLiveOverlay>
                   '${widget.match.target}',
                   style: TextStyle(
                     color: const Color(0xFFF43F5E),
-                    fontSize: 11.sp,
+                    fontSize: 13.sp,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -837,76 +1065,56 @@ class _ScorePartnerLiveOverlayState extends State<ScorePartnerLiveOverlay>
     );
   }
 
-  Widget _buildPlayerCard({
-    required String name,
-    required int runs,
-    required int balls,
-    required int fours,
-    required int sixes,
+  Widget _buildBatterCard({
+    required BatterStats batter,
     required bool isOnStrike,
   }) {
-    final sr = balls > 0 ? (runs / balls * 100).toStringAsFixed(1) : '0.0';
+    final sr = batter.balls > 0
+        ? (batter.runs / batter.balls * 100).toStringAsFixed(1)
+        : '0.0';
 
     return Row(
       children: [
-        // Compact Player Avatar
-        Container(
-          width: 24.h,
-          height: 24.h,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isOnStrike
-                ? const Color(0xFF22C55E).withOpacity(0.2)
-                : Colors.white10,
-            border: Border.all(
-              color: isOnStrike ? const Color(0xFF22C55E) : Colors.white24,
-              width: isOnStrike ? 1.5 : 1.0,
+        // Strike indicator dot
+        if (isOnStrike)
+          Container(
+            width: 5.w,
+            height: 5.w,
+            margin: EdgeInsets.only(right: 4.w),
+            decoration: BoxDecoration(
+              color: const Color(0xFF22C55E),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF22C55E).withOpacity(0.6),
+                  blurRadius: 4,
+                ),
+              ],
             ),
-          ),
-          alignment: Alignment.center,
-          child: Icon(
-            Icons.person,
-            color: isOnStrike ? const Color(0xFF22C55E) : Colors.white70,
-            size: 13.sp,
-          ),
-        ),
-        SizedBox(width: 6.w),
+          )
+        else
+          SizedBox(width: 9.w),
+        // Player info
         Expanded(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  if (isOnStrike)
-                    Container(
-                      width: 4.w,
-                      height: 4.w,
-                      margin: EdgeInsets.only(right: 3.w),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF22C55E),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  Expanded(
-                    child: Text(
-                      name,
-                      style: TextStyle(
-                        color: isOnStrike ? Colors.white : Colors.white70,
-                        fontSize: 10.sp,
-                        fontWeight: isOnStrike
-                            ? FontWeight.w800
-                            : FontWeight.w600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
+              Text(
+                batter.playerName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isOnStrike ? Colors.white : Colors.white60,
+                  fontSize: 10.sp,
+                  fontWeight:
+                      isOnStrike ? FontWeight.w800 : FontWeight.w500,
+                ),
               ),
               Row(
                 children: [
                   Text(
-                    '$runs',
+                    '${batter.runs}',
                     style: TextStyle(
                       color: const Color(0xFFFACC15),
                       fontSize: 11.sp,
@@ -914,18 +1122,35 @@ class _ScorePartnerLiveOverlayState extends State<ScorePartnerLiveOverlay>
                     ),
                   ),
                   Text(
-                    ' ($balls)',
-                    style: TextStyle(color: Colors.white54, fontSize: 8.sp),
+                    ' (${batter.balls})',
+                    style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 8.sp,
+                    ),
                   ),
                   SizedBox(width: 4.w),
                   Text(
                     'SR $sr',
                     style: TextStyle(
-                      color: Colors.white38,
+                      color: _getStrikeRateColor(
+                          batter.balls > 0
+                              ? batter.runs / batter.balls * 100
+                              : 0),
                       fontSize: 7.sp,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
+                  if (batter.fours > 0 || batter.sixes > 0) ...[
+                    SizedBox(width: 4.w),
+                    Text(
+                      '${batter.fours}×4 ${batter.sixes}×6',
+                      style: TextStyle(
+                        color: Colors.white24,
+                        fontSize: 6.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],
@@ -935,43 +1160,48 @@ class _ScorePartnerLiveOverlayState extends State<ScorePartnerLiveOverlay>
     );
   }
 
-  /// RIGHT TEAM PANEL: Compact Opponent Logo, Bowler Photo/Name, Figures (W-R), Economy, Last 6 Balls
-  Widget _buildRightTeamPanel(
-    String bowlingTeamName,
+  Color _getStrikeRateColor(double sr) {
+    if (sr >= 150) return const Color(0xFF22C55E);
+    if (sr >= 100) return const Color(0xFF38BDF8);
+    if (sr >= 70) return Colors.white38;
+    return const Color(0xFFF43F5E).withOpacity(0.7);
+  }
+
+  // ━━━ BOWLER + THIS OVER PANEL ━━━
+
+  Widget _buildBowlerAndOverPanel(
     BowlerStats? bowler,
     List<BallEvent> recentBalls,
+    String bowlingTeamName,
   ) {
-    final opponentCode = _getTeamCode(bowlingTeamName);
-    final theme = widget.theme ?? OverlayThemes.scorePartnerLivePlus;
-
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (bowler != null) ...[
-            // Bowler Avatar
+            // Bowler icon
             Container(
-              width: 24.h,
-              height: 24.h,
+              width: 22.h,
+              height: 22.h,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white10,
+                color: const Color(0xFFEF4444).withOpacity(0.1),
                 border: Border.all(
-                  color: const Color(0xFFEF4444).withOpacity(0.6),
-                  width: 1.0,
+                  color: const Color(0xFFEF4444).withOpacity(0.3),
+                  width: 1,
                 ),
               ),
               alignment: Alignment.center,
               child: Icon(
                 Icons.sports_baseball,
                 color: const Color(0xFFEF4444),
-                size: 13.sp,
+                size: 11.sp,
               ),
             ),
-            SizedBox(width: 6.w),
+            SizedBox(width: 5.w),
             ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: 110.w),
+              constraints: BoxConstraints(maxWidth: 90.w),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -979,12 +1209,12 @@ class _ScorePartnerLiveOverlayState extends State<ScorePartnerLiveOverlay>
                   Text(
                     bowler.playerName,
                     maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 10.sp,
+                      fontSize: 9.sp,
                       fontWeight: FontWeight.w700,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
                   Row(
                     children: [
@@ -992,25 +1222,24 @@ class _ScorePartnerLiveOverlayState extends State<ScorePartnerLiveOverlay>
                         '${bowler.wickets}-${bowler.runs}',
                         style: TextStyle(
                           color: const Color(0xFFEF4444),
-                          fontSize: 10.sp,
+                          fontSize: 9.sp,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
                       Text(
                         ' (${bowler.oversDisplay})',
-                        style: TextStyle(color: Colors.white60, fontSize: 8.sp),
+                        style: TextStyle(
+                          color: Colors.white38,
+                          fontSize: 7.sp,
+                        ),
                       ),
                       SizedBox(width: 3.w),
-                      Flexible(
-                        child: Text(
-                          'ECO ${bowler.economy.toStringAsFixed(1)}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white38,
-                            fontSize: 7.sp,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      Text(
+                        'E${bowler.economy.toStringAsFixed(1)}',
+                        style: TextStyle(
+                          color: _getEconomyColor(bowler.economy),
+                          fontSize: 7.sp,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -1020,49 +1249,53 @@ class _ScorePartnerLiveOverlayState extends State<ScorePartnerLiveOverlay>
             ),
             SizedBox(width: 6.w),
           ],
-
-          // Last 6 Balls Animated Pills
-          Row(
-            children: recentBalls
-                .map((ball) => _buildBallEventPill(ball))
-                .toList(),
-          ),
-
-          SizedBox(width: 6.w),
-
-          // Compact Opponent Team Logo Badge
-          Container(
-            width: 30.h,
-            height: 30.h,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [theme.highlightColor, theme.secondaryColor],
-              ),
-              border: Border.all(color: Colors.white, width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.highlightColor.withOpacity(0.5),
-                  blurRadius: 6,
+          // THIS OVER ball pills
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'THIS OVER',
+                style: TextStyle(
+                  color: Colors.white24,
+                  fontSize: 5.sp,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
                 ),
-              ],
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              opponentCode,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 10.sp,
-                fontWeight: FontWeight.w900,
               ),
-            ),
+              SizedBox(height: 2.h),
+              Row(
+                children: recentBalls.isEmpty
+                    ? [
+                        Text(
+                          '—',
+                          style: TextStyle(
+                            color: Colors.white24,
+                            fontSize: 8.sp,
+                          ),
+                        )
+                      ]
+                    : recentBalls
+                        .take(6)
+                        .map((ball) => _buildBallEventPill(ball))
+                        .toList(),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  /// Ball event pill with custom color animations
+  Color _getEconomyColor(double eco) {
+    if (eco <= 6.0) return const Color(0xFF22C55E);
+    if (eco <= 8.0) return const Color(0xFF38BDF8);
+    if (eco <= 10.0) return const Color(0xFFFACC15);
+    return const Color(0xFFF43F5E);
+  }
+
+  // ━━━ BALL EVENT PILL ━━━
+
   Widget _buildBallEventPill(BallEvent ball) {
     Color bg;
     Color fg;
@@ -1073,27 +1306,27 @@ class _ScorePartnerLiveOverlayState extends State<ScorePartnerLiveOverlay>
       fg = Colors.white;
       text = 'W';
     } else if (ball.runs == 6) {
-      bg = const Color(0xFFF59E0B);
-      fg = Colors.black;
+      bg = const Color(0xFF8B5CF6);
+      fg = Colors.white;
       text = '6';
     } else if (ball.runs == 4) {
-      bg = const Color(0xFFF97316);
+      bg = const Color(0xFF3B82F6);
       fg = Colors.white;
       text = '4';
     } else if (ball.runs == 3) {
-      bg = const Color(0xFFA855F7);
+      bg = const Color(0xFF06B6D4);
       fg = Colors.white;
       text = '3';
     } else if (ball.runs == 2) {
-      bg = const Color(0xFF06B6D4);
+      bg = const Color(0xFF14B8A6);
       fg = Colors.white;
       text = '2';
     } else if (ball.runs == 1) {
-      bg = const Color(0xFF3B82F6);
-      fg = Colors.white;
+      bg = Colors.white.withOpacity(0.15);
+      fg = Colors.white70;
       text = '1';
     } else if (ball.extraType == 'wide') {
-      bg = const Color(0xFFEAB308);
+      bg = const Color(0xFFF59E0B);
       fg = Colors.black;
       text = 'Wd';
     } else if (ball.extraType == 'no-ball') {
@@ -1101,20 +1334,31 @@ class _ScorePartnerLiveOverlayState extends State<ScorePartnerLiveOverlay>
       fg = Colors.white;
       text = 'Nb';
     } else {
-      bg = Colors.white.withOpacity(0.12);
-      fg = Colors.white54;
+      bg = Colors.white.withOpacity(0.08);
+      fg = Colors.white38;
       text = '•';
     }
 
+    final isHighlight = ball.runs >= 4 || ball.wicket != null;
+
     return Container(
-      width: 16.w,
-      height: 16.w,
+      width: 18.w,
+      height: 18.w,
       margin: EdgeInsets.only(left: 2.w),
       decoration: BoxDecoration(
         color: bg,
         shape: BoxShape.circle,
-        boxShadow: ball.runs >= 4 || ball.wicket != null
-            ? [BoxShadow(color: bg.withOpacity(0.8), blurRadius: 4)]
+        boxShadow: isHighlight
+            ? [
+                BoxShadow(
+                  color: bg.withOpacity(0.6),
+                  blurRadius: 5,
+                  spreadRadius: 0.5,
+                ),
+              ]
+            : null,
+        border: isHighlight
+            ? Border.all(color: fg.withOpacity(0.3), width: 0.5)
             : null,
       ),
       alignment: Alignment.center,
@@ -1122,100 +1366,14 @@ class _ScorePartnerLiveOverlayState extends State<ScorePartnerLiveOverlay>
         text,
         style: TextStyle(
           color: fg,
-          fontSize: 8.sp,
+          fontSize: 7.sp,
           fontWeight: FontWeight.w900,
         ),
       ),
     );
   }
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 3. BOTTOM BAR TICKER
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  Widget _buildBottomTicker() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16.w),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12.r),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 4.h),
-            decoration: BoxDecoration(
-              color: const Color(0xCC0F172A),
-              borderRadius: BorderRadius.circular(12.r),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.subtitles,
-                  color: const Color(0xFFFF8D48),
-                  size: 14.sp,
-                ),
-                SizedBox(width: 6.w),
-                Expanded(
-                  child: Text(
-                    'LIVE COMMENTARY: Great delivery outside off-stump, batsman defends cleanly back to bowler.',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 10.sp,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                // Weather / Wind Telemetry
-                Row(
-                  children: [
-                    Icon(
-                      Icons.wb_sunny,
-                      color: const Color(0xFFFACC15),
-                      size: 12.sp,
-                    ),
-                    SizedBox(width: 4.w),
-                    Text(
-                      '28°C',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 9.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
-                    Icon(
-                      Icons.air,
-                      color: const Color(0xFF38BDF8),
-                      size: 12.sp,
-                    ),
-                    SizedBox(width: 4.w),
-                    Text(
-                      '12 km/h NW',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 9.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPanelDivider() {
-    return Container(
-      width: 1,
-      height: 32.h,
-      color: Colors.white.withOpacity(0.12),
-    );
-  }
+  // ━━━ HELPERS ━━━
 
   String _getTeamCode(String teamName) {
     if (teamName.isEmpty) return 'SP';
@@ -1223,7 +1381,8 @@ class _ScorePartnerLiveOverlayState extends State<ScorePartnerLiveOverlay>
     if (parts.length >= 3) {
       return '${parts[0][0]}${parts[1][0]}${parts[2][0]}'.toUpperCase();
     } else if (parts.length == 2) {
-      return '${parts[0][0]}${parts[1][0]}${parts[1][1]}'.toUpperCase();
+      return '${parts[0][0]}${parts[1][0]}${parts[1].length > 1 ? parts[1][1] : ''}'
+          .toUpperCase();
     }
     return teamName.substring(0, min(3, teamName.length)).toUpperCase();
   }
@@ -1232,6 +1391,14 @@ class _ScorePartnerLiveOverlayState extends State<ScorePartnerLiveOverlay>
     if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
     if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}k';
     return count.toString();
+  }
+
+  String _compactMatchInfo() {
+    final t = widget.match.tournamentName;
+    if (t != null && t.isNotEmpty) {
+      return '${widget.match.matchFormat.toUpperCase()} - $t';
+    }
+    return '${widget.match.matchFormat.toUpperCase()} MATCH';
   }
 
   List<BallEvent> _getCurrentOverBalls() {

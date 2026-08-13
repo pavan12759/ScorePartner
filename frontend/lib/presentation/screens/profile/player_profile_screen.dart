@@ -15,6 +15,9 @@ import '../chat/chat_list_screen.dart';
 import '../../providers/auth_provider.dart';
 import '../matches/match_detail_screen.dart';
 import 'followers_list_screen.dart';
+import '../../widgets/state/scorepartner_skeleton.dart';
+import '../../widgets/state/scorepartner_empty_state.dart';
+import '../../widgets/state/scorepartner_error_state.dart';
 
 /// Screen to display another user's profile (view-only with follow functionality)
 
@@ -1284,9 +1287,27 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
             labelColor: AppTheme.primaryOrange,
             unselectedLabelColor: Colors.grey,
             indicatorColor: AppTheme.primaryOrange,
-            tabs: const [
-              Tab(text: '🎾 Tennis'),
-              Tab(text: '🏏 Leather'),
+            tabs: [
+              Tab(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const TennisBallWidget(size: 18),
+                    SizedBox(width: 8.w),
+                    const Text('Tennis Ball', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+              Tab(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const LeatherBallWidget(size: 18),
+                    SizedBox(width: 8.w),
+                    const Text('Leather Ball', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
             ],
           ),
           Expanded(
@@ -1425,17 +1446,33 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
       future: FirebaseDataService.instance.getUserPlayedMatches(userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.zero,
+            itemCount: 3,
+            itemBuilder: (_, __) => Padding(
+              padding: EdgeInsets.only(bottom: 12.h),
+              child: ScorePartnerSkeleton(
+                width: double.infinity,
+                height: 120.h,
+                borderRadius: 16.r,
+              ),
+            ),
+          );
         }
+        
+        if (snapshot.hasError) {
+          return ScorePartnerErrorState(message: snapshot.error.toString());
+        }
+        
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.sports_cricket, size: 48.sp, color: Colors.grey[300]),
-                SizedBox(height: 16.h),
-                Text('No matches played yet', style: TextStyle(color: Colors.grey[500])),
-              ],
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 24.h),
+            child: ScorePartnerEmptyState(
+              title: 'No matches played yet',
+              description: 'This player has not played any matches yet.',
+              icon: Icons.sports_cricket,
             ),
           );
         }
@@ -1703,4 +1740,109 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return months[month - 1];
   }
+}
+
+class TennisBallWidget extends StatelessWidget {
+  final double size;
+  const TennisBallWidget({super.key, this.size = 20});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        color: Color(0xFFCCFF00), // Vibrant Tennis Neon Yellow/Green
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 2,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: CustomPaint(painter: _TennisBallPainter()),
+    );
+  }
+}
+
+class _TennisBallPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.12;
+
+    final path1 = Path();
+    path1.moveTo(size.width * 0.15, 0);
+    path1.quadraticBezierTo(size.width * 0.5, size.height * 0.45, size.width * 0.85, 0);
+
+    final path2 = Path();
+    path2.moveTo(size.width * 0.15, size.height);
+    path2.quadraticBezierTo(size.width * 0.5, size.height * 0.55, size.width * 0.85, size.height);
+
+    canvas.drawPath(path1, paint);
+    canvas.drawPath(path2, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class LeatherBallWidget extends StatelessWidget {
+  final double size;
+  const LeatherBallWidget({super.key, this.size = 20});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        color: Color(0xFFB71C1C), // Deep Crimson Leather Red
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 2,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: CustomPaint(painter: _LeatherBallPainter()),
+    );
+  }
+}
+
+class _LeatherBallPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final seamPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.14;
+
+    // Main white seam line across the ball
+    final path = Path();
+    path.moveTo(size.width * 0.15, size.height * 0.85);
+    path.lineTo(size.width * 0.85, size.height * 0.15);
+    canvas.drawPath(path, seamPaint);
+
+    final stitchPaint = Paint()
+      ..color = const Color(0xFF800000)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.05;
+
+    // Center seam stitching detail
+    canvas.drawLine(
+      Offset(size.width * 0.2, size.height * 0.8),
+      Offset(size.width * 0.8, size.height * 0.2),
+      stitchPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

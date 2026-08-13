@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -654,7 +654,7 @@ class _CinematicPosterCreatorDialogState extends State<CinematicPosterCreatorDia
             : _detectedMoments.isEmpty
                 ? Text('No moments detected yet. Register teams or complete matches to trigger AI extraction.', style: TextStyle(color: Colors.grey[600], fontSize: 12.sp))
                 : Container(
-                    height: 85.h,
+                    height: 110.h,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       itemCount: _detectedMoments.length,

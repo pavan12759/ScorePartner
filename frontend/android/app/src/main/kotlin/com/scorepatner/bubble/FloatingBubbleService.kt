@@ -146,7 +146,11 @@ class FloatingBubbleService : Service() {
 
         // Start foreground with notification
         val notification = notificationHelper.buildNotification()
-        startForeground(BubbleNotificationHelper.NOTIFICATION_ID, notification)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(BubbleNotificationHelper.NOTIFICATION_ID, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        } else {
+            startForeground(BubbleNotificationHelper.NOTIFICATION_ID, notification)
+        }
 
         isRunning = true
         currentMatchId = matchId
@@ -204,8 +208,8 @@ class FloatingBubbleService : Service() {
             WindowManager.LayoutParams.TYPE_PHONE
 
         bubbleParams = WindowManager.LayoutParams(
-            sizePx + dpToPx(16f), // Extra space for glow
-            sizePx + dpToPx(16f),
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            dpToPx(44f) + dpToPx(16f), // Height + extra space for glow
             overlayType,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
@@ -422,6 +426,14 @@ class FloatingBubbleService : Service() {
         val status = data["status"] as? String ?: "live"
         val currentBattingTeam = data["currentBattingTeam"] as? String ?: "team1"
         val currentInnings = (data["currentInnings"] as? Number)?.toInt() ?: 1
+        
+        val team1Id = data["team1Id"] as? String ?: ""
+        val team2Id = data["team2Id"] as? String ?: ""
+        val currentBattingTeamId = if (currentBattingTeam == "team1") team1Id else team2Id
+        
+        val currentStrikerId = data["currentStrikerId"] as? String
+        val currentNonStrikerId = data["currentNonStrikerId"] as? String
+        val currentBowlerId = data["currentBowlerId"] as? String
 
         // Parse team scores
         val team1ScoreMap = data["team1Score"] as? Map<String, Any?> ?: emptyMap()
@@ -444,16 +456,18 @@ class FloatingBubbleService : Service() {
         val ballsBowled = oversToTotalBalls(battingOvers)
         val crr = if (ballsBowled > 0) battingRuns / (ballsBowled / 6.0) else 0.0
 
-        // Calculate RRR
+        // Calculate RRR and Target Info
         val target = (data["target"] as? Number)?.toInt()
         val oversPerSide = (data["oversPerSide"] as? Number)?.toInt() ?: 20
         var rrr = 0.0
+        var targetInfo = ""
         if (target != null && currentInnings == 2) {
             val remaining = target - battingRuns
             val totalBalls = oversPerSide * 6
             val ballsLeft = totalBalls - ballsBowled
             if (ballsLeft > 0) {
                 rrr = remaining / (ballsLeft / 6.0)
+                targetInfo = "Need $remaining from $ballsLeft balls"
             }
         }
 
@@ -464,27 +478,32 @@ class FloatingBubbleService : Service() {
         val batters = battingScore["batters"] as? List<Map<String, Any?>> ?: emptyList()
         val bowlers = bowlingScore["bowlers"] as? List<Map<String, Any?>> ?: emptyList()
 
-        // Find current batters (isPlaying == true)
-        val activeBatters = batters.filter { (it["isPlaying"] as? Boolean) == true }
-        val batter1 = activeBatters.getOrNull(0)
-        val batter2 = activeBatters.getOrNull(1)
+        // Find current batters using IDs first, fallback to isPlaying
+        val batter1 = batters.find { it["playerId"] as? String == currentStrikerId } 
+            ?: batters.firstOrNull { (it["isPlaying"] as? Boolean) == true }
+        
+        val batter2 = batters.find { it["playerId"] as? String == currentNonStrikerId }
+            ?: batters.filter { (it["isPlaying"] as? Boolean) == true }.getOrNull(1)
+            
         val batter1Name = batter1?.let {
-            val name = it["name"] as? String ?: "-"
+            val name = (it["playerName"] as? String)?.takeIf { n -> n.isNotBlank() } ?: (it["name"] as? String)?.takeIf { n -> n.isNotBlank() } ?: "Batter"
             val runs = (it["runs"] as? Number)?.toInt() ?: 0
             val balls = (it["balls"] as? Number)?.toInt() ?: 0
             "$name $runs($balls)"
         } ?: "-"
         val batter2Name = batter2?.let {
-            val name = it["name"] as? String ?: "-"
+            val name = (it["playerName"] as? String)?.takeIf { n -> n.isNotBlank() } ?: (it["name"] as? String)?.takeIf { n -> n.isNotBlank() } ?: "Batter"
             val runs = (it["runs"] as? Number)?.toInt() ?: 0
             val balls = (it["balls"] as? Number)?.toInt() ?: 0
             "$name $runs($balls)"
         } ?: "-"
 
-        // Find current bowler (isBowling == true)
-        val activeBowler = bowlers.find { (it["isBowling"] as? Boolean) == true }
+        // Find current bowler using ID first, fallback to isBowling
+        val activeBowler = bowlers.find { it["playerId"] as? String == currentBowlerId } 
+            ?: bowlers.find { (it["isBowling"] as? Boolean) == true }
+            
         val bowlerName = activeBowler?.let {
-            val name = it["name"] as? String ?: "-"
+            val name = (it["playerName"] as? String)?.takeIf { n -> n.isNotBlank() } ?: (it["name"] as? String)?.takeIf { n -> n.isNotBlank() } ?: "Bowler"
             val overs = (it["overs"] as? Number)?.toDouble() ?: 0.0
             val runs = (it["runs"] as? Number)?.toInt() ?: 0
             val wickets = (it["wickets"] as? Number)?.toInt() ?: 0
@@ -509,6 +528,26 @@ class FloatingBubbleService : Service() {
             }
         } ?: "-"
 
+        // This Over
+        val currentOverInt = if (battingOvers == battingOvers.toInt().toDouble() && battingOvers > 0) battingOvers.toInt() - 1 else battingOvers.toInt()
+        val thisOverBalls = ballByBall.filter { 
+            val ballOverInt = (it["overNumber"] as? Number)?.toInt() ?: 0
+            ballOverInt == currentOverInt && it["battingTeam"] == currentBattingTeamId
+        }.map {
+            val runs = (it["runs"] as? Number)?.toInt() ?: 0
+            val wicket = it["isWicket"] as? Boolean ?: false
+            val extraType = it["extraType"] as? String
+            when {
+                wicket -> "W"
+                extraType == "wide" -> "WD"
+                extraType == "no-ball" -> "NB"
+                extraType == "bye" || extraType == "leg-bye" -> "${runs}B"
+                runs == 4 -> "4"
+                runs == 6 -> "6"
+                else -> runs.toString()
+            }
+        }.takeLast(6) // Fallback to avoid wrapping too much
+
         // Viewer stats
         val liveViewers = (data["liveViewers"] as? Number)?.toInt() ?: 0
         val totalViews = (data["totalViews"] as? Number)?.toInt() ?: 0
@@ -531,6 +570,8 @@ class FloatingBubbleService : Service() {
             "batter2" to batter2Name,
             "bowler" to bowlerName,
             "lastBall" to lastBall,
+            "thisOver" to thisOverBalls,
+            "targetInfo" to targetInfo,
             "liveViewers" to liveViewers,
             "totalViews" to totalViews
         )
@@ -544,7 +585,21 @@ class FloatingBubbleService : Service() {
         previousWickets = battingWickets
         previousOvers = battingOvers
 
-        // Update bubble
+        // Update bubble pill text
+        val t1Abbr = team1Name.take(3).uppercase()
+        val t2Abbr = team2Name.take(3).uppercase()
+        val pillText = if (currentInnings == 2) {
+            if (currentBattingTeam == "team2") {
+                "$t2Abbr $team2Runs/$team2Wickets • $t1Abbr $team1Runs/$team1Wickets (${formatOvers(team2Overs)})"
+            } else {
+                "$t1Abbr $team1Runs/$team1Wickets • $t2Abbr $team2Runs/$team2Wickets (${formatOvers(team1Overs)})"
+            }
+        } else {
+            val batAbbr = if (currentBattingTeam == "team1") t1Abbr else t2Abbr
+            "$batAbbr $battingRuns/$battingWickets (${formatOvers(battingOvers)})"
+        }
+        
+        bubbleView?.updateScore(pillText)
         bubbleView?.setLiveStatus(status == "live")
 
         // Update expanded card if open

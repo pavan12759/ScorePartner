@@ -5,6 +5,9 @@ import '../../../data/models/team_model.dart';
 import 'create_tournament_screen.dart';
 import 'tournament_details_screen.dart';
 import 'tournament_setup_screen.dart';
+import '../../widgets/state/scorepartner_skeleton.dart';
+import '../../widgets/state/scorepartner_empty_state.dart';
+import '../../widgets/state/scorepartner_error_state.dart';
 
 /// Tournaments List Screen
 class TournamentsScreen extends StatefulWidget {
@@ -42,37 +45,40 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
         future: _fetchTournaments(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return ListView.builder(
+              padding: EdgeInsets.all(16.w),
+              itemCount: 4,
+              itemBuilder: (_, __) => Padding(
+                padding: EdgeInsets.only(bottom: 12.h),
+                child: ScorePartnerSkeleton(
+                  width: double.infinity,
+                  height: 180.h,
+                  borderRadius: 16.r,
+                ),
+              ),
+            );
           }
 
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return ScorePartnerErrorState(message: snapshot.error.toString());
           }
 
           final tournaments = snapshot.data ?? [];
 
           if (tournaments.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.emoji_events_outlined, size: 80.sp, color: Colors.grey[400]),
-                  SizedBox(height: 16.h),
-                  Text(
-                    'No tournaments yet',
-                    style: TextStyle(fontSize: 18.sp, color: Colors.grey[600]),
-                  ),
-                  SizedBox(height: 8.h),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const CreateTournamentScreen()),
-                      );
-                    },
-                    child: const Text('Create your first tournament'),
-                  ),
-                ],
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              child: ScorePartnerEmptyState(
+                title: 'No tournaments yet',
+                description: 'Create your first tournament to get started.',
+                icon: Icons.emoji_events_outlined,
+                primaryButtonText: 'Create Tournament',
+                onPrimaryAction: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CreateTournamentScreen()),
+                  );
+                },
               ),
             );
           }

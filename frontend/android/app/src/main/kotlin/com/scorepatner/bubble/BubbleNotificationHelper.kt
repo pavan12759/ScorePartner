@@ -90,6 +90,11 @@ class BubbleNotificationHelper(private val context: Context) {
                 "Close",
                 closePending
             )
+            .addAction(
+                android.R.drawable.ic_menu_view,
+                "Open Match",
+                openAppPending
+            )
             .build()
     }
 

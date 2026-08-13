@@ -2342,9 +2342,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
             labelColor: AppTheme.primaryOrange,
             unselectedLabelColor: Colors.grey,
             indicatorColor: AppTheme.primaryOrange,
-            tabs: const [
-              Tab(text: '🎾 Tennis'),
-              Tab(text: '🏏 Leather'),
+            tabs: [
+              Tab(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const TennisBallWidget(size: 18),
+                    SizedBox(width: 8.w),
+                    const Text('Tennis Ball', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+              Tab(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const LeatherBallWidget(size: 18),
+                    SizedBox(width: 8.w),
+                    const Text('Leather Ball', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
             ],
           ),
           Expanded(
@@ -2751,5 +2769,110 @@ class _ProfileScreenState extends State<ProfileScreen> {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return months[month - 1];
   }
+}
+
+class TennisBallWidget extends StatelessWidget {
+  final double size;
+  const TennisBallWidget({super.key, this.size = 20});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        color: Color(0xFFCCFF00), // Vibrant Tennis Neon Yellow/Green
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 2,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: CustomPaint(painter: _TennisBallPainter()),
+    );
+  }
+}
+
+class _TennisBallPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.12;
+
+    final path1 = Path();
+    path1.moveTo(size.width * 0.15, 0);
+    path1.quadraticBezierTo(size.width * 0.5, size.height * 0.45, size.width * 0.85, 0);
+
+    final path2 = Path();
+    path2.moveTo(size.width * 0.15, size.height);
+    path2.quadraticBezierTo(size.width * 0.5, size.height * 0.55, size.width * 0.85, size.height);
+
+    canvas.drawPath(path1, paint);
+    canvas.drawPath(path2, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class LeatherBallWidget extends StatelessWidget {
+  final double size;
+  const LeatherBallWidget({super.key, this.size = 20});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        color: Color(0xFFB71C1C), // Deep Crimson Leather Red
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 2,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: CustomPaint(painter: _LeatherBallPainter()),
+    );
+  }
+}
+
+class _LeatherBallPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final seamPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.14;
+
+    // Main white seam line across the ball
+    final path = Path();
+    path.moveTo(size.width * 0.15, size.height * 0.85);
+    path.lineTo(size.width * 0.85, size.height * 0.15);
+    canvas.drawPath(path, seamPaint);
+
+    final stitchPaint = Paint()
+      ..color = const Color(0xFF800000)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.05;
+
+    // Center seam stitching detail
+    canvas.drawLine(
+      Offset(size.width * 0.2, size.height * 0.8),
+      Offset(size.width * 0.8, size.height * 0.2),
+      stitchPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 

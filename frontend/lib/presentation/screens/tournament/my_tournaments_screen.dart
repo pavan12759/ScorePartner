@@ -7,6 +7,8 @@ import '../../providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import 'create_tournament_screen.dart';
 import 'tournament_details_screen.dart';
+import '../../widgets/state/scorepartner_skeleton.dart';
+import '../../widgets/state/scorepartner_empty_state.dart';
 
 /// Screen to view and manage user's tournaments
 class MyTournamentsScreen extends StatefulWidget {
@@ -124,7 +126,18 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
           ),
         ),
         body: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryOrange))
+            ? ListView.builder(
+                padding: EdgeInsets.all(16.w),
+                itemCount: 4,
+                itemBuilder: (_, __) => Padding(
+                  padding: EdgeInsets.only(bottom: 12.h),
+                  child: ScorePartnerSkeleton(
+                    width: double.infinity,
+                    height: 140.h,
+                    borderRadius: 24.r,
+                  ),
+                ),
+              )
             : TabBarView(
                 children: [
                   _buildTournamentList(_liveTournaments, false),
@@ -160,51 +173,16 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: EdgeInsets.all(24.w),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryOrange.withOpacity(0.1),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primaryOrange.withOpacity(0.2),
-                  blurRadius: 30,
-                  spreadRadius: 5,
-                ),
-              ],
-            ),
-            child: Icon(Icons.emoji_events_outlined, size: 64.sp, color: AppTheme.primaryOrange),
-          ),
-          SizedBox(height: 24.h),
-          Text(
-            _searchQuery.isNotEmpty ? 'NO RESULTS' : 'NO TOURNAMENTS',
-            style: TextStyle(
-              fontSize: 20.sp,
-              fontWeight: FontWeight.w900,
-              color: Colors.black,
-              letterSpacing: 1.0,
-            ),
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            _searchQuery.isNotEmpty 
-                ? 'Try a different search term'
-                : 'Create your first tournament',
-            style: TextStyle(color: Colors.grey, fontSize: 14.sp),
-          ),
-          if (_searchQuery.isEmpty) ...[
-            SizedBox(height: 32.h),
-            ElevatedButton.icon(
-              onPressed: _navigateToCreateTournament,
-              icon: Icon(Icons.add),
-              label: const Text('CREATE TOURNAMENT'),
-            ),
-          ],
-        ],
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 24.w),
+      child: ScorePartnerEmptyState(
+        title: _searchQuery.isNotEmpty ? 'No Results' : 'No Tournaments',
+        description: _searchQuery.isNotEmpty 
+            ? 'Try a different search term.'
+            : 'Create your first tournament.',
+        icon: Icons.emoji_events_outlined,
+        primaryButtonText: _searchQuery.isEmpty ? 'Create Tournament' : null,
+        onPrimaryAction: _searchQuery.isEmpty ? _navigateToCreateTournament : null,
       ),
     );
   }
