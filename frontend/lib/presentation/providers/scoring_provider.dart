@@ -37,7 +37,7 @@ class ScoringProvider extends ChangeNotifier {
 
   /// Initialize socket connection
   void initializeSocket({String? serverUrl}) {
-    _socketService.connect(serverUrl: serverUrl ?? 'http://127.0.0.1:5000');
+    _socketService.connect(serverUrl: serverUrl);
   }
 
   /// Join a match for real-time updates
@@ -273,8 +273,8 @@ class ScoringProvider extends ChangeNotifier {
 
       // Create Ball Event
       final ballEvent = BallEvent(
-        ballNumber: currentBall == 0 ? 6 : currentBall,
-        overNumber: isLegalBall && currentBall == 0 ? currentOver - 1 : currentOver,
+        ballNumber: (isLegalBall && currentBall == 0) ? 6 : (currentBall == 0 ? 1 : currentBall),
+        overNumber: (isLegalBall && currentBall == 0) ? currentOver - 1 : currentOver,
         battingTeam: isTeam1Batting ? match.team1Id : match.team2Id,
         bowlerId: actualBowlerId,
         bowlerName: bowlerName,
@@ -289,8 +289,8 @@ class ScoringProvider extends ChangeNotifier {
           fielderId: fielderId,
         ) : null,
         commentary: _generateCommentary(
-          overNumber: isLegalBall && currentBall == 0 ? currentOver - 1 : currentOver,
-          ballNumber: currentBall == 0 ? 6 : currentBall,
+          overNumber: (isLegalBall && currentBall == 0) ? currentOver - 1 : currentOver,
+          ballNumber: (isLegalBall && currentBall == 0) ? 6 : (currentBall == 0 ? 1 : currentBall),
           bowlerName: bowlerName,
           batsmanName: batterName,
           runs: runs, 

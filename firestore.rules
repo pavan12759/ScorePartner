@@ -25,7 +25,8 @@ service cloud.firestore {
       // Notifications Subcollection inside user document
       match /notifications/{notificationId} {
         allow read: if request.auth != null && request.auth.uid == userId;
-        allow write: if request.auth != null; // Anyone authenticated can send notifications
+        allow create: if request.auth != null; // Any authenticated user can send notifications (via backend)
+        allow update, delete: if false; // No client-side updates
       }
       
       // FCM Tokens Subcollection
@@ -61,11 +62,10 @@ service cloud.firestore {
         request.auth.uid == request.resource.data.createdBy;
       allow update: if signedIn() && (
         request.auth.uid == resource.data.createdBy ||
-        userIn(resource.data, 'adminIds') ||
-        userIn(resource.data, 'scorerIds') ||
-        userIn(resource.data, 'scorers')
+        userIn(resource.data, 'adminIds')
       );
-      // Viewer stats updates must be handled securely via the backend
+      // Scorers should only update match state (scores, ball events via backend),
+      // NOT ownership/admin fields. Use the secure backend API for scoring updates.
       allow delete: if signedIn() && (
         request.auth.uid == resource.data.createdBy ||
         userIn(resource.data, 'adminIds')
@@ -114,13 +114,12 @@ service cloud.firestore {
       );
     }
 
-    // Join requests collection (for team invite link feature)
-    match /joinRequests/{requestId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null;
-      allow delete: if request.auth != null;
-    }
+     // Join requests collection (for team invite link feature)
+     match /joinRequests/{requestId} {
+       allow read: if false; // No direct client reads - use backend API
+       allow create: if request.auth != null; // Any authenticated user can create requests
+       allow update, delete: if false; // No client-side updates - use backend API
+     }
 
     // Chats collection
     match /chats/{chatId} {

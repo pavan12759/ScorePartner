@@ -1,19 +1,21 @@
 const express = require('express');
 const router = express.Router();
+const { auth } = require('../middleware/auth');
 
 // Helper to get Firestore db and Socket.io from express app
 const getDb = (req) => req.app.get('db');
 const getIo = (req) => req.app.get('io');
 
 // POST /api/broadcast/start - Start a new broadcast session
-router.post('/start', async (req, res) => {
+router.post('/start', auth, async (req, res) => {
   try {
-    const { matchId, broadcasterId, overlayThemeId, title } = req.body;
+    const { matchId, overlayThemeId, title } = req.body;
+    const broadcasterId = req.user.uid;
     const db = getDb(req);
     const io = getIo(req);
 
-    if (!matchId || !broadcasterId) {
-      return res.status(400).json({ error: 'matchId and broadcasterId are required' });
+    if (!matchId) {
+      return res.status(400).json({ error: 'matchId is required' });
     }
 
     // Check if match exists
@@ -67,7 +69,7 @@ router.post('/start', async (req, res) => {
 });
 
 // POST /api/broadcast/end - End active broadcast session
-router.post('/end', async (req, res) => {
+router.post('/end', auth, async (req, res) => {
   try {
     const { broadcastId } = req.body;
     const db = getDb(req);
@@ -135,7 +137,7 @@ router.get('/match/:matchId', async (req, res) => {
 });
 
 // POST /api/broadcast/:id/crew - Join broadcast crew via code
-router.post('/:id/crew', async (req, res) => {
+router.post('/:id/crew', auth, async (req, res) => {
   try {
     const { id } = req.params;
     const { userId, crewCode, role } = req.body;
@@ -166,7 +168,7 @@ router.post('/:id/crew', async (req, res) => {
 });
 
 // GET /api/broadcast/:id/analytics - Get broadcast analytics metrics
-router.get('/:id/analytics', async (req, res) => {
+router.get('/:id/analytics', auth, async (req, res) => {
   try {
     const { id } = req.params;
     const db = getDb(req);

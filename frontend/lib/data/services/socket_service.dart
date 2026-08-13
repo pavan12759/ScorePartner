@@ -26,20 +26,26 @@ class SocketService {
   bool get isConnected => _isConnected;
   
   /// Initialize socket connection to backend
-  void connect({String serverUrl = 'http://127.0.0.1:5000'}) {
+  void connect({String? serverUrl}) {
     if (_socket != null && _isConnected) {
       return; // Already connected
     }
     
+    final effectiveUrl = serverUrl ??
+        const String.fromEnvironment(
+          'SOCKET_SERVER_URL',
+          defaultValue: 'http://127.0.0.1:5000',
+        );
+
     // Disconnect existing socket if any
     if (_socket != null) {
       _socket!.dispose();
       _socket = null;
     }
     
-    print('🔌 Attempting to connect to socket at: $serverUrl');
+    print('🔌 Attempting to connect to socket at: $effectiveUrl');
     
-    _socket = IO.io(serverUrl, <String, dynamic>{
+    _socket = IO.io(effectiveUrl, <String, dynamic>{
       'transports': ['websocket', 'polling'],  // Add polling fallback for web
       'autoConnect': false,  // We'll connect manually
       'reconnection': true,

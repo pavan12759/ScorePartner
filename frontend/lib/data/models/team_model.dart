@@ -364,6 +364,11 @@ class TournamentModel {
   final double? latitude;
   final double? longitude;
 
+  // Invite link fields
+  final String inviteToken;
+  final bool inviteLinkEnabled;
+  final DateTime? inviteExpiry;
+
   const TournamentModel({
     required this.id,
     required this.name,
@@ -404,6 +409,9 @@ class TournamentModel {
     this.views = 0,
     this.latitude,
     this.longitude,
+    this.inviteToken = '',
+    this.inviteLinkEnabled = false,
+    this.inviteExpiry,
   });
 
   factory TournamentModel.fromMap(Map<String, dynamic> data) {
@@ -469,6 +477,9 @@ class TournamentModel {
       views: data['views'] ?? 0,
       latitude: (data['latitude'] as num?)?.toDouble(),
       longitude: (data['longitude'] as num?)?.toDouble(),
+      inviteToken: data['inviteToken'] ?? '',
+      inviteLinkEnabled: data['inviteLinkEnabled'] ?? false,
+      inviteExpiry: data['inviteExpiry'] != null ? _parseDate(data['inviteExpiry']) : null,
     );
   }
 
@@ -513,6 +524,9 @@ class TournamentModel {
       'views': views,
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
+      'inviteToken': inviteToken,
+      'inviteLinkEnabled': inviteLinkEnabled,
+      if (inviteExpiry != null) 'inviteExpiry': inviteExpiry!.toIso8601String(),
     };
   }
 
@@ -556,6 +570,9 @@ class TournamentModel {
     int? views,
     double? latitude,
     double? longitude,
+    String? inviteToken,
+    bool? inviteLinkEnabled,
+    DateTime? inviteExpiry,
   }) {
     return TournamentModel(
       id: id ?? this.id,
@@ -597,6 +614,9 @@ class TournamentModel {
       views: views ?? this.views,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      inviteToken: inviteToken ?? this.inviteToken,
+      inviteLinkEnabled: inviteLinkEnabled ?? this.inviteLinkEnabled,
+      inviteExpiry: inviteExpiry ?? this.inviteExpiry,
     );
   }
 

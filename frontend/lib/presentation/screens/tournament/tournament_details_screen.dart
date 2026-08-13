@@ -19,6 +19,7 @@ import '../../providers/auth_provider.dart';
 import '../matches/live_scoring_screen.dart';
 import '../matches/match_detail_screen.dart';
 import '../matches/create_match_screen.dart'; // Added
+import 'tournament_join_requests_screen.dart'; // Added
 import '../../widgets/toss_selection_dialog.dart';
 import '../../widgets/match_config_dialog.dart';
 import '../../widgets/manage_admins_dialog.dart';
@@ -585,6 +586,14 @@ https://scorepartner.in/tournament/${t.id}
                             case 'manage_admins':
                               _showManageAdmins();
                               break;
+                            case 'view_join_requests':
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => TournamentJoinRequestsScreen(tournament: _tournament),
+                                ),
+                              );
+                              break;
                             case 'edit_tournament':
                               _showEditTournamentDialog();
                               break;
@@ -622,6 +631,16 @@ https://scorepartner.in/tournament/${t.id}
                               child: ListTile(
                                 leading: Icon(Icons.admin_panel_settings, color: AppTheme.primaryOrange),
                                 title: Text('Manage Admins'),
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                          if (canManage)
+                            const PopupMenuItem(
+                              value: 'view_join_requests',
+                              child: ListTile(
+                                leading: Icon(Icons.group_add, color: AppTheme.primaryOrange),
+                                title: Text('Join Requests'),
                                 dense: true,
                                 contentPadding: EdgeInsets.zero,
                               ),
@@ -2351,6 +2370,45 @@ https://scorepartner.in/tournament/${t.id}
                       child: const Text('Search'),
                     ),
                   ],
+                  SizedBox(height: 24.h),
+                  const Divider(),
+                  SizedBox(height: 16.h),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      Navigator.pop(modalContext);
+                      
+                      // Show loading dialog
+                      if (!mounted) return;
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (loadingContext) => const Center(child: CircularProgressIndicator(color: AppTheme.primaryOrange)),
+                      );
+
+                      final link = await FirebaseDataService.instance.generateTournamentInviteLink(_tournament.id);
+                      
+                      if (mounted) {
+                        Navigator.of(context).pop(); // close loading
+                        if (link != null) {
+                          Share.share(
+                            'Register your team for our tournament "${_tournament.name}" on ScorePartner!\n\nClick the link below:\n$link',
+                            subject: 'Register for ${_tournament.name}',
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Failed to generate invite link', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red),
+                          );
+                        }
+                      }
+                    },
+                    icon: Icon(Icons.link, color: AppTheme.primaryOrange),
+                    label: const Text('Generate Invite Link', style: TextStyle(color: AppTheme.primaryOrange)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: AppTheme.primaryOrange),
+                      padding: EdgeInsets.symmetric(vertical: 16.h),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                    ),
+                  ),
                   SizedBox(height: 24.h),
                 ],
               ),

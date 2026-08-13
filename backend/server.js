@@ -14,7 +14,9 @@ const server = http.createServer(app);
 // Initialize Socket.io
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: process.env.SOCKET_CORS_ORIGINS
+      ? process.env.SOCKET_CORS_ORIGINS.split(',').map(s => s.trim())
+      : ['http://localhost:5000', 'http://127.0.0.1:5000'],
     methods: ['GET', 'POST', 'PUT', 'DELETE']
   }
 });
@@ -48,17 +50,41 @@ app.get('/api/health', (req, res) => {
 });
 
 // Simple local proxy to bypass CORS for external APIs (like Google Places)
-const https = require('https');
+// Only allows whitelisted API domains to prevent SSRF attacks
+const ALLOWED_PROXY_HOSTS = [
+  'maps.googleapis.com',
+  'maps.googleapis.com',
+  'api.openweathermap.org',
+  'rest.nba.all.api',
+];
+
+const url = require('url');
 app.get('/api/proxy', (req, res) => {
   const targetUrl = req.query.url;
   if (!targetUrl) return res.status(400).json({ error: 'Missing url parameter' });
-  
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(targetUrl);
+  } catch (e) {
+    return res.status(400).json({ error: 'Invalid URL' });
+  }
+
+  const hostname = parsedUrl.hostname;
+  if (!hostname || !ALLOWED_PROXY_HOSTS.includes(hostname)) {
+    return res.status(403).json({ error: 'URL host not allowed' });
+  }
+
+  if (parsedUrl.protocol !== 'https:') {
+    return res.status(403).json({ error: 'Only HTTPS URLs are allowed' });
+  }
+
   https.get(targetUrl, (apiRes) => {
     res.status(apiRes.statusCode);
-    res.set('Access-Control-Allow-Origin', '*'); // Ensure frontend can read it
+    res.set('Access-Control-Allow-Origin', '*');
     apiRes.pipe(res);
   }).on('error', (e) => {
-    res.status(500).json({ error: e.message });
+    res.status(502).json({ error: e.message });
   });
 });
 
@@ -207,6 +233,6 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT} (0.0.0.0)`);
-  console.log(`📡 API available at http://localhost:${PORT}/api & http://192.168.1.10:${PORT}/api`);
+  console.log(`📡 API available at http://localhost:${PORT}/api`);
   console.log(`🔥 Connected to Firebase Firestore`);
 });

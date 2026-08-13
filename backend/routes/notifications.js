@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const admin = require('firebase-admin');
+const { auth } = require('../middleware/auth');
 
 // Ensure Firebase is initialized before this
 // Usually done in server.js via admin.initializeApp()
@@ -9,7 +10,7 @@ const admin = require('firebase-admin');
  * Send a push notification to specific FCM tokens
  * POST /api/notifications/send
  */
-router.post('/send', async (req, res) => {
+router.post('/send', auth, async (req, res) => {
     try {
         const { tokens, title, body, data } = req.body;
 
@@ -53,7 +54,7 @@ router.post('/send', async (req, res) => {
  * Trigger match start notifications for all followers of all players in a match
  * POST /api/notifications/match-start
  */
-router.post('/match-start', async (req, res) => {
+router.post('/match-start', auth, async (req, res) => {
     try {
         const { matchId, playerIds, team1Name, team2Name } = req.body;
 

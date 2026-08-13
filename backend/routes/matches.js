@@ -162,15 +162,18 @@ router.put('/:id', auth, async (req, res) => {
             return res.status(404).json({ error: 'Match not found' });
         }
 
-        const matchData = matchDoc.data();
-        if (!canScoreMatch(req.user.uid, matchData)) {
+        if (!canScoreMatch(req.user.uid, matchDoc.data())) {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
-        await matchRef.update({
-            ...req.body,
-            updatedAt: new Date()
+        // Scorers can update match state but CANNOT modify ownership/admin fields
+        const protectedFields = ['createdBy', 'adminIds', 'scorerIds'];
+        const updates = { ...req.body, updatedAt: new Date() };
+        protectedFields.forEach(field => {
+            delete updates[field];
         });
+
+        await matchRef.update(updates);
 
         const updatedDoc = await matchRef.get();
         const match = { id: updatedDoc.id, ...updatedDoc.data() };

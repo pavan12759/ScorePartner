@@ -11,9 +11,12 @@ class ApiService {
   static ApiService get instance => _instance ??= ApiService._();
   ApiService._();
 
-  // Base URL - change this for production
-  static const String _baseUrl = 'http://localhost:5000/api';
-  
+  // Base URL - configurable for different environments
+  // Override via --dart-define=API_BASE_URL=http://your.server.ip:5000/api
+  static const String _baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:5000/api',
+  );
   // For Android emulator use: 'http://10.0.2.2:5000/api'
   // For iOS simulator use: 'http://localhost:5000/api'
   // For real device use your computer's IP: 'http://192.168.x.x:5000/api'

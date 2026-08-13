@@ -260,9 +260,19 @@ class MatchModel {
     String? strikerId = currentStrikerId;
     String? nonStrikerId = currentNonStrikerId;
 
-    // 2. Process each ball chronologically
+  // 2. Process each ball chronologically
+    String? lastBattingTeamId;
     for (var ball in ballByBall) {
       bool isTeam1Batting = ball.battingTeam == team1Id;
+      String currentBattingTeamId = isTeam1Batting ? team1Id : team2Id;
+      
+      // Reset over counters when batting team changes (innings change)
+      if (lastBattingTeamId != null && lastBattingTeamId != currentBattingTeamId) {
+        newCurrentOver = 0;
+        newCurrentBall = 0;
+      }
+      lastBattingTeamId = currentBattingTeamId;
+      
       TeamScore battingScore = isTeam1Batting ? newTeam1Score : newTeam2Score;
       TeamScore bowlingScore = isTeam1Batting ? newTeam2Score : newTeam1Score;
 

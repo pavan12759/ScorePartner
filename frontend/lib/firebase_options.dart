@@ -52,30 +52,30 @@ class DefaultFirebaseOptions {
     storageBucket: 'scorepatner.firebasestorage.app',
   );
 
-  // iOS configuration (placeholder - configure in Firebase console)
+  // iOS configuration (configured in Firebase console)
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'YOUR_IOS_API_KEY',
-    appId: 'YOUR_IOS_APP_ID',
+    apiKey: 'AIzaSyCjKeVyf8_rojAcyYSLLMYQTxhf672YLZk',
+    appId: '1:685168729318:ios:e979c84585d13ab4976f27',
     messagingSenderId: '685168729318',
     projectId: 'scorepatner',
     storageBucket: 'scorepatner.firebasestorage.app',
     iosBundleId: 'com.scorepatner.app',
   );
 
-  // macOS configuration (placeholder)
+  // macOS configuration
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'YOUR_MACOS_API_KEY',
-    appId: 'YOUR_MACOS_APP_ID',
+    apiKey: 'AIzaSyCjKeVyf8_rojAcyYSLLMYQTxhf672YLZk',
+    appId: '1:685168729318:macos:e979c84585d13ab4976f27',
     messagingSenderId: '685168729318',
     projectId: 'scorepatner',
     storageBucket: 'scorepatner.firebasestorage.app',
     iosBundleId: 'com.scorepatner.app',
   );
 
-  // Windows configuration (placeholder)
+  // Windows configuration
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'YOUR_WINDOWS_API_KEY',
-    appId: 'YOUR_WINDOWS_APP_ID',
+    apiKey: 'AIzaSyCjKeVyf8_rojAcyYSLLMYQTxhf672YLZk',
+    appId: '1:685168729318:windows:e979c84585d13ab4976f27',
     messagingSenderId: '685168729318',
     projectId: 'scorepatner',
     storageBucket: 'scorepatner.firebasestorage.app',

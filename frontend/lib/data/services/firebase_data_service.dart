@@ -13,8 +13,10 @@ import '../models/achievement_model.dart';
 import '../models/match_performance.dart';
 import '../models/notification_model.dart';
 import '../models/join_request_model.dart';
+import '../models/tournament_join_request_model.dart';
 import 'star_calculator.dart';
 import 'api_service.dart';
+import 'notification_service.dart';
 import 'match_stats_calculator.dart';
 import '../../core/utils/location_utils.dart';
 
@@ -3696,6 +3698,197 @@ class FirebaseDataService {
     } catch (e) {
       debugPrint('❌ Error rejecting join request: $e');
       return false;
+    }
+  }
+
+  // ==================== TOURNAMENT JOIN REQUESTS ====================
+
+  static const String tournamentJoinRequestsCollection = 'tournament_join_requests';
+
+  Future<TournamentModel?> validateTournamentInviteToken(String tournamentId, String token) async {
+    try {
+      final doc = await _db.collection(tournamentsCollection).doc(tournamentId).get();
+      if (!doc.exists) return null;
+
+      final data = doc.data()!;
+      if (data['inviteToken'] != token || data['inviteLinkEnabled'] != true) {
+        return null;
+      }
+
+      // Check expiry if exists
+      if (data['inviteExpiry'] != null) {
+        final expiry = (data['inviteExpiry'] as Timestamp).toDate();
+        if (DateTime.now().isAfter(expiry)) {
+          return null;
+        }
+      }
+
+      return TournamentModel.fromMap({...data, 'id': doc.id});
+    } catch (e) {
+      debugPrint('❌ Error validating tournament invite token: $e');
+      return null;
+    }
+  }
+
+  Future<String?> createTournamentJoinRequest(TournamentJoinRequestModel request) async {
+    try {
+      // 1. Check if tournament exists and has slots
+      final tournamentDoc = await _db.collection(tournamentsCollection).doc(request.tournamentId).get();
+      if (!tournamentDoc.exists) return 'Tournament not found';
+      
+      final tData = tournamentDoc.data()!;
+      final registeredTeams = List<String>.from(tData['registeredTeamIds'] ?? []);
+      final maxTeams = tData['maxTeams'] ?? 8;
+      
+      if (registeredTeams.length >= maxTeams) {
+        return 'Tournament is full';
+      }
+      
+      if (registeredTeams.contains(request.teamId)) {
+        return 'Team is already registered for this tournament';
+      }
+
+      // 2. Check for existing pending request
+      final existingReqs = await _db.collection(tournamentJoinRequestsCollection)
+          .where('tournamentId', isEqualTo: request.tournamentId)
+          .where('teamId', isEqualTo: request.teamId)
+          .where('status', isEqualTo: TournamentJoinRequestStatus.pending.name)
+          .limit(1)
+          .get();
+          
+      if (existingReqs.docs.isNotEmpty) {
+        return 'A request is already pending for this team';
+      }
+
+      // 3. Create the request
+      final docRef = await _db.collection(tournamentJoinRequestsCollection).add(request.toMap());
+
+      // 4. Notify Tournament Organizer
+      await createNotification(
+        notification: NotificationModel(
+          id: '',
+          userId: tData['organizerId'],
+          type: NotificationType.teamJoinRequest, // Reuse or create a new type if needed
+          title: 'New Tournament Registration Request',
+          body: '${request.teamName} has requested to join ${request.tournamentName}.',
+          data: {
+            'tournamentId': request.tournamentId,
+            'teamId': request.teamId,
+            'requestId': docRef.id,
+          },
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      return null; // Success
+    } catch (e) {
+      debugPrint('❌ Error creating tournament join request: $e');
+      return 'An error occurred while submitting the request';
+    }
+  }
+
+  Future<List<TournamentJoinRequestModel>> getTournamentJoinRequests(String tournamentId) async {
+    try {
+      final snapshot = await _db.collection(tournamentJoinRequestsCollection)
+          .where('tournamentId', isEqualTo: tournamentId)
+          .orderBy('requestedAt', descending: true)
+          .get();
+
+      return snapshot.docs.map((doc) => TournamentJoinRequestModel.fromMap(doc.data(), doc.id)).toList();
+    } catch (e) {
+      debugPrint('❌ Error getting tournament join requests: $e');
+      return [];
+    }
+  }
+
+  Future<bool> updateTournamentJoinRequestStatus(String requestId, String status, String adminId, {String rejectionReason = ''}) async {
+    try {
+      final doc = await _db.collection(tournamentJoinRequestsCollection).doc(requestId).get();
+      if (!doc.exists) return false;
+      
+      final reqData = doc.data()!;
+      final teamId = reqData['teamId'];
+      final tournamentId = reqData['tournamentId'];
+      final requestedByUserId = reqData['requestedByUserId'];
+
+      await _db.collection(tournamentJoinRequestsCollection).doc(requestId).update({
+        'status': status,
+        'reviewedAt': FieldValue.serverTimestamp(),
+        'reviewedBy': adminId,
+        'rejectionReason': rejectionReason,
+      });
+
+      if (status == TournamentJoinRequestStatus.accepted.name) {
+        // Add team to tournament
+        await addTeamToTournament(tournamentId, teamId);
+      }
+
+      // Notify requester
+      await createNotification(
+        notification: NotificationModel(
+          id: '',
+          userId: requestedByUserId,
+          type: status == TournamentJoinRequestStatus.accepted.name 
+              ? NotificationType.teamJoinAccepted 
+              : NotificationType.teamJoinRejected,
+          title: status == TournamentJoinRequestStatus.accepted.name 
+              ? 'Registration Accepted' 
+              : 'Registration Rejected',
+          body: status == TournamentJoinRequestStatus.accepted.name
+              ? 'Your request for ${reqData['teamName']} to join ${reqData['tournamentName']} was approved.'
+              : 'Your request for ${reqData['teamName']} to join ${reqData['tournamentName']} was rejected. ${rejectionReason.isNotEmpty ? "\nReason: $rejectionReason" : ""}',
+          data: {
+            'tournamentId': tournamentId,
+            'teamId': teamId,
+          },
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error updating tournament join request status: $e');
+      return false;
+    }
+  }
+
+  Future<TournamentJoinRequestModel?> getTeamPendingRequestForTournament(String teamId, String tournamentId) async {
+    try {
+      final snapshot = await _db.collection(tournamentJoinRequestsCollection)
+          .where('tournamentId', isEqualTo: tournamentId)
+          .where('teamId', isEqualTo: teamId)
+          .where('status', isEqualTo: TournamentJoinRequestStatus.pending.name)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        final doc = snapshot.docs.first;
+        return TournamentJoinRequestModel.fromMap(doc.data(), doc.id);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ Error getting team pending request for tournament: $e');
+      return null;
+    }
+  }
+
+  Future<String?> generateTournamentInviteLink(String tournamentId) async {
+    try {
+      // 1. Generate token
+      final token = DateTime.now().millisecondsSinceEpoch.toRadixString(36);
+      
+      // 2. Update tournament
+      await _db.collection(tournamentsCollection).doc(tournamentId).update({
+        'inviteToken': token,
+        'inviteLinkEnabled': true,
+      });
+      
+      // 3. Return the link (using same logic as team invite link but with different path)
+      // scorepartner.app/join/tournament/{tournamentId}?invite={token}
+      return 'https://scorepartner.app/join/tournament/$tournamentId?invite=$token';
+    } catch (e) {
+      debugPrint('❌ Error generating tournament invite link: $e');
+      return null;
     }
   }
 }

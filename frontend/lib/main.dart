@@ -17,6 +17,7 @@ import 'presentation/providers/theme_provider.dart';
 import 'presentation/providers/floating_bubble_provider.dart';
 import 'presentation/screens/splash/splash_screen.dart';
 import 'presentation/screens/teams/team_invitation_screen.dart';
+import 'presentation/screens/tournament/tournament_invitation_screen.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -160,6 +161,30 @@ class _ScorePartnerAppState extends State<ScorePartnerApp> {
           }
         } catch (e) {
           debugPrint('Error handling team invite deep link: $e');
+        }
+      }
+    } else if (pathSegments.length >= 3 && pathSegments[0] == 'join' && pathSegments[1] == 'tournament') {
+      // Tournament invite link: scorepartner.app/join/tournament/{tournamentId}?invite={token}
+      final tournamentId = pathSegments[2];
+      final inviteToken = uri.queryParameters['invite'] ?? '';
+      debugPrint('Navigating to tournament invitation: tournamentId=$tournamentId, token=$inviteToken');
+
+      if (inviteToken.isNotEmpty) {
+        try {
+          if (mounted) {
+            await Future.delayed(const Duration(milliseconds: 500));
+
+            _navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (_) => TournamentInvitationScreen(
+                  tournamentId: tournamentId,
+                  inviteToken: inviteToken,
+                ),
+              ),
+            );
+          }
+        } catch (e) {
+          debugPrint('Error handling tournament invite deep link: $e');
         }
       }
     }
