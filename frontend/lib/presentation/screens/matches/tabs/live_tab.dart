@@ -1076,7 +1076,9 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
               onTap: () => _navigateToPlayerProfile(bowler.playerId, context),
               child: Text(bowler.playerName, style: TextStyle(
                 fontWeight: FontWeight.bold, color: AppTheme.primaryOrange, fontSize: 14.sp,
-              )),
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
             )
           ),
           Row(

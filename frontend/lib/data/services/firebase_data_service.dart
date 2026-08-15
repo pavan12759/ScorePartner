@@ -1111,12 +1111,107 @@ class FirebaseDataService {
   /// Update team details
   Future<bool> updateTeam(String teamId, Map<String, dynamic> data) async {
     try {
+      // If renaming, try backend API first
+      if (data.containsKey('name')) {
+        try {
+          final apiService = ApiService.instance;
+          await apiService.put('/teams/$teamId/rename', {'name': data['name']});
+          debugPrint('✅ Team renamed via backend API: $teamId');
+          return true;
+        } catch (e) {
+          debugPrint('⚠️ Backend rename failed, falling back to direct Firestore update: $e');
+        }
+      }
+
       await _db.collection(teamsCollection).doc(teamId).update(data);
       debugPrint('✅ Team updated: $teamId');
+
+      if (data.containsKey('name')) {
+        final newName = data['name'] as String;
+        await _propagateTeamNameChange(teamId, newName);
+      }
+
       return true;
     } catch (e) {
       debugPrint('❌ Error updating team: $e');
       return false;
+    }
+  }
+
+  /// Propagate a team name change to all matches and tournaments that reference this team
+  Future<void> _propagateTeamNameChange(String teamId, String newName) async {
+    try {
+      // --- Update matches where this team is team1 ---
+      final matchesAsTeam1 = await _db
+          .collection(matchesCollection)
+          .where('team1Id', isEqualTo: teamId)
+          .get();
+      for (final doc in matchesAsTeam1.docs) {
+        await doc.reference.update({'team1Name': newName});
+      }
+
+      // --- Update matches where this team is team2 ---
+      final matchesAsTeam2 = await _db
+          .collection(matchesCollection)
+          .where('team2Id', isEqualTo: teamId)
+          .get();
+      for (final doc in matchesAsTeam2.docs) {
+        await doc.reference.update({'team2Name': newName});
+      }
+
+      debugPrint('✅ Updated ${matchesAsTeam1.docs.length + matchesAsTeam2.docs.length} matches with new team name');
+
+      // --- Update tournaments that have this team registered ---
+      final tournamentsWithTeam = await _db
+          .collection(tournamentsCollection)
+          .where('registeredTeamIds', arrayContains: teamId)
+          .get();
+
+      for (final doc in tournamentsWithTeam.docs) {
+        final tData = doc.data();
+        bool changed = false;
+
+        // Update fixtures
+        final fixtures = (tData['fixtures'] as List<dynamic>?)
+            ?.map((f) => Map<String, dynamic>.from(f))
+            .toList();
+        if (fixtures != null) {
+          for (var f in fixtures) {
+            if (f['team1Id'] == teamId) {
+              f['team1Name'] = newName;
+              changed = true;
+            }
+            if (f['team2Id'] == teamId) {
+              f['team2Name'] = newName;
+              changed = true;
+            }
+          }
+        }
+
+        // Update points table
+        final pointsTable = (tData['pointsTable'] as List<dynamic>?)
+            ?.map((p) => Map<String, dynamic>.from(p))
+            .toList();
+        if (pointsTable != null) {
+          for (var p in pointsTable) {
+            if (p['teamId'] == teamId) {
+              p['teamName'] = newName;
+              changed = true;
+            }
+          }
+        }
+
+        if (changed) {
+          final updateData = <String, dynamic>{};
+          if (fixtures != null) updateData['fixtures'] = fixtures;
+          if (pointsTable != null) updateData['pointsTable'] = pointsTable;
+          await doc.reference.update(updateData);
+        }
+      }
+
+      debugPrint('✅ Updated ${tournamentsWithTeam.docs.length} tournaments with new team name');
+    } catch (e) {
+      debugPrint('⚠️ Error propagating team name change: $e');
     }
   }
 
@@ -3765,6 +3860,7 @@ class FirebaseDataService {
 
       // 4. Notify Tournament Organizer
       await createNotification(
+        userId: tData['organizerId'],
         notification: NotificationModel(
           id: '',
           userId: tData['organizerId'],
@@ -3825,6 +3921,7 @@ class FirebaseDataService {
 
       // Notify requester
       await createNotification(
+        userId: requestedByUserId,
         notification: NotificationModel(
           id: '',
           userId: requestedByUserId,
@@ -3884,8 +3981,8 @@ class FirebaseDataService {
       });
       
       // 3. Return the link (using same logic as team invite link but with different path)
-      // scorepartner.app/join/tournament/{tournamentId}?invite={token}
-      return 'https://scorepartner.app/join/tournament/$tournamentId?invite=$token';
+      // scorepartner.in/join/tournament/{tournamentId}?invite={token}
+      return 'https://scorepartner.in/join/tournament/$tournamentId?invite=$token';
     } catch (e) {
       debugPrint('❌ Error generating tournament invite link: $e');
       return null;

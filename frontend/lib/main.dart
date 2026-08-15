@@ -164,7 +164,7 @@ class _ScorePartnerAppState extends State<ScorePartnerApp> {
         }
       }
     } else if (pathSegments.length >= 3 && pathSegments[0] == 'join' && pathSegments[1] == 'tournament') {
-      // Tournament invite link: scorepartner.app/join/tournament/{tournamentId}?invite={token}
+      // Tournament invite link: scorepartner.in/join/tournament/{tournamentId}?invite={token}
       final tournamentId = pathSegments[2];
       final inviteToken = uri.queryParameters['invite'] ?? '';
       debugPrint('Navigating to tournament invitation: tournamentId=$tournamentId, token=$inviteToken');

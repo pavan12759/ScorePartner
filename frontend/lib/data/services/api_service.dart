@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:firebase_auth/firebase_auth.dart';
+
 /// API Service for communicating with Node.js backend
 class ApiService {
   // Singleton
@@ -20,6 +22,15 @@ class ApiService {
   // For Android emulator use: 'http://10.0.2.2:5000/api'
   // For iOS simulator use: 'http://localhost:5000/api'
   // For real device use your computer's IP: 'http://192.168.x.x:5000/api'
+
+  List<String> get _candidateBaseUrls {
+    final urls = <String>[_baseUrl];
+    if (_baseUrl.contains('localhost')) {
+      urls.add(_baseUrl.replaceAll('localhost', '192.168.1.42'));
+      urls.add(_baseUrl.replaceAll('localhost', '10.0.2.2'));
+    }
+    return urls;
+  }
 
   String? _authToken;
   
@@ -58,6 +69,19 @@ class ApiService {
     return headers;
   }
 
+  Future<Map<String, String>> get _headersAsync async {
+    final headers = Map<String, String>.from(_headers);
+    if (_authToken == null) {
+      try {
+        final idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+        if (idToken != null) {
+          headers['Authorization'] = 'Bearer $idToken';
+        }
+      } catch (_) {}
+    }
+    return headers;
+  }
+
   // ==================== HTTP METHODS ====================
 
   /// GET request
@@ -91,17 +115,24 @@ class ApiService {
 
   /// PUT request
   Future<Map<String, dynamic>> put(String endpoint, Map<String, dynamic> data) async {
-    try {
-      final response = await http.put(
-        Uri.parse('$_baseUrl$endpoint'),
-        headers: _headers,
-        body: jsonEncode(data),
-      );
-      return _handleResponse(response);
-    } catch (e) {
-      debugPrint('❌ PUT $endpoint error: $e');
-      throw ApiException('Network error: $e');
+    final headers = await _headersAsync;
+    Object? lastError;
+
+    for (final baseUrl in _candidateBaseUrls) {
+      try {
+        final response = await http.put(
+          Uri.parse('$baseUrl$endpoint'),
+          headers: headers,
+          body: jsonEncode(data),
+        ).timeout(const Duration(seconds: 4));
+        return _handleResponse(response);
+      } catch (e) {
+        lastError = e;
+        debugPrint('⚠️ PUT $baseUrl$endpoint error: $e');
+      }
     }
+    debugPrint('❌ PUT $endpoint error: $lastError');
+    throw ApiException('Network error: $lastError');
   }
 
   /// DELETE request

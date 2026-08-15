@@ -814,6 +814,7 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
                   color: AppTheme.primaryOrange,
                   decoration: TextDecoration.none,
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),

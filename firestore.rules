@@ -62,7 +62,8 @@ service cloud.firestore {
         request.auth.uid == request.resource.data.createdBy;
       allow update: if signedIn() && (
         request.auth.uid == resource.data.createdBy ||
-        userIn(resource.data, 'adminIds')
+        userIn(resource.data, 'adminIds') ||
+        request.resource.data.diff(resource.data).affectedKeys().hasAny(['team1Name', 'team2Name'])
       );
       // Scorers should only update match state (scores, ball events via backend),
       // NOT ownership/admin fields. Use the secure backend API for scoring updates.
@@ -92,8 +93,9 @@ service cloud.firestore {
       
       // Viewers subcollection inside broadcast
       match /viewers/{viewerId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && request.auth.uid == viewerId;
+        allow read: if true;
+        allow create: if request.auth != null;
+        allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
       }
       
       // Messages within broadcast live chat
@@ -110,6 +112,7 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == request.resource.data.creatorId;
       allow update, delete: if request.auth != null && (
         request.auth.uid == resource.data.creatorId ||
+        request.auth.uid == resource.data.captainId ||
         userIn(resource.data, 'adminIds')
       );
     }
@@ -153,8 +156,10 @@ service cloud.firestore {
       allow read: if true;
       allow create: if request.auth != null && 
         request.auth.uid == request.resource.data.organizerId;
-      allow update, delete: if request.auth != null && 
-        request.auth.uid == resource.data.organizerId;
+      allow update, delete: if request.auth != null && (
+        request.auth.uid == resource.data.organizerId ||
+        request.resource.data.diff(resource.data).affectedKeys().hasAny(['fixtures', 'pointsTable'])
+      );
       // Views updates must be handled securely via the backend
     }
   }

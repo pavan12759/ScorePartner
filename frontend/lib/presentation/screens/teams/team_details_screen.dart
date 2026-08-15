@@ -597,6 +597,61 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
     );
   }
 
+  Future<void> _editTeamName(TeamModel team) async {
+    final nameController = TextEditingController(text: team.name);
+    
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Team Name'),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(
+            labelText: 'Team Name',
+            hintText: 'Enter new team name',
+          ),
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryOrange),
+            child: const Text('Save', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final newName = nameController.text.trim();
+      if (newName.isNotEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Updating team name across matches & tournaments...'),
+              backgroundColor: Color(0xFFFF6B35),
+            ),
+          );
+        }
+
+        final success = await _dataService.updateTeam(team.id, {'name': newName});
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(success ? '✅ Team name updated everywhere!' : '❌ Failed to update team name'),
+              backgroundColor: success ? Colors.green : Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<TeamModel?>(
@@ -710,9 +765,20 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                         onTap: canManage ? () => _showLogoOptions(team) : null,
                       ),
                       SizedBox(height: 16.h),
-                      Text(
-                        team.name,
-                        style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            team.name,
+                            style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold),
+                          ),
+                          if (canManage)
+                            IconButton(
+                              icon: const Icon(Icons.edit, size: 20),
+                              onPressed: () => _editTeamName(team),
+                              color: AppTheme.primaryOrange,
+                            ),
+                        ],
                       ),
                       SizedBox(height: 4.h),
                       Text(

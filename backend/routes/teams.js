@@ -1,6 +1,6 @@
 const express = require('express');
 const { db } = require('../config/firebase');
-const { auth } = require('../middleware/auth');
+const { auth, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -554,6 +554,93 @@ router.put('/:id/join-requests/:requestId/reject', auth, async (req, res) => {
         res.json({ message: 'Join request rejected' });
     } catch (error) {
         console.error('Reject join request error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// @route   PUT /api/teams/:id/rename
+// @desc    Rename team and propagate to matches & tournaments
+// @access  Public/Private (team creator or captain)
+router.put('/:id/rename', optionalAuth, async (req, res) => {
+    try {
+        const { name } = req.body;
+        if (!name || !name.trim()) {
+            return res.status(400).json({ error: 'Name is required' });
+        }
+
+        const newName = name.trim();
+        const teamId = req.params.id;
+
+        const teamDoc = await db.collection('teams').doc(teamId).get();
+        if (!teamDoc.exists) {
+            return res.status(404).json({ error: 'Team not found' });
+        }
+
+        const teamData = teamDoc.data();
+        if (req.user && req.user.uid && teamData.createdBy && teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid) {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+
+        // Update team name
+        await db.collection('teams').doc(teamId).update({ name: newName });
+
+        // --- Propagate to matches where this team is team1 ---
+        const matchesAsTeam1 = await db.collection('matches')
+            .where('team1Id', '==', teamId).get();
+        for (const doc of matchesAsTeam1.docs) {
+            await doc.ref.update({ team1Name: newName });
+        }
+
+        // --- Propagate to matches where this team is team2 ---
+        const matchesAsTeam2 = await db.collection('matches')
+            .where('team2Id', '==', teamId).get();
+        for (const doc of matchesAsTeam2.docs) {
+            await doc.ref.update({ team2Name: newName });
+        }
+
+        // --- Propagate to tournaments ---
+        const tournamentsWithTeam = await db.collection('tournaments')
+            .where('registeredTeamIds', 'array-contains', teamId).get();
+
+        for (const doc of tournamentsWithTeam.docs) {
+            const tData = doc.data();
+            let changed = false;
+            const updateData = {};
+
+            // Update fixtures
+            if (tData.fixtures && Array.isArray(tData.fixtures)) {
+                const fixtures = tData.fixtures.map(f => {
+                    const updated = { ...f };
+                    if (f.team1Id === teamId) { updated.team1Name = newName; changed = true; }
+                    if (f.team2Id === teamId) { updated.team2Name = newName; changed = true; }
+                    return updated;
+                });
+                if (changed) updateData.fixtures = fixtures;
+            }
+
+            // Update points table
+            if (tData.pointsTable && Array.isArray(tData.pointsTable)) {
+                const pointsTable = tData.pointsTable.map(p => {
+                    if (p.teamId === teamId) {
+                        changed = true;
+                        return { ...p, teamName: newName };
+                    }
+                    return p;
+                });
+                if (changed) updateData.pointsTable = pointsTable;
+            }
+
+            if (changed) {
+                await doc.ref.update(updateData);
+            }
+        }
+
+        const totalUpdated = matchesAsTeam1.docs.length + matchesAsTeam2.docs.length;
+        console.log(`✅ Team ${teamId} renamed to "${newName}". Updated ${totalUpdated} matches, ${tournamentsWithTeam.docs.length} tournaments.`);
+
+        res.json({ message: 'Team renamed successfully', matchesUpdated: totalUpdated, tournamentsUpdated: tournamentsWithTeam.docs.length });
+    } catch (error) {
+        console.error('Rename team error:', error);
         res.status(500).json({ error: 'Server error' });
     }
 });

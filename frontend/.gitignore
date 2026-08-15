@@ -1,3 +1,10 @@
+# Analysis & Debug
+analysis_log.txt
+analysis_output*.txt
+debug_stars.dart
+standalone_script.txt
+test_db.dart
+
 # Miscellaneous
 *.class
 *.log
@@ -27,17 +34,30 @@ migrate_working_dir/
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
 /build/
 /coverage/
 
+# Android build artifacts
+/android/.gradle/
+/android/app/build/
+/android/captures/
+/android/gradlew
+/android/gradle/
+/android/gradle/wrapper/gradle-wrapper.properties
+
 # Symbolication related
 app.*.symbols
 
 # Obfuscation related
 app.*.map.json
+
+# Firebase
+firebase-debug.log
+flutterfire-debug.log
 
 # Android Studio will place build artifacts here
 /android/app/debug
