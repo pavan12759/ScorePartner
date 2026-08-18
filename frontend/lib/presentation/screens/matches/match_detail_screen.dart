@@ -348,35 +348,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                             SizedBox(height: 16.h),
                           ],
                           MvpRatingCard(match: match),
-                          // Match Summary Poster (available to all users when match is completed)
-                          if (match.status == 'past' ||
-                              match.result != null) ...[
-                            SizedBox(height: 16.h),
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        MatchSummaryPosterScreen(
-                                          matchId: match.id,
-                                        ),
-                                  ),
-                                );
-                              },
-                              icon: Icon(Icons.image),
-                              label: const Text('Match Summary Poster'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.deepPurple,
-                                foregroundColor: Colors.white,
-                                padding: EdgeInsets.symmetric(vertical: 14.h),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12.r),
-                                ),
-                                elevation: 2,
-                              ),
-                            ),
-                          ],
                         ],
                       ),
                     ),

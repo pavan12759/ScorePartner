@@ -101,11 +101,81 @@ class MatchPosterCustomization extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Sponsor image
+  // Border style
+  PosterBorderStyle _borderStyle = PosterBorderStyle.none;
+  PosterBorderStyle get borderStyle => _borderStyle;
+  set borderStyle(PosterBorderStyle style) {
+    _borderStyle = style;
+    _invalidateCache();
+    notifyListeners();
+  }
+
+  // Shadow style
+  PosterShadowStyle _shadowStyle = PosterShadowStyle.subtle;
+  PosterShadowStyle get shadowStyle => _shadowStyle;
+  set shadowStyle(PosterShadowStyle style) {
+    _shadowStyle = style;
+    _invalidateCache();
+    notifyListeners();
+  }
+
+  // Color scheme override
+  ColorSchemeType _colorScheme = ColorSchemeType.theme;
+  ColorSchemeType get colorScheme => _colorScheme;
+  set colorScheme(ColorSchemeType scheme) {
+    _colorScheme = scheme;
+    _invalidateCache();
+    notifyListeners();
+  }
+
+  // Top Sponsors (multiple) - up to 4
+  List<Uint8List?> _topSponsors = [null, null, null, null];
+  List<Uint8List?> get topSponsors => _topSponsors;
+  set topSponsors(List<Uint8List?> sponsors) {
+    _topSponsors = sponsors;
+    _invalidateCache();
+    notifyListeners();
+  }
+
+  // Bottom Sponsors (multiple) - up to 4
+  List<Uint8List?> _bottomSponsors = [null, null, null, null];
+  List<Uint8List?> get bottomSponsors => _bottomSponsors;
+  set bottomSponsors(List<Uint8List?> sponsors) {
+    _bottomSponsors = sponsors;
+    _invalidateCache();
+    notifyListeners();
+  }
+
+  // Legacy single sponsor (for backward compatibility)
   Uint8List? _sponsorImage;
   Uint8List? get sponsorImage => _sponsorImage;
   set sponsorImage(Uint8List? image) {
     _sponsorImage = image;
+    _invalidateCache();
+    notifyListeners();
+  }
+
+  // Sponsor layout options
+  SponsorLayout _sponsorLayout = SponsorLayout.horizontal;
+  SponsorLayout get sponsorLayout => _sponsorLayout;
+  set sponsorLayout(SponsorLayout layout) {
+    _sponsorLayout = layout;
+    _invalidateCache();
+    notifyListeners();
+  }
+
+  double _sponsorHeight = 30.0;
+  double get sponsorHeight => _sponsorHeight;
+  set sponsorHeight(double height) {
+    _sponsorHeight = height;
+    _invalidateCache();
+    notifyListeners();
+  }
+
+  double _sponsorSpacing = 16.0;
+  double get sponsorSpacing => _sponsorSpacing;
+  set sponsorSpacing(double spacing) {
+    _sponsorSpacing = spacing;
     _invalidateCache();
     notifyListeners();
   }
@@ -275,4 +345,46 @@ enum PosterAccentStyle {
 
   final String label;
   const PosterAccentStyle(this.label);
+}
+
+enum SponsorLayout {
+  horizontal('Horizontal Row'),
+  vertical('Vertical Stack'),
+  grid('Grid');
+
+  final String label;
+  const SponsorLayout(this.label);
+}
+
+enum PosterBorderStyle {
+  none('None'),
+  thin('Thin'),
+  thick('Thick'),
+  doubleLine('Double Line');
+
+  final String label;
+  const PosterBorderStyle(this.label);
+}
+
+enum PosterShadowStyle {
+  none('None'),
+  subtle('Subtle'),
+  medium('Medium'),
+  strong('Strong'),
+  glow('Glow');
+
+  final String label;
+  const PosterShadowStyle(this.label);
+}
+
+enum ColorSchemeType {
+  theme('Theme Default'),
+  dark('Dark'),
+  light('Light'),
+  team1('Team 1 Colors'),
+  team2('Team 2 Colors'),
+  custom('Custom');
+
+  final String label;
+  const ColorSchemeType(this.label);
 }

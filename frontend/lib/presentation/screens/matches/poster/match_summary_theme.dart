@@ -316,6 +316,150 @@ class MatchSummaryThemes {
     ),
   );
 
+  static const royalPurple = MatchSummaryTheme(
+    id: 'royal_purple',
+    name: 'Royal Purple',
+    description: 'Premium velvet feel',
+    icon: Icons.diamond,
+    backgroundColor: Color(0xFF1A0033),
+    cardColor: Color(0xFF2D004D),
+    accentColor: Color(0xFFBB86FC),
+    textPrimaryColor: Colors.white,
+    textSecondaryColor: Color(0xFFE1BEE7),
+    scoreHighlightColor: Color(0xFFBB86FC),
+    dividerColor: Color(0xFF4A148C),
+    sectionHeaderColor: Color(0xFFBB86FC),
+    backgroundGradient: LinearGradient(
+      colors: [Color(0xFF1A0033), Color(0xFF2D004D), Color(0xFF1A0033)],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    ),
+    cardGradient: LinearGradient(
+      colors: [Color(0xFF2D004D), Color(0xFF1A0033)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    headerGradient: LinearGradient(
+      colors: [Color(0xFFBB86FC), Color(0xFF7B1FA2)],
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+    ),
+    isDark: true,
+  );
+
+  static const sunsetOrange = MatchSummaryTheme(
+    id: 'sunset_orange',
+    name: 'Sunset Orange',
+    description: 'Warm evening glow',
+    icon: Icons.wb_sunny,
+    backgroundColor: Color(0xFF2E1400),
+    cardColor: Color(0xFF4A2400),
+    accentColor: Color(0xFFFF9800),
+    textPrimaryColor: Colors.white,
+    textSecondaryColor: Color(0xFFFFCC80),
+    scoreHighlightColor: Color(0xFFFF9800),
+    dividerColor: Color(0xFFBF360C),
+    sectionHeaderColor: Color(0xFFFF9800),
+    backgroundGradient: LinearGradient(
+      colors: [Color(0xFF2E1400), Color(0xFF4A2400), Color(0xFF2E1400)],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    ),
+    cardGradient: LinearGradient(
+      colors: [Color(0xFF4A2400), Color(0xFF3E2000)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    headerGradient: LinearGradient(
+      colors: [Color(0xFFFF9800), Color(0xFFE65100)],
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+    ),
+    isDark: true,
+  );
+
+  static const oceanBlue = MatchSummaryTheme(
+    id: 'ocean_blue',
+    name: 'Ocean Blue',
+    description: 'Deep sea vibes',
+    icon: Icons.water_drop,
+    backgroundColor: Color(0xFF001F3F),
+    cardColor: Color(0xFF003366),
+    accentColor: Color(0xFF00BFFF),
+    textPrimaryColor: Colors.white,
+    textSecondaryColor: Color(0xFF87CEEB),
+    scoreHighlightColor: Color(0xFF00BFFF),
+    dividerColor: Color(0xFF001A33),
+    sectionHeaderColor: Color(0xFF00BFFF),
+    backgroundGradient: LinearGradient(
+      colors: [Color(0xFF001F3F), Color(0xFF003366), Color(0xFF001F3F)],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    ),
+    cardGradient: LinearGradient(
+      colors: [Color(0xFF003366), Color(0xFF00264D)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    headerGradient: LinearGradient(
+      colors: [Color(0xFF00BFFF), Color(0xFF0077BE)],
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+    ),
+    isDark: true,
+  );
+
+  static const monochrome = MatchSummaryTheme(
+    id: 'monochrome',
+    name: 'Monochrome',
+    description: 'Classic B&W print style',
+    icon: Icons.format_color_reset,
+    backgroundColor: Colors.white,
+    cardColor: Color(0xFFF5F5F5),
+    accentColor: Colors.black,
+    textPrimaryColor: Colors.black,
+    textSecondaryColor: Color(0xFF666666),
+    scoreHighlightColor: Colors.black,
+    dividerColor: Color(0xFFCCCCCC),
+    sectionHeaderColor: Colors.black,
+    backgroundGradient: LinearGradient(
+      colors: [Colors.white, Color(0xFFF0F0F0)],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    ),
+  );
+
+  static const fieryRed = MatchSummaryTheme(
+    id: 'fiery_red',
+    name: 'Fiery Red',
+    description: 'High intensity match',
+    icon: Icons.local_fire_department,
+    backgroundColor: Color(0xFF3E0000),
+    cardColor: Color(0xFF5D0000),
+    accentColor: Color(0xFFFF3D00),
+    textPrimaryColor: Colors.white,
+    textSecondaryColor: Color(0xFFFF8A65),
+    scoreHighlightColor: Color(0xFFFF3D00),
+    dividerColor: Color(0xFFB71C1C),
+    sectionHeaderColor: Color(0xFFFF3D00),
+    backgroundGradient: LinearGradient(
+      colors: [Color(0xFF3E0000), Color(0xFF5D0000), Color(0xFF3E0000)],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    ),
+    cardGradient: LinearGradient(
+      colors: [Color(0xFF5D0000), Color(0xFF4A0000)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    headerGradient: LinearGradient(
+      colors: [Color(0xFFFF3D00), Color(0xFFDD2C00)],
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+    ),
+    isDark: true,
+  );
+
   /// All static themes (Team Colors is generated dynamically)
   static List<MatchSummaryTheme> get allStatic => [
         classic,
@@ -325,6 +469,11 @@ class MatchSummaryThemes {
         neonNight,
         goldChampions,
         cleanWhite,
+        royalPurple,
+        sunsetOrange,
+        oceanBlue,
+        monochrome,
+        fieryRed,
       ];
 
   /// Get all themes including dynamic team colors theme

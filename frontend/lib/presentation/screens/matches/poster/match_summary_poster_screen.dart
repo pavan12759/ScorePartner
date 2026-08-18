@@ -834,7 +834,152 @@ class _CustomizeSheetState extends State<_CustomizeSheet> {
             );
           }).toList(),
         ),
-        SizedBox(height: 20.h),
+        SizedBox(height: 16.h),
+
+        // === BORDER STYLE ===
+        _sectionTitle('Border Style'),
+        SizedBox(height: 8.h),
+        Wrap(
+          spacing: 8.w,
+          children: PosterBorderStyle.values.map((style) {
+            final isSelected = c.borderStyle == style;
+            return ChoiceChip(
+              label: Text(style.label),
+              selected: isSelected,
+              selectedColor: AppTheme.primaryOrange,
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : Colors.white70,
+                fontSize: 11.sp,
+              ),
+              backgroundColor: const Color(0xFF2A2A2A),
+              side: BorderSide(
+                color: isSelected ? AppTheme.primaryOrange : Colors.white24,
+              ),
+              showCheckmark: true,
+              checkmarkColor: Colors.white,
+              onSelected: (sel) {
+                if (sel) c.borderStyle = style;
+              },
+            );
+          }).toList(),
+        ),
+        SizedBox(height: 16.h),
+
+        // === SHADOW STYLE ===
+        _sectionTitle('Shadow Style'),
+        SizedBox(height: 8.h),
+        Wrap(
+          spacing: 8.w,
+          children: PosterShadowStyle.values.map((style) {
+            final isSelected = c.shadowStyle == style;
+            return ChoiceChip(
+              label: Text(style.label),
+              selected: isSelected,
+              selectedColor: AppTheme.primaryOrange,
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : Colors.white70,
+                fontSize: 11.sp,
+              ),
+              backgroundColor: const Color(0xFF2A2A2A),
+              side: BorderSide(
+                color: isSelected ? AppTheme.primaryOrange : Colors.white24,
+              ),
+              showCheckmark: true,
+              checkmarkColor: Colors.white,
+              onSelected: (sel) {
+                if (sel) c.shadowStyle = style;
+              },
+            );
+          }).toList(),
+        ),
+        SizedBox(height: 16.h),
+
+        // === COLOR SCHEME ===
+        _sectionTitle('Color Scheme'),
+        SizedBox(height: 8.h),
+        Wrap(
+          spacing: 8.w,
+          children: ColorSchemeType.values.map((scheme) {
+            final isSelected = c.colorScheme == scheme;
+            return ChoiceChip(
+              label: Text(scheme.label),
+              selected: isSelected,
+              selectedColor: AppTheme.primaryOrange,
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : Colors.white70,
+                fontSize: 11.sp,
+              ),
+              backgroundColor: const Color(0xFF2A2A2A),
+              side: BorderSide(
+                color: isSelected ? AppTheme.primaryOrange : Colors.white24,
+              ),
+              showCheckmark: true,
+              checkmarkColor: Colors.white,
+              onSelected: (sel) {
+                if (sel) c.colorScheme = scheme;
+              },
+            );
+          }).toList(),
+        ),
+        SizedBox(height: 16.h),
+
+        // === SPONSOR LAYOUT ===
+        _sectionTitle('Sponsor Layout'),
+        SizedBox(height: 8.h),
+        Wrap(
+          spacing: 8.w,
+          children: SponsorLayout.values.map((layout) {
+            final isSelected = c.sponsorLayout == layout;
+            return ChoiceChip(
+              label: Text(layout.label),
+              selected: isSelected,
+              selectedColor: AppTheme.primaryOrange,
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : Colors.white70,
+                fontSize: 11.sp,
+              ),
+              backgroundColor: const Color(0xFF2A2A2A),
+              side: BorderSide(
+                color: isSelected ? AppTheme.primaryOrange : Colors.white24,
+              ),
+              showCheckmark: true,
+              checkmarkColor: Colors.white,
+              onSelected: (sel) {
+                if (sel) c.sponsorLayout = layout;
+              },
+            );
+          }).toList(),
+        ),
+        SizedBox(height: 16.h),
+
+        // === TOP SPONSORS ===
+        _sectionTitle('Top Sponsors (up to 4)'),
+        SizedBox(height: 8.h),
+        ...List.generate(4, (index) => _buildSponsorSlot(
+            'Top Sponsor ${index + 1}',
+            c.topSponsors.length > index ? c.topSponsors[index] : null,
+            (image) => _updateTopSponsor(index, image),
+            (v) => c.showSponsorLogo = v,
+        )),
+        SizedBox(height: 16.h),
+
+        // === BOTTOM SPONSORS ===
+        _sectionTitle('Bottom Sponsors (up to 4)'),
+        SizedBox(height: 8.h),
+        ...List.generate(4, (index) => _buildSponsorSlot(
+            'Bottom Sponsor ${index + 1}',
+            c.bottomSponsors.length > index ? c.bottomSponsors[index] : null,
+            (image) => _updateBottomSponsor(index, image),
+            (v) => c.showSponsorLogo = v,
+        )),
+        SizedBox(height: 16.h),
+
+        // === SPONSOR SETTINGS ===
+        _sectionTitle('Sponsor Settings'),
+        SizedBox(height: 8.h),
+        _sliderTile('Sponsor Height', c.sponsorHeight, 20, 80, (v) => c.sponsorHeight = v),
+        _sliderTile('Sponsor Spacing', c.sponsorSpacing, 4, 40, (v) => c.sponsorSpacing = v),
+        SizedBox(height: 16.h),
 
         // === VISIBILITY TOGGLES ===
         _sectionTitle('Show / Hide Sections'),
@@ -884,6 +1029,107 @@ class _CustomizeSheetState extends State<_CustomizeSheet> {
       contentPadding: EdgeInsets.zero,
       dense: true,
     );
+  }
+
+  Widget _buildSponsorSlot(String label, Uint8List? currentImage, Function(Uint8List?) onImageSelected, ValueChanged<bool> onToggle) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2A2A2A),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(color: Colors.white70, fontSize: 12.sp, fontWeight: FontWeight.w600),
+                ),
+                if (currentImage != null) ...[
+                  SizedBox(height: 4.h),
+                  Text(
+                    'Image selected ✓',
+                    style: TextStyle(color: Colors.green[400], fontSize: 11.sp),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (currentImage != null)
+            IconButton(
+              icon: Icon(Icons.delete_outline, color: Colors.red[400], size: 20.sp),
+              onPressed: () => onImageSelected(null),
+            ),
+          IconButton(
+            icon: Icon(Icons.add_photo_alternate, color: AppTheme.primaryOrange, size: 20.sp),
+            onPressed: () => _pickSponsorImageForSlot(onImageSelected),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sliderTile(String label, double value, double min, double max, ValueChanged<double> onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: TextStyle(color: Colors.white, fontSize: 13.sp)),
+            Text(value.round().toString(), style: TextStyle(color: Colors.white70, fontSize: 12.sp)),
+          ],
+        ),
+        Slider(
+          value: value,
+          min: min,
+          max: max,
+          divisions: ((max - min) / 2).round(),
+          activeColor: AppTheme.primaryOrange,
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickSponsorImageForSlot(Function(Uint8List?) onSelected) async {
+    try {
+      final picked = await widget.imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 200,
+        imageQuality: 90,
+      );
+      if (picked != null) {
+        final bytes = await picked.readAsBytes();
+        onSelected(bytes);
+      }
+    } catch (e) {
+      debugPrint('Error picking sponsor image: $e');
+    }
+  }
+
+  Future<void> _updateTopSponsor(int index, Uint8List? image) async {
+    final sponsors = List<Uint8List?>.from(widget.customization.topSponsors);
+    while (sponsors.length <= index) {
+      sponsors.add(null);
+    }
+    sponsors[index] = image;
+    widget.customization.topSponsors = sponsors;
+  }
+
+  Future<void> _updateBottomSponsor(int index, Uint8List? image) async {
+    final sponsors = List<Uint8List?>.from(widget.customization.bottomSponsors);
+    while (sponsors.length <= index) {
+      sponsors.add(null);
+    }
+    sponsors[index] = image;
+    widget.customization.bottomSponsors = sponsors;
   }
 
   Future<void> _pickBackgroundImage() async {

@@ -223,6 +223,28 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Match Summary Poster Button at top
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MatchSummaryPosterScreen(matchId: match.id),
+                ),
+              );
+            },
+            icon: Icon(Icons.auto_awesome, color: Colors.white),
+            label: Text('Match Summary Poster', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(vertical: 16.h),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+              elevation: 2,
+            ),
+          ),
+          SizedBox(height: 20.h),
+
           _buildResultBanner(),
           SizedBox(height: 20.h),
           
@@ -245,28 +267,6 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
           SizedBox(height: 24.h),
           
           _buildLiveCommentaryFeed(),
-          SizedBox(height: 24.h),
-          
-          // Share Match Summary Poster Button
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => MatchSummaryPosterScreen(matchId: match.id),
-                ),
-              );
-            },
-            icon: Icon(Icons.auto_awesome, color: Colors.white),
-            label: Text('Match Summary Poster', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryOrange,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(vertical: 16.h),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-              elevation: 2,
-            ),
-          ),
           SizedBox(height: 40.h),
         ],
       ),

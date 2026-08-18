@@ -1,4 +1,5 @@
 import 'dart:ui' as ui;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -44,6 +45,89 @@ class MatchSummaryPosterCard extends StatelessWidget {
       color: color ?? theme.textPrimaryColor,
       letterSpacing: letterSpacing,
       height: height,
+    );
+  }
+
+  // ===== STYLE HELPERS =====
+  Border? _getCardBorder() {
+    switch (customization.borderStyle) {
+      case PosterBorderStyle.none:
+        return null;
+      case PosterBorderStyle.thin:
+        return Border.all(color: theme.dividerColor, width: 1);
+      case PosterBorderStyle.thick:
+        return Border.all(color: theme.dividerColor, width: 2);
+      case PosterBorderStyle.doubleLine:
+        return Border(
+          top: BorderSide(color: theme.dividerColor, width: 1),
+          bottom: BorderSide(color: theme.dividerColor, width: 1),
+          left: BorderSide(color: theme.dividerColor, width: 1),
+          right: BorderSide(color: theme.dividerColor, width: 1),
+        );
+    }
+  }
+
+  List<BoxShadow> _getCardShadow() {
+    switch (customization.shadowStyle) {
+      case PosterShadowStyle.none:
+        return [];
+      case PosterShadowStyle.subtle:
+        return [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ];
+      case PosterShadowStyle.medium:
+        return [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ];
+      case PosterShadowStyle.strong:
+        return [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ];
+      case PosterShadowStyle.glow:
+        return [
+          BoxShadow(
+            color: theme.accentColor.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 0),
+            spreadRadius: 2,
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ];
+    }
+  }
+
+  BoxDecoration _getCardDecoration() {
+    return BoxDecoration(
+      color: theme.cardColor.withOpacity(theme.isGlassmorphic ? 0.85 : 1),
+      borderRadius: BorderRadius.circular(customization.cardBorderRadius),
+      border: _getCardBorder(),
+      boxShadow: _getCardShadow(),
     );
   }
 
@@ -101,6 +185,11 @@ class MatchSummaryPosterCard extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          // Top Sponsors
+                          if (customization.showSponsorLogo && customization.topSponsors.any((s) => s != null)) ...[
+                            _buildSponsorRow(customization.topSponsors.where((s) => s != null).toList(), isTop: true),
+                            const SizedBox(height: 16),
+                          ],
                           _buildHeader(),
                           const SizedBox(height: 20),
                           _buildTeamScores(),
@@ -129,6 +218,11 @@ class MatchSummaryPosterCard extends StatelessWidget {
                           ],
                           const SizedBox(height: 20),
                           _buildFooter(),
+                          // Bottom Sponsors
+                          if (customization.showSponsorLogo && customization.bottomSponsors.any((s) => s != null)) ...[
+                            const SizedBox(height: 16),
+                            _buildSponsorRow(customization.bottomSponsors.where((s) => s != null).toList(), isTop: false),
+                          ],
                         ],
                       ),
                     ),
@@ -215,9 +309,7 @@ class MatchSummaryPosterCard extends StatelessWidget {
   Widget _buildTeamScores() {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: theme.cardDecoration.copyWith(
-        borderRadius: BorderRadius.circular(customization.cardBorderRadius),
-      ),
+      decoration: _getCardDecoration(),
       child: Row(
         children: [
           // Team 1
@@ -328,9 +420,7 @@ class MatchSummaryPosterCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: theme.cardDecoration.copyWith(
-        borderRadius: BorderRadius.circular(customization.cardBorderRadius),
-      ),
+      decoration: _getCardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -426,9 +516,7 @@ class MatchSummaryPosterCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: theme.cardDecoration.copyWith(
-        borderRadius: BorderRadius.circular(customization.cardBorderRadius),
-      ),
+      decoration: _getCardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -542,8 +630,7 @@ class MatchSummaryPosterCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: theme.cardDecoration.copyWith(
-        borderRadius: BorderRadius.circular(customization.cardBorderRadius),
+      decoration: _getCardDecoration().copyWith(
         border: Border.all(
           color: theme.accentColor.withOpacity(0.3),
           width: 1.5,
@@ -747,6 +834,12 @@ class MatchSummaryPosterCard extends StatelessWidget {
   Widget _buildFooter() {
     return Column(
       children: [
+        // Top Sponsors
+        if (customization.showSponsorLogo && 
+            customization.topSponsors.any((s) => s != null)) ...[
+          _buildSponsorRow(customization.topSponsors.where((s) => s != null).toList(), isTop: true),
+          const SizedBox(height: 12),
+        ],
         // QR Code
         if (customization.showQrCode) ...[
           Container(
@@ -781,13 +874,21 @@ class MatchSummaryPosterCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
         ],
-        // Sponsor logo
-        if (customization.showSponsorLogo && customization.sponsorImage != null) ...[
+        // Bottom Sponsors
+        if (customization.showSponsorLogo && 
+            customization.bottomSponsors.any((s) => s != null)) ...[
+          _buildSponsorRow(customization.bottomSponsors.where((s) => s != null).toList(), isTop: false),
+          const SizedBox(height: 12),
+        ],
+        // Legacy single sponsor (backward compatibility)
+        if (customization.showSponsorLogo && customization.sponsorImage != null &&
+            customization.topSponsors.every((s) => s == null) &&
+            customization.bottomSponsors.every((s) => s == null)) ...[
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Image.memory(
               customization.sponsorImage!,
-              height: 30,
+              height: customization.sponsorHeight,
               fit: BoxFit.contain,
             ),
           ),
@@ -841,6 +942,91 @@ class MatchSummaryPosterCard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  // ===== SPONSOR ROW =====
+  Widget _buildSponsorRow(List<Uint8List?> sponsors, {required bool isTop}) {
+    if (sponsors.isEmpty) return const SizedBox.shrink();
+
+    final maxSponsors = 4;
+    final displaySponsors = sponsors.take(maxSponsors).toList();
+    final layout = customization.sponsorLayout;
+    final height = customization.sponsorHeight;
+    final spacing = customization.sponsorSpacing;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.cardColor.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(customization.cardBorderRadius),
+        border: Border.all(
+          color: theme.dividerColor.withOpacity(0.3),
+          width: 0.5,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (layout == SponsorLayout.horizontal)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: displaySponsors.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final sponsor = entry.value;
+                  return Padding(
+                    padding: EdgeInsets.only(right: index < displaySponsors.length - 1 ? spacing : 0),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: Image.memory(
+                        sponsor!,
+                        height: height,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            )
+          else if (layout == SponsorLayout.vertical)
+            Column(
+              children: displaySponsors.asMap().entries.map((entry) {
+                final index = entry.key;
+                final sponsor = entry.value;
+                return Padding(
+                  padding: EdgeInsets.only(bottom: index < displaySponsors.length - 1 ? spacing / 2 : 0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: Image.memory(
+                      sponsor!,
+                      height: height,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                );
+              }).toList(),
+            )
+          else // grid
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: spacing,
+              runSpacing: spacing / 2,
+              children: displaySponsors.map((sponsor) {
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: Image.memory(
+                    sponsor!,
+                    height: height,
+                    fit: BoxFit.contain,
+                  ),
+                );
+              }).toList(),
+            ),
+        ],
+      ),
     );
   }
 }
