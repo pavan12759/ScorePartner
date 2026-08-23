@@ -416,7 +416,7 @@ class HighlightBadgeCard extends StatelessWidget {
   ImageProvider? _resolveImageProvider() {
     if (playerPhoto == null) return null;
     if (playerPhoto is File) {
-      return FileImage(playerPhoto as File);
+      return kIsWeb ? null : FileImage(playerPhoto as File);
     } else if (playerPhoto is Uint8List) {
       return MemoryImage(playerPhoto as Uint8List);
     } else if (playerPhoto is String) {
@@ -432,7 +432,7 @@ class HighlightBadgeCard extends StatelessWidget {
         } catch (_) {
           return null;
         }
-      } else {
+      } else if (!kIsWeb) {
         return FileImage(File(photoStr));
       }
     }

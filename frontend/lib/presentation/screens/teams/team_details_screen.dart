@@ -55,9 +55,19 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
     }
   }
 
-  /// Check if current user can manage the team (admin or captain)
+  /// Check if current user is the vice captain
+  bool _isViceCaptain(TeamModel team) {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      return authProvider.user?.uid == team.viceCaptainId;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Check if current user can manage the team (admin, captain, or vice captain)
   bool _canManage(TeamModel team) {
-    return _isAdmin(team) || _isCaptain(team);
+    return _isAdmin(team) || _isCaptain(team) || _isViceCaptain(team);
   }
 
   void _showLogoOptions(TeamModel team) {

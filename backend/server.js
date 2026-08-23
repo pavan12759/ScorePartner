@@ -23,8 +23,27 @@ const io = new Server(server, {
 
 // Middleware
 const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 app.use(helmet());
-app.use(cors());
+
+// CORS - restrict to frontend domains
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(',').map(s => s.trim())
+  : ['http://localhost:3000', 'http://localhost:5000', 'http://127.0.0.1:5000'];
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
+
+// Rate limiting
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 200 })); // Global: 200 req/15min per IP
+
+// Stricter limits on sensitive endpoints
+const strictLimiter = rateLimit({ windowMs: 60 * 1000, max: 30 });
+app.use('/api/auth', strictLimiter);
+app.use('/api/matches/:id/ball', strictLimiter);
+app.use('/api/agora/token', rateLimit({ windowMs: 60 * 1000, max: 10 }));
+
 // Limit request size to 1MB to prevent payload attacks
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));

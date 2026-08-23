@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
@@ -49,8 +50,6 @@ class _TournamentDetailsScreenState extends State<TournamentDetailsScreen>
   bool _isLoadingTeams = true;
   late TournamentModel _tournament;
   
-  // Track expanded state for stat sections
-  final Map<String, bool> _expandedStatsSections = {};
   String _activeGalleryFilter = 'all';
 
   @override
@@ -2436,71 +2435,343 @@ https://scorepartner.in/tournament/${t.id}
       );
     }
 
+    return Column(
+      children: [
+        // Category Tabs
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildStatCategoryTab('BATTING', 0),
+              ),
+              Expanded(
+                child: _buildStatCategoryTab('BOWLING', 1),
+              ),
+            ],
+          ),
+        ),
+        // Content
+        Expanded(
+          child: _selectedStatCategory == 0 ? _buildBattingStats() : _buildBowlingStats(),
+        ),
+      ],
+    );
+  }
+
+  int _selectedStatCategory = 0;
+
+  Widget _buildStatCategoryTab(String label, int index) {
+    final isSelected = _selectedStatCategory == index;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedStatCategory = index;
+        });
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 12.h),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: isSelected ? AppTheme.primaryOrange : Colors.transparent,
+              width: 3,
+            ),
+          ),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? AppTheme.primaryOrange : Colors.grey[600],
+            letterSpacing: 1.0,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBattingStats() {
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 100.h),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── BATTING CATEGORY ──
-          _buildCategoryHeader('🏏', 'BATTING', Color(0xFF1A73E8)),
-          SizedBox(height: 12.h),
-          _buildPremiumStatsCard(
+          _buildClassicStatsTable(
             'Top Run Scorers',
-            Icons.sports_cricket_rounded,
-            Color(0xFF1A73E8),
+            Icons.sports_cricket,
             _tournament.topRunScorers ?? [],
-            (e) => '${e.value}',
-            'runs',
+            (e) => '${e.value} runs',
           ),
           SizedBox(height: 12.h),
-          _buildPremiumStatsCard(
+          _buildClassicStatsTable(
             'Most Sixes',
-            Icons.rocket_launch_rounded,
-            Color(0xFF7B1FA2),
+            Icons.rocket_launch,
             _tournament.topSixHitters ?? [],
-            (e) => '${e.value}',
-            'sixes',
+            (e) => '${e.value} sixes',
           ),
           SizedBox(height: 12.h),
-          _buildPremiumStatsCard(
+          _buildClassicStatsTable(
             'Most Fours',
-            Icons.bolt_rounded,
-            Color(0xFFE65100),
+            Icons.bolt,
             _tournament.topFourHitters ?? [],
-            (e) => '${e.value}',
-            'fours',
+            (e) => '${e.value} fours',
           ),
+        ],
+      ),
+    );
+  }
 
-          SizedBox(height: 24.h),
-
-          // ── BOWLING CATEGORY ──
-          _buildCategoryHeader('🎯', 'BOWLING', Color(0xFF2E7D32)),
-          SizedBox(height: 12.h),
-          _buildPremiumStatsCard(
+  Widget _buildBowlingStats() {
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 100.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildClassicStatsTable(
             'Top Wicket Takers',
-            Icons.sports_baseball_rounded,
-            Color(0xFF2E7D32),
+            Icons.sports_baseball,
             _tournament.topWicketTakers ?? [],
-            (e) => '${e.value}',
-            'wickets',
+            (e) => '${e.value} wickets',
           ),
           SizedBox(height: 12.h),
-          _buildPremiumStatsCard(
+          _buildClassicStatsTable(
             'Best Economy',
-            Icons.trending_down_rounded,
-            Color(0xFF00838F),
+            Icons.trending_down,
             _tournament.bestEconomy ?? [],
             (e) => e.average > 0 ? e.average.toStringAsFixed(2) : '-',
-            'econ',
           ),
           SizedBox(height: 12.h),
-          _buildPremiumStatsCard(
+          _buildClassicStatsTable(
             'Best Bowling Figures',
-            Icons.military_tech_rounded,
-            Color(0xFF4E342E),
+            Icons.military_tech,
             _tournament.bestBowlingFigures ?? [],
             (e) => e.description ?? '${e.value} wkts',
-            '',
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClassicStatsTable(
+    String title,
+    IconData icon,
+    List<TournamentLeaderboardEntry> data,
+    String Function(TournamentLeaderboardEntry) valueFormatter,
+  ) {
+    if (data.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.grey[400], size: 20.sp),
+            SizedBox(width: 12.w),
+            Text(title, style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w500, fontSize: 13.sp)),
+            const Spacer(),
+            Text('No data', style: TextStyle(color: Colors.grey[400], fontSize: 12.sp)),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        children: [
+          // Header row
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.vertical(top: Radius.circular(8.r)),
+              border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: Colors.grey[700], size: 18.sp),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.sp,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${data.length} players',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 11.sp, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ),
+
+          // Top performer highlight (first row)
+          if (data.isNotEmpty)
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+              decoration: BoxDecoration(
+                color: Colors.amber[50],
+                border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+              ),
+              child: Row(
+                children: [
+                  // Rank
+                  Container(
+                    width: 28.w,
+                    height: 28.h,
+                    decoration: BoxDecoration(
+                      color: Colors.amber,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '1',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  // Player info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          data.first.playerName,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13.sp,
+                            color: Colors.black87,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          data.first.teamName,
+                          style: TextStyle(color: Colors.grey[600], fontSize: 11.sp),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Value
+                  Text(
+                    valueFormatter(data.first),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13.sp,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // Remaining players
+          ...data.skip(1).toList().asMap().entries.map((entry) {
+            final index = entry.key;
+            final player = entry.value;
+            final rank = index + 2;
+
+            final isLast = index == data.length - 2;
+
+            return Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+              decoration: BoxDecoration(
+                color: index.isEven ? Colors.grey[50] : Colors.white,
+                border: Border(
+                  bottom: isLast
+                      ? BorderSide.none
+                      : BorderSide(color: Colors.grey[200]!, width: 0.5),
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Rank
+                  Container(
+                    width: 28.w,
+                    height: 28.h,
+                    decoration: BoxDecoration(
+                      color: rank == 2
+                          ? Colors.grey[300]
+                          : rank == 3
+                              ? Colors.amber[200]
+                              : Colors.transparent,
+                      shape: rank <= 3 ? BoxShape.circle : BoxShape.rectangle,
+                      border: rank > 3 ? Border.all(color: Colors.grey[300]!) : null,
+                      borderRadius: rank > 3 ? BorderRadius.circular(14.r) : null,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$rank',
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.bold,
+                          color: rank == 2
+                              ? Colors.white
+                              : rank == 3
+                                  ? Colors.black87
+                                  : Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  // Player info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          player.playerName,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12.sp,
+                            color: Colors.black87,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          player.teamName,
+                          style: TextStyle(color: Colors.grey[500], fontSize: 10.sp),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Value
+                  Text(
+                    valueFormatter(player),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12.sp,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -2536,299 +2807,7 @@ https://scorepartner.in/tournament/${t.id}
     );
   }
 
-  Widget _buildPremiumStatsCard(
-    String title,
-    IconData icon,
-    Color accentColor,
-    List<TournamentLeaderboardEntry> data,
-    String Function(TournamentLeaderboardEntry) valueFormatter,
-    String unit,
-  ) {
-    if (data.isEmpty) {
-      return Container(
-        padding: EdgeInsets.all(16.w),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(color: Colors.grey[200]!),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.grey[400], size: 20.sp),
-            SizedBox(width: 12.w),
-            Text(title, style: TextStyle(color: Colors.grey[500], fontWeight: FontWeight.w600, fontSize: 13.sp)),
-            const Spacer(),
-            Text('No data', style: TextStyle(color: Colors.grey[400], fontSize: 12.sp)),
-          ],
-        ),
-      );
-    }
-
-    final isExpanded = _expandedStatsSections[title] ?? false;
-    final displayCount = isExpanded ? data.length : (data.length > 3 ? 3 : data.length);
-    final displayData = data.take(displayCount).toList();
-    final hasMore = data.length > 3;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: accentColor.withOpacity(0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Header
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [accentColor, accentColor.withOpacity(0.85)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(6.w),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Icon(icon, color: Colors.white, size: 18.sp),
-                ),
-                SizedBox(width: 10.w),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14.sp,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  child: Text(
-                    '${data.length} players',
-                    style: TextStyle(color: Colors.white70, fontSize: 10.sp, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Leader Highlight (Top #1)
-          if (data.isNotEmpty)
-            Container(
-              padding: EdgeInsets.all(14.w),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [accentColor.withOpacity(0.06), Colors.white],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-              child: Row(
-                children: [
-                  // Gold Medal
-                  Container(
-                    width: 40.w,
-                    height: 40.w,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFFD700), Color(0xFFFFA000)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [BoxShadow(color: Colors.amber.withOpacity(0.3), blurRadius: 8)],
-                    ),
-                    child: Center(
-                      child: Text(
-                        data.first.playerName.isNotEmpty ? data.first.playerName[0].toUpperCase() : '?',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16.sp),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 12.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text('👑 ', style: TextStyle(fontSize: 12.sp)),
-                            Flexible(
-                              child: Text(
-                                data.first.playerName,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 15.sp,
-                                  color: Colors.black87,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 2.h),
-                        Text(
-                          data.first.teamName,
-                          style: TextStyle(color: Colors.grey[600], fontSize: 11.sp),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
-                    decoration: BoxDecoration(
-                      color: accentColor,
-                      borderRadius: BorderRadius.circular(20.r),
-                    ),
-                    child: Text(
-                      '${valueFormatter(data.first)}${unit.isNotEmpty ? ' $unit' : ''}',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13.sp,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          // Remaining players
-          if (displayData.length > 1) ...[
-            Divider(height: 1, color: Colors.grey[200]),
-            ...displayData.sublist(1).asMap().entries.map((entry) {
-              final idx = entry.key + 1; // 0-based after sublist(1), so actual rank is idx+1
-              final player = entry.value;
-              final rank = idx + 1;
-
-              Color medalColor;
-              if (rank == 2) {
-                medalColor = const Color(0xFFC0C0C0); // Silver
-              } else if (rank == 3) {
-                medalColor = const Color(0xFFCD7F32); // Bronze
-              } else {
-                medalColor = Colors.grey[300]!;
-              }
-
-              return Container(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey[100]!, width: 0.5)),
-                ),
-                child: Row(
-                  children: [
-                    // Rank Badge
-                    Container(
-                      width: 28.w,
-                      height: 28.w,
-                      decoration: BoxDecoration(
-                        color: rank <= 3 ? medalColor : Colors.grey[100],
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '$rank',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.bold,
-                            color: rank <= 3 ? Colors.white : Colors.grey[600],
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 12.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            player.playerName,
-                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.sp),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            player.teamName,
-                            style: TextStyle(color: Colors.grey[500], fontSize: 11.sp),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      '${valueFormatter(player)}${unit.isNotEmpty ? ' $unit' : ''}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13.sp,
-                        color: accentColor,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-          ],
-
-          // Show More / Less
-          if (hasMore)
-            InkWell(
-              onTap: () {
-                setState(() {
-                  _expandedStatsSections[title] = !isExpanded;
-                });
-              },
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(16.r)),
-              child: Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(vertical: 12.h),
-                decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.04),
-                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(16.r)),
-                  border: Border(top: BorderSide(color: Colors.grey[200]!)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      isExpanded ? 'Show Less' : 'Show All ${data.length} Players',
-                      style: TextStyle(
-                        color: accentColor,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12.sp,
-                      ),
-                    ),
-                    SizedBox(width: 4.w),
-                    Icon(
-                      isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                      color: accentColor,
-                      size: 18.sp,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  // ==================== MVP TAB ====================
+// ==================== MVP TAB ====================
   Widget _buildMVPTab() {
     // Calculate MVP using weighted formula: runs + (wickets × 25) + (sixes × 6) + (fours × 4)
     final Map<String, _MvpCandidate> mvpScores = {};
@@ -4041,11 +4020,17 @@ void _navigateToOrganizerProfile(String organizerId) async {
                                   final base64Str = item.imageUrl.split(',').last;
                                   final bytes = base64Decode(base64Str);
                                   
-                                  final tempDir = await getTemporaryDirectory();
-                                  final file = await File('${tempDir.path}/${item.id}.png').create();
-                                  await file.writeAsBytes(bytes);
-                                  
-                                  await Share.shareXFiles([XFile(file.path)], text: 'Check out this epic moment from the ${widget.tournament.name}! 🏏🏆');
+                                  final shareText = 'Check out this epic moment from the ${widget.tournament.name}! 🏏🏆';
+                                  if (kIsWeb) {
+                                    final xFile = XFile.fromData(bytes, name: '${item.id}.png', mimeType: 'image/png');
+                                    await Share.shareXFiles([xFile], text: shareText);
+                                  } else {
+                                    final tempDir = await getTemporaryDirectory();
+                                    final file = await File('${tempDir.path}/${item.id}.png').create();
+                                    await file.writeAsBytes(bytes);
+                                    
+                                    await Share.shareXFiles([XFile(file.path)], text: shareText);
+                                  }
                                 } catch (e) {
                                   debugPrint('Error sharing photo: $e');
                                 }

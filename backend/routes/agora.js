@@ -1,7 +1,7 @@
 const express = require('express');
 const { RtcTokenBuilder, RtcRole } = require('agora-token');
 const router = express.Router();
-const { auth, optionalAuth } = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 
 /**
  * POST /api/agora/token
@@ -10,7 +10,7 @@ const { auth, optionalAuth } = require('../middleware/auth');
  *
  * The App Certificate never leaves the server — Flutter only receives the token.
  */
-router.post('/token', optionalAuth, (req, res) => {
+router.post('/token', auth, (req, res) => {
   const appId = process.env.AGORA_APP_ID;
   const appCertificate = process.env.AGORA_APP_CERTIFICATE;
 

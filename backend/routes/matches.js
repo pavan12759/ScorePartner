@@ -1,8 +1,15 @@
 const express = require('express');
 const { db } = require('../config/firebase');
 const { auth, optionalAuth } = require('../middleware/auth');
+const { body, validationResult } = require('express-validator');
 
 const router = express.Router();
+
+const validate = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  next();
+};
 
 function listIncludes(list, value) {
     return Array.isArray(list) && list.includes(value);
@@ -192,52 +199,56 @@ router.put('/:id', auth, async (req, res) => {
 // @route   POST /api/matches/:id/ball
 // @desc    Add ball event (live scoring)
 // @access  Private
-router.post('/:id/ball', auth, async (req, res) => {
-    try {
-        const matchRef = db.collection('matches').doc(req.params.id);
-        const matchDoc = await matchRef.get();
+const ballValidation = [
+  body('runs').isInt({ min: 0, max: 7 }),
+  body('extras').optional().isIn(['wide', 'no-ball', 'bye', 'leg-bye']),
+  body('wicket.type').optional().isIn(['bowled', 'caught', 'lbw', 'run-out', 'stumped', 'hit-wicket']),
+  body('wicket.playerId').optional().isString(),
+  body('wicket.fielderId').optional().isString(),
+  body('overNumber').isInt({ min: 0 }),
+  body('ballNumber').isInt({ min: 1, max: 6 }),
+  body('battingTeam').isIn(['team1', 'team2']),
+  body('bowlerId').isString(),
+  body('batsmanId').isString(),
+  body('commentary').optional().isString(),
+];
 
-        if (!matchDoc.exists) {
-            return res.status(404).json({ error: 'Match not found' });
-        }
+router.post('/:id/ball', auth, ballValidation, validate, async (req, res) => {
+  try {
+    const matchRef = db.collection('matches').doc(req.params.id);
+    const ballEvent = { ...req.body, timestamp: new Date() };
 
-        const matchData = matchDoc.data();
-        if (!canScoreMatch(req.user.uid, matchData)) {
-            return res.status(403).json({ error: 'Not authorized' });
-        }
-        const ballEvent = {
-            ...req.body,
-            timestamp: new Date()
-        };
+    await db.runTransaction(async (t) => {
+      const matchDoc = await t.get(matchRef);
+      if (!matchDoc.exists) throw new Error('Match not found');
 
-        // Add ball event to array
-        const ballEvents = matchData.ballEvents || [];
-        ballEvents.push(ballEvent);
+      const matchData = matchDoc.data();
+      if (!canScoreMatch(req.user.uid, matchData)) throw new Error('Not authorized');
 
-        // Update scores
-        const updates = {
-            ballEvents,
-            currentOver: ballEvent.overNumber,
-            currentBall: ballEvent.ballNumber,
-            updatedAt: new Date()
-        };
+      const ballEvents = matchData.ballEvents || [];
+      ballEvents.push(ballEvent);
 
-        await matchRef.update(updates);
+      t.update(matchRef, {
+        ballEvents,
+        currentOver: ballEvent.overNumber,
+        currentBall: ballEvent.ballNumber,
+        updatedAt: new Date()
+      });
+    });
 
-        const updatedDoc = await matchRef.get();
-        const match = { id: updatedDoc.id, ...updatedDoc.data() };
+    const updatedDoc = await matchRef.get();
+    const match = { id: updatedDoc.id, ...updatedDoc.data() };
 
-        // Emit real-time update
-        const io = req.app.get('io');
-        io.to(`match-${req.params.id}`).emit('ball-event', { match, ballEvent });
+    const io = req.app.get('io');
+    io.to(`match-${req.params.id}`).emit('ball-event', { match, ballEvent });
 
-        console.log(`🏏 Ball event: ${matchData.team1Name} vs ${matchData.team2Name}`);
+    console.log(`🏏 Ball event: ${matchData.team1Name} vs ${matchData.team2Name}`);
 
-        res.json({ message: 'Ball event added', match, ballEvent });
-    } catch (error) {
-        console.error('Add ball event error:', error);
-        res.status(500).json({ error: 'Server error' });
-    }
+    res.json({ message: 'Ball event added', match, ballEvent });
+  } catch (error) {
+    console.error('Add ball event error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // @route   PUT /api/matches/:id/complete

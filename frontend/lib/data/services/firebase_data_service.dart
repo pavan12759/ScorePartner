@@ -2958,10 +2958,12 @@ class FirebaseDataService {
       if (type == 'image') lastMsgText = '📷 Image';
       if (type == 'audio') lastMsgText = '🎤 Voice Message';
 
-      // Update chat room metadata
+      // Update chat room metadata (including unread tracking)
       await _db.collection('chats').doc(chatId).update({
         'lastMessage': lastMsgText,
         'lastMessageTime': FieldValue.serverTimestamp(),
+        'lastMessageSenderId': senderId,
+        'isLastMessageRead': false,
       });
     } catch (e) {
       debugPrint('❌ Error sending message: $e');
@@ -3067,9 +3069,12 @@ class FirebaseDataService {
         batch.update(doc.reference, {'isRead': true});
       }
 
-      await batch.commit();
+       await batch.commit();
       
-      // Update unread count in chat room metadata if we were tracking it (skipped for now)
+      // Clear unread badge at the chat room level
+      await _db.collection('chats').doc(chatId).update({
+        'isLastMessageRead': true,
+      });
     } catch (e) {
       debugPrint('❌ Error marking messages as read: $e');
     }

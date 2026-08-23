@@ -434,7 +434,7 @@ class _CinematicPosterCardState extends State<CinematicPosterCard> with SingleTi
   ImageProvider? _resolveImageProvider() {
     if (widget.photo == null) return null;
     if (widget.photo is File) {
-      return FileImage(widget.photo as File);
+      return kIsWeb ? null : FileImage(widget.photo as File);
     } else if (widget.photo is Uint8List) {
       return MemoryImage(widget.photo as Uint8List);
     } else if (widget.photo is String) {
@@ -450,7 +450,7 @@ class _CinematicPosterCardState extends State<CinematicPosterCard> with SingleTi
         } catch (_) {
           return null;
         }
-      } else {
+      } else if (!kIsWeb) {
         return FileImage(File(photoStr));
       }
     }

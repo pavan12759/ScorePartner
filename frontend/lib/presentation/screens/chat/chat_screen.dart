@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
-import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
@@ -87,6 +86,21 @@ class _ChatScreenState extends State<ChatScreen> {
         case 'Midnight Dark':
           _bubbleGradient = [const Color(0xFF2C3E50), const Color(0xFF000000)];
           break;
+        case 'Forest Green':
+          _bubbleGradient = [const Color(0xFF27AE60), const Color(0xFF2ECC71)];
+          break;
+        case 'Ruby Red':
+          _bubbleGradient = [const Color(0xFFE74C3C), const Color(0xFFC0392B)];
+          break;
+        case 'Gold':
+          _bubbleGradient = [const Color(0xFFF39C12), const Color(0xFFD4AC0D)];
+          break;
+        case 'Lavender':
+          _bubbleGradient = [const Color(0xFF9B59B6), const Color(0xFFBB8FCE)];
+          break;
+        case 'Crimson':
+          _bubbleGradient = [const Color(0xFFC0392B), const Color(0xFF922B21)];
+          break;
         case 'Classic Orange':
         default:
           _bubbleGradient = [AppTheme.primaryOrange, AppTheme.deepOrange];
@@ -104,6 +118,8 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void dispose() {
     _typingTimer?.cancel();
+    _messageController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -283,9 +299,67 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  Widget _buildImageMessage(String? imageUrl, {bool isMe = false}) {
+    final bubbleColor = isMe ? Colors.white : Color(0xFFF2F2F2);
 
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return Container(
+        width: 200.w,
+        height: 150.h,
+        decoration: BoxDecoration(
+          color: Colors.grey[300],
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+        child: Icon(Icons.broken_image, color: Colors.grey, size: 40.sp),
+      );
+    }
 
+    final isDataUrl = imageUrl.trim().startsWith('data:');
+    final ImageProvider imageProvider = isDataUrl
+        ? MemoryImage(base64Decode(imageUrl.split(',').last.trim()))
+        : NetworkImage(imageUrl) as ImageProvider;
 
+    return Container(
+      width: 200.w,
+      constraints: BoxConstraints(maxHeight: 200.h),
+      decoration: BoxDecoration(
+        color: bubbleColor,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12.r),
+        child: Image(
+          image: imageProvider,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Container(
+              width: 200.w,
+              height: 150.h,
+              color: Colors.grey[200],
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: AppTheme.primaryOrange,
+                  strokeWidth: 2,
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                      : null,
+                ),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              width: 200.w,
+              height: 150.h,
+              color: Colors.grey[300],
+              child: Icon(Icons.broken_image, color: Colors.grey, size: 40.sp),
+            );
+          },
+        ),
+      ),
+    );
+  }
 
   void _showChatOptions() {
     showModalBottomSheet(
@@ -350,7 +424,10 @@ class _ChatScreenState extends State<ChatScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
       ),
       builder: (context) {
-        final themes = ['Classic Orange', 'Sunset Pink', 'Neon Purple', 'Ocean Breeze', 'Midnight Dark'];
+        final themes = [
+          'Classic Orange', 'Sunset Pink', 'Neon Purple', 'Ocean Breeze', 
+          'Midnight Dark', 'Forest Green', 'Ruby Red', 'Gold', 'Lavender', 'Crimson'
+        ];
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -363,18 +440,22 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
               const Divider(),
-              ...themes.map((themeName) {
-                return ListTile(
-                  title: Text(themeName),
-                  trailing: _currentThemeName == themeName
-                      ? Icon(Icons.check_circle, color: AppTheme.primaryOrange)
-                      : null,
-                  onTap: () {
-                    _changeChatTheme(themeName);
-                    Navigator.pop(context);
-                  },
-                );
-              }),
+              Expanded(
+                child: ListView(
+                  children: themes.map((themeName) {
+                    return ListTile(
+                      title: Text(themeName),
+                      trailing: _currentThemeName == themeName
+                          ? Icon(Icons.check_circle, color: AppTheme.primaryOrange)
+                          : null,
+                      onTap: () {
+                        _changeChatTheme(themeName);
+                        Navigator.pop(context);
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
             ],
           ),
         );
@@ -652,8 +733,9 @@ class _ChatScreenState extends State<ChatScreen> {
                         itemBuilder: (context, index) {
                           final docId = messages[index].id;
                           final data = messages[index].data() as Map<String, dynamic>;
-                          final isMe = data['senderId'] == currentUserId;
-                          final isDeleted = data['isDeleted'] == true;
+          final isMe = data['senderId'] == currentUserId;
+          final isDeleted = data['isDeleted'] == true;
+          final isImage = !isDeleted && data['type'] == 'image';
                           
                           return Dismissible(
                             key: ValueKey(docId),
@@ -673,14 +755,17 @@ class _ChatScreenState extends State<ChatScreen> {
                                 HapticFeedback.heavyImpact();
                                 FirebaseDataService.instance.reactToMessage(widget.chatId, docId, currentUserId, '❤️');
                               },
-                              child: Align(
+                               child: Align(
                                 alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                                 child: Stack(
                                   clipBehavior: Clip.none,
                                   children: [
                                     Container(
                                       margin: EdgeInsets.only(bottom: 4.h),
-                                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: isImage ? 0 : 12.w,
+                                        vertical: isImage ? 0 : 8.h,
+                                      ),
                                       constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.only(
@@ -689,10 +774,12 @@ class _ChatScreenState extends State<ChatScreen> {
                                           bottomLeft: isMe ? Radius.circular(20) : Radius.circular(4),
                                           bottomRight: isMe ? Radius.circular(4) : Radius.circular(20),
                                         ),
-                                        gradient: isDeleted 
-                                          ? null 
-                                          : (isMe ? LinearGradient(colors: _bubbleGradient, begin: Alignment.topLeft, end: Alignment.bottomRight) : LinearGradient(colors: [Color(0xFFF2F2F2), Color(0xFFE0E0E0)], begin: Alignment.topLeft, end: Alignment.bottomRight)),
-                                        color: isDeleted ? Colors.grey[200] : null,
+                                        gradient: isImage || isDeleted
+                                            ? null
+                                            : (isMe ? LinearGradient(colors: _bubbleGradient, begin: Alignment.topLeft, end: Alignment.bottomRight) : LinearGradient(colors: [Color(0xFFF2F2F2), Color(0xFFE0E0E0)], begin: Alignment.topLeft, end: Alignment.bottomRight)),
+                                        color: isDeleted
+                                            ? Colors.grey[200]
+                                            : (isImage ? (isMe ? Colors.white : Color(0xFFF2F2F2)) : null),
                                         boxShadow: [
                                           BoxShadow(
                                             color: Colors.black.withOpacity(0.05),
@@ -741,28 +828,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                               ],
                                             )
                                           else if (data['type'] == 'image')
-                                            GestureDetector(
-                                              onTap: () {
-                                                showDialog(
-                                                  context: context,
-                                                  builder: (_) => Dialog(
-                                                    child: Image.network(data['imageUrl']),
-                                                  ),
-                                                );
-                                              },
-                                              child: Container(
-                                                constraints: BoxConstraints(maxHeight: 200),
-                                                decoration: BoxDecoration(
-                                                  borderRadius: BorderRadius.circular(12.r),
-                                                  image: DecorationImage(
-                                                    image: NetworkImage(data['imageUrl']),
-                                                    fit: BoxFit.cover,
-                                                  ),
-                                                ),
-                                                width: 200.w,
-                                                height: 150.h,
-                                              ),
-                                            )
+                                            _buildImageMessage(data['imageUrl'], isMe: isMe)
                                           else if (data['type'] == 'audio')
                                             VoiceMessagePlayer(
                                               audioUrl: data['audioUrl'] ?? '',

@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users: own profile read/write, public read for leaderboard
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && resource.data.isPublic == true;
+    }
+
+    // Matches: authenticated read, creator/scorer write
+    match /matches/{matchId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
+      allow update: if request.auth != null && 
+        (request.auth.uid == resource.data.createdBy || 
+         request.auth.uid in resource.data.scorerIds ||
+         request.auth.uid in resource.data.adminIds);
+      allow delete: if request.auth != null && request.auth.uid == resource.data.createdBy;
+    }
+
+    // Tournaments: authenticated read, organizer write
+    match /tournaments/{tournamentId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.organizerId == request.auth.uid;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.organizerId;
+    }
+
+    // Teams: members read, captain write
+    match /teams/{teamId} {
+      allow read: if request.auth != null && 
+        (request.auth.uid == resource.data.captainId || request.auth.uid in resource.data.players);
+      allow create: if request.auth != null && request.resource.data.captainId == request.auth.uid;
+      allow update: if request.auth != null && request.auth.uid == resource.data.captainId;
+    }
+
+    // Reels: public read, owner write
+    match /reels/{reelId} {
+      allow read: if request.auth != null && resource.data.isPublic == true;
+      allow create: if request.auth != null && request.resource.data.playerId == request.auth.uid;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.playerId;
+    }
+
+    // Notifications: own only
+    match /notifications/{notificationId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // News: public read, admin write only (via Cloud Functions)
+    match /news/{newsId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Deny all other
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -343,5 +343,3 @@ class MatchCard extends StatelessWidget {
     }
   }
 }
-// Helper for web constant in case foundation not imported
-const bool kIsWeb = identical(0, 0.0);

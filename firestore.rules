@@ -113,6 +113,7 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && (
         request.auth.uid == resource.data.creatorId ||
         request.auth.uid == resource.data.captainId ||
+        request.auth.uid == resource.data.viceCaptainId ||
         userIn(resource.data, 'adminIds')
       );
     }

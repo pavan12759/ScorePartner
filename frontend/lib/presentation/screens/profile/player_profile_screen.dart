@@ -20,8 +20,6 @@ import '../../widgets/state/scorepartner_empty_state.dart';
 import '../../widgets/state/scorepartner_error_state.dart';
 
 /// Screen to display another user's profile (view-only with follow functionality)
-
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';

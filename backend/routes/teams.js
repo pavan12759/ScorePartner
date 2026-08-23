@@ -144,7 +144,7 @@ router.put('/:id', auth, async (req, res) => {
         }
 
         const teamData = teamDoc.data();
-        if (teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid) {
+        if (teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid && teamData.viceCaptainId !== req.user.uid) {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
@@ -174,7 +174,7 @@ router.post('/:id/players', auth, async (req, res) => {
         }
 
         const teamData = teamDoc.data();
-        if (teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid) {
+        if (teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid && teamData.viceCaptainId !== req.user.uid) {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
@@ -207,7 +207,7 @@ router.delete('/:id/players/:playerId', auth, async (req, res) => {
         }
 
         const teamData = teamDoc.data();
-        if (teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid) {
+        if (teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid && teamData.viceCaptainId !== req.user.uid) {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
@@ -276,7 +276,7 @@ router.post('/:id/invite', auth, async (req, res) => {
         }
 
         const teamData = teamDoc.data();
-        if (teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid) {
+        if (teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid && teamData.viceCaptainId !== req.user.uid) {
             return res.status(403).json({ error: 'Not authorized. Only admin or captain can generate invite links.' });
         }
 
@@ -310,7 +310,7 @@ router.delete('/:id/invite', auth, async (req, res) => {
         }
 
         const teamData = teamDoc.data();
-        if (teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid) {
+        if (teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid && teamData.viceCaptainId !== req.user.uid) {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
@@ -446,7 +446,7 @@ router.get('/:id/join-requests', auth, async (req, res) => {
         }
 
         const teamData = teamDoc.data();
-        if (teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid) {
+        if (teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid && teamData.viceCaptainId !== req.user.uid) {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
@@ -475,7 +475,7 @@ router.put('/:id/join-requests/:requestId/accept', auth, async (req, res) => {
         }
 
         const teamData = teamDoc.data();
-        if (teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid) {
+        if (teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid && teamData.viceCaptainId !== req.user.uid) {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
@@ -531,7 +531,7 @@ router.put('/:id/join-requests/:requestId/reject', auth, async (req, res) => {
         }
 
         const teamData = teamDoc.data();
-        if (teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid) {
+        if (teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid && teamData.viceCaptainId !== req.user.uid) {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
@@ -577,7 +577,7 @@ router.put('/:id/rename', optionalAuth, async (req, res) => {
         }
 
         const teamData = teamDoc.data();
-        if (req.user && req.user.uid && teamData.createdBy && teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid) {
+        if (req.user && req.user.uid && teamData.createdBy && teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid && teamData.viceCaptainId !== req.user.uid) {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
