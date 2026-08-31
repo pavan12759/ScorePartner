@@ -48,9 +48,10 @@ service cloud.firestore {
         // A user manages their own following list
       }
 
-      // Processed matches tracking (idempotent stats - any authenticated user can write)
+      // Processed matches tracking (idempotent stats — only the user themselves can write)
       match /processed_matches/{matchId} {
-        allow read, write: if request.auth != null;
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if request.auth != null && request.auth.uid == userId;
       }
     }
 
@@ -63,7 +64,8 @@ service cloud.firestore {
       allow update: if signedIn() && (
         request.auth.uid == resource.data.createdBy ||
         userIn(resource.data, 'adminIds') ||
-        request.resource.data.diff(resource.data).affectedKeys().hasAny(['team1Name', 'team2Name'])
+        userIn(resource.data, 'scorerIds') ||
+        userIn(resource.data, 'scorers')
       );
       // Scorers should only update match state (scores, ball events via backend),
       // NOT ownership/admin fields. Use the secure backend API for scoring updates.
@@ -157,10 +159,8 @@ service cloud.firestore {
       allow read: if true;
       allow create: if request.auth != null && 
         request.auth.uid == request.resource.data.organizerId;
-      allow update, delete: if request.auth != null && (
-        request.auth.uid == resource.data.organizerId ||
-        request.resource.data.diff(resource.data).affectedKeys().hasAny(['fixtures', 'pointsTable'])
-      );
+      allow update, delete: if request.auth != null && 
+        request.auth.uid == resource.data.organizerId;
       // Views updates must be handled securely via the backend
     }
   }

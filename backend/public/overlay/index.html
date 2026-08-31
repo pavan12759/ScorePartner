@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScorePartner Live Broadcast Overlay</title>
+    <!-- Import Google Fonts for professional look -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-classic">
+
+    <div class="overlay-container">
+        
+        <!-- Main Scoreboard -->
+        <div class="scoreboard-main">
+            <!-- Team 1 -->
+            <div class="team-block" id="team1-block">
+                <div class="team-logo-container">
+                    <img id="team1-logo" class="team-logo" src="" alt="Team 1" onerror="this.style.display='none'">
+                </div>
+                <div class="team-info">
+                    <span class="team-name" id="team1-name">TEAM A</span>
+                </div>
+                <div class="team-score">
+                    <span class="runs" id="team1-runs">0</span>
+                    <span class="slash">/</span>
+                    <span class="wickets" id="team1-wickets">0</span>
+                    <span class="overs" id="team1-overs">(0.0)</span>
+                </div>
+            </div>
+
+            <!-- VS Divider -->
+            <div class="vs-divider">
+                <span id="match-status-badge">LIVE</span>
+            </div>
+
+            <!-- Team 2 -->
+            <div class="team-block" id="team2-block">
+                <div class="team-score">
+                    <span class="runs" id="team2-runs">0</span>
+                    <span class="slash">/</span>
+                    <span class="wickets" id="team2-wickets">0</span>
+                    <span class="overs" id="team2-overs">(0.0)</span>
+                </div>
+                <div class="team-info">
+                    <span class="team-name" id="team2-name">TEAM B</span>
+                </div>
+                <div class="team-logo-container">
+                    <img id="team2-logo" class="team-logo" src="" alt="Team 2" onerror="this.style.display='none'">
+                </div>
+            </div>
+        </div>
+
+        <!-- Secondary Info Bar (Batters, Bowler, Target) -->
+        <div class="scoreboard-secondary">
+            <div class="batters-section">
+                <div class="batter active" id="striker-row">
+                    <span class="player-name" id="striker-name">Striker *</span>
+                    <span class="player-score"><span id="striker-runs">0</span> <span class="balls">(<span id="striker-balls">0</span>)</span></span>
+                </div>
+                <div class="batter" id="nonstriker-row">
+                    <span class="player-name" id="nonstriker-name">Non-striker</span>
+                    <span class="player-score"><span id="nonstriker-runs">0</span> <span class="balls">(<span id="nonstriker-balls">0</span>)</span></span>
+                </div>
+            </div>
+            
+            <div class="bowler-section">
+                <div class="bowler">
+                    <span class="player-name" id="bowler-name">Bowler</span>
+                    <span class="player-score"><span id="bowler-wickets">0</span>-<span id="bowler-runs">0</span> <span class="balls">(<span id="bowler-overs">0.0</span>)</span></span>
+                </div>
+            </div>
+
+            <div class="match-context" id="match-context-bar">
+                <span id="target-info">1st Innings</span>
+            </div>
+        </div>
+
+        <!-- Recent Balls -->
+        <div class="recent-balls-container">
+            <div class="recent-balls-label">RECENT</div>
+            <div class="recent-balls" id="recent-balls">
+                <!-- Balls injected via JS -->
+            </div>
+        </div>
+
+        <!-- Event Banner (Six, Four, Wicket) -->
+        <div class="event-banner hidden" id="event-banner">
+            <span id="event-text">SIX!</span>
+        </div>
+        
+    </div>
+
+    <!-- Socket.io -->
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- App Logic -->
+    <script src="app.js"></script>
+</body>
+</html>

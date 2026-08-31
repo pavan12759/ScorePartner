@@ -106,7 +106,21 @@ router.put('/:id', auth, async (req, res) => {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
-        await db.collection('tournaments').doc(req.params.id).update(req.body);
+        // ✅ Security: Only allow updating safe fields (prevents overwriting organizerId, createdAt)
+        const allowedFields = [
+            'name', 'description', 'matchType', 'format', 'oversPerMatch',
+            'maxTeams', 'startDate', 'endDate', 'location', 'status',
+            'teams', 'fixtures', 'pointsTable', 'prize', 'rules',
+            'registeredTeamIds', 'logoUrl', 'bannerUrl', 'updatedAt'
+        ];
+        const filteredUpdates = {};
+        Object.keys(req.body).forEach(key => {
+            if (allowedFields.includes(key)) {
+                filteredUpdates[key] = req.body[key];
+            }
+        });
+
+        await db.collection('tournaments').doc(req.params.id).update(filteredUpdates);
 
         const updatedDoc = await db.collection('tournaments').doc(req.params.id).get();
 

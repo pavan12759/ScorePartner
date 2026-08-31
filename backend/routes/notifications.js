@@ -2,6 +2,16 @@ const express = require('express');
 const router = express.Router();
 const admin = require('firebase-admin');
 const { auth } = require('../middleware/auth');
+const rateLimit = require('express-rate-limit');
+
+// ✅ Security: Rate limit notification sending to prevent spam
+const notificationLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 10, // Max 10 notification sends per minute per IP
+    message: { error: 'Too many notification requests, please slow down' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // Ensure Firebase is initialized before this
 // Usually done in server.js via admin.initializeApp()
@@ -10,7 +20,7 @@ const { auth } = require('../middleware/auth');
  * Send a push notification to specific FCM tokens
  * POST /api/notifications/send
  */
-router.post('/send', auth, async (req, res) => {
+router.post('/send', auth, notificationLimiter, async (req, res) => {
     try {
         const { tokens, title, body, data } = req.body;
 

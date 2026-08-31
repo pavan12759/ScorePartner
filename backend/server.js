@@ -1,11 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
+const https = require('https');
+const path = require('path');
 const { Server } = require('socket.io');
 require('dotenv').config();
 
 // Initialize Firebase
-const { db, auth } = require('./config/firebase');
+const { db, auth, admin } = require('./config/firebase');
+const jwt = require('jsonwebtoken');
 
 // Initialize Express
 const app = express();
@@ -42,7 +45,7 @@ app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 200 })); // Global: 200 req/1
 const strictLimiter = rateLimit({ windowMs: 60 * 1000, max: 30 });
 app.use('/api/auth', strictLimiter);
 app.use('/api/matches/:id/ball', strictLimiter);
-app.use('/api/agora/token', rateLimit({ windowMs: 60 * 1000, max: 10 }));
+
 
 // Limit request size to 1MB to prevent payload attacks
 app.use(express.json({ limit: '1mb' }));
@@ -61,7 +64,14 @@ app.use('/api/tournaments', require('./routes/tournaments'));
 app.use('/api/leaderboard', require('./routes/leaderboard'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/broadcast', require('./routes/broadcast'));
-app.use('/api/agora', require('./routes/agora')); // Agora RTC token generation
+
+// Serve static files from 'public' directory
+app.use(express.static(path.join(__dirname, 'public')));
+
+// OBS Overlay Web Route
+app.get('/live/:matchId/overlay', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'overlay', 'index.html'));
+});
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -107,44 +117,104 @@ app.get('/api/proxy', (req, res) => {
   });
 });
 
-// Socket.io connection handling
+// ==================== Socket.io Authentication ====================
+
+// Helper: verify a token string (Firebase ID token or JWT)
+async function verifySocketToken(token) {
+  if (!token) throw new Error('No token provided');
+
+  try {
+    // Try Firebase ID token first
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    return { uid: decodedToken.uid, email: decodedToken.email || '' };
+  } catch (firebaseError) {
+    // Fallback to custom JWT
+    if (!process.env.JWT_SECRET) throw firebaseError;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const uid = decoded.uid || decoded.userId;
+    if (!uid) throw new Error('Token missing user id');
+    return { uid, email: decoded.email || '' };
+  }
+}
+
+// Helper: check if a user can score a given match
+function canUserScoreMatch(userId, matchData) {
+  if (!matchData || !userId) return false;
+  if (matchData.createdBy === userId) return true;
+  if (Array.isArray(matchData.adminIds) && matchData.adminIds.includes(userId)) return true;
+  if (Array.isArray(matchData.scorerIds) && matchData.scorerIds.includes(userId)) return true;
+  if (Array.isArray(matchData.scorers) && matchData.scorers.includes(userId)) return true;
+  return false;
+}
+
+// Socket.io authentication middleware — runs on every new connection
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+    if (!token) {
+      // ✅ Allow anonymous connections for read-only OBS overlays
+      socket.user = null;
+      return next();
+    }
+    socket.user = await verifySocketToken(token);
+    console.log(`🔐 Socket authenticated: ${socket.user.uid}`);
+    next();
+  } catch (error) {
+    console.error('❌ Socket auth failed (falling back to anonymous):', error.message);
+    socket.user = null; // Still allow connection, but without privileges
+    next();
+  }
+});
+
+// Socket.io connection handling (all connections are now authenticated or anonymous for OBS)
 io.on('connection', (socket) => {
-  console.log('🔌 Client connected:', socket.id);
+  console.log(`🔌 Client connected: ${socket.id} (user: ${socket.user ? socket.user.uid : 'anonymous'})`);
 
   // Join a match room for live updates
   socket.on('join-match', (matchId) => {
+    if (!matchId || typeof matchId !== 'string') return;
     socket.join(`match-${matchId}`);
     console.log(`📺 Client ${socket.id} joined match-${matchId}`);
   });
 
   // Leave a match room
   socket.on('leave-match', (matchId) => {
+    if (!matchId || typeof matchId !== 'string') return;
     socket.leave(`match-${matchId}`);
     console.log(`👋 Client ${socket.id} left match-${matchId}`);
   });
 
   // Handle ball scoring event from scorer app
   socket.on('score-ball', async (data) => {
-    const { matchId, ballEvent } = data;
-    console.log(`🏏 Ball scored in match-${matchId}:`, ballEvent);
+    const { matchId, ballEvent } = data || {};
+    if (!matchId || !ballEvent) {
+      return socket.emit('error', { message: 'Invalid ball event data' });
+    }
+    console.log(`🏏 Ball scored in match-${matchId} by user ${socket.user.uid}`);
 
     try {
-      // Get current match data
       const matchRef = db.collection('matches').doc(matchId);
       const matchDoc = await matchRef.get();
 
-      if (matchDoc.exists) {
-        const matchData = matchDoc.data();
-
-        // Broadcast to all clients watching this match
-        io.to(`match-${matchId}`).emit('ball-event', {
-          matchId,
-          ballEvent,
-          match: { id: matchId, ...matchData }
-        });
-
-        console.log(`✅ Ball event broadcasted to match-${matchId}`);
+      if (!matchDoc.exists) {
+        return socket.emit('error', { message: 'Match not found' });
       }
+
+      const matchData = matchDoc.data();
+
+      // ✅ Authorization check: only scorers/admins/creators can score
+      if (!socket.user || !canUserScoreMatch(socket.user.uid, matchData)) {
+        return socket.emit('error', { message: 'Not authorized to score this match' });
+      }
+
+      // Broadcast to all clients watching this match
+      io.to(`match-${matchId}`).emit('ball-event', {
+        matchId,
+        ballEvent,
+        match: { id: matchId, ...matchData }
+      });
+
+      console.log(`✅ Ball event broadcasted to match-${matchId}`);
     } catch (error) {
       console.error('Error processing ball event:', error);
       socket.emit('error', { message: 'Failed to process ball event' });
@@ -153,38 +223,48 @@ io.on('connection', (socket) => {
 
   // Handle innings change
   socket.on('change-innings', async (data) => {
-    const { matchId, newInnings, target } = data;
-    console.log(`🔄 Innings change for match-${matchId}: Innings ${newInnings}, Target ${target}`);
+    const { matchId, newInnings, target } = data || {};
+    if (!matchId) {
+      return socket.emit('error', { message: 'matchId is required' });
+    }
+    console.log(`🔄 Innings change for match-${matchId} by user ${socket.user.uid}`);
 
     try {
       const matchRef = db.collection('matches').doc(matchId);
       const matchDoc = await matchRef.get();
 
-      if (matchDoc.exists) {
-        const matchData = matchDoc.data();
-
-        // Swap batting teams
-        const newBattingTeam = matchData.currentBattingTeam === 'team1' ? 'team2' : 'team1';
-        const newBowlingTeam = matchData.currentBattingTeam === 'team1' ? 'team1' : 'team2';
-
-        await matchRef.update({
-          currentInnings: newInnings,
-          currentBattingTeam: newBattingTeam,
-          bowlingTeam: newBowlingTeam,
-          target: target,
-          currentOver: 0,
-          currentBall: 0,
-          updatedAt: new Date()
-        });
-
-        const updatedDoc = await matchRef.get();
-        const updatedMatch = { id: matchId, ...updatedDoc.data() };
-
-        // Broadcast innings change
-        io.to(`match-${matchId}`).emit('innings-change', updatedMatch);
-
-        console.log(`✅ Innings change broadcasted for match-${matchId}`);
+      if (!matchDoc.exists) {
+        return socket.emit('error', { message: 'Match not found' });
       }
+
+      const matchData = matchDoc.data();
+
+      // ✅ Authorization check
+      if (!socket.user || !canUserScoreMatch(socket.user.uid, matchData)) {
+        return socket.emit('error', { message: 'Not authorized to change innings' });
+      }
+
+      // Swap batting teams
+      const newBattingTeam = matchData.currentBattingTeam === 'team1' ? 'team2' : 'team1';
+      const newBowlingTeam = matchData.currentBattingTeam === 'team1' ? 'team1' : 'team2';
+
+      await matchRef.update({
+        currentInnings: newInnings,
+        currentBattingTeam: newBattingTeam,
+        bowlingTeam: newBowlingTeam,
+        target: target,
+        currentOver: 0,
+        currentBall: 0,
+        updatedAt: new Date()
+      });
+
+      const updatedDoc = await matchRef.get();
+      const updatedMatch = { id: matchId, ...updatedDoc.data() };
+
+      // Broadcast innings change
+      io.to(`match-${matchId}`).emit('innings-change', updatedMatch);
+
+      console.log(`✅ Innings change broadcasted for match-${matchId}`);
     } catch (error) {
       console.error('Error processing innings change:', error);
       socket.emit('error', { message: 'Failed to process innings change' });
@@ -193,11 +273,24 @@ io.on('connection', (socket) => {
 
   // Handle match completion
   socket.on('complete-match', async (data) => {
-    const { matchId, result } = data;
-    console.log(`🏆 Match completed: ${matchId}`, result);
+    const { matchId, result } = data || {};
+    if (!matchId) {
+      return socket.emit('error', { message: 'matchId is required' });
+    }
+    console.log(`🏆 Match completed: ${matchId} by user ${socket.user.uid}`);
 
     try {
       const matchRef = db.collection('matches').doc(matchId);
+      const matchDoc = await matchRef.get();
+
+      if (!matchDoc.exists) {
+        return socket.emit('error', { message: 'Match not found' });
+      }
+
+      // ✅ Authorization check
+      if (!socket.user || !canUserScoreMatch(socket.user.uid, matchDoc.data())) {
+        return socket.emit('error', { message: 'Not authorized to complete this match' });
+      }
 
       await matchRef.update({
         status: 'completed',
@@ -220,11 +313,20 @@ io.on('connection', (socket) => {
 
   // Handle player updates (striker, non-striker, bowler changes)
   socket.on('update-players', async (data) => {
-    const { matchId, strikerId, nonStrikerId, bowlerId } = data;
-    console.log(`👥 Player update for match-${matchId}`);
+    const { matchId, strikerId, nonStrikerId, bowlerId } = data || {};
+    if (!matchId) return;
+    console.log(`👥 Player update for match-${matchId} by user ${socket.user.uid}`);
 
     try {
       const matchRef = db.collection('matches').doc(matchId);
+      const matchDoc = await matchRef.get();
+
+      if (!matchDoc.exists) return;
+
+      // ✅ Authorization check
+      if (!socket.user || !canUserScoreMatch(socket.user.uid, matchDoc.data())) {
+        return socket.emit('error', { message: 'Not authorized' });
+      }
 
       const updates = { updatedAt: new Date() };
       if (strikerId) updates.currentStrikerId = strikerId;
@@ -244,7 +346,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    console.log('🔌 Client disconnected:', socket.id);
+    console.log(`🔌 Client disconnected: ${socket.id} (user: ${socket.user ? socket.user.uid : 'anonymous'})`);
   });
 });
 

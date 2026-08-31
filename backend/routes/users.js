@@ -44,9 +44,9 @@ router.get('/search/:query', async (req, res) => {
     try {
         const query = req.params.query.toLowerCase();
 
-        // Firestore doesn't support LIKE queries, so we use range query
+        // Firestore doesn't support LIKE queries, so we use range query on nameLowercase
         const snapshot = await db.collection('users')
-            .orderBy('name')
+            .orderBy('nameLowercase')
             .startAt(query)
             .endAt(query + '\uf8ff')
             .limit(20)
@@ -115,16 +115,34 @@ router.get('/:id', async (req, res) => {
 // @access  Private
 router.put('/:id/stats', auth, async (req, res) => {
     try {
+        // ✅ Security: Only allow users to update their own stats
+        if (req.user.uid !== req.params.id) {
+            return res.status(403).json({ error: 'Not authorized to update another user\'s stats' });
+        }
+
         const { ballType, stats } = req.body;
 
         if (!['tennis', 'leather'].includes(ballType)) {
             return res.status(400).json({ error: 'Invalid ball type' });
         }
 
+        // ✅ Security: Whitelist allowed stat fields to prevent injection
+        const allowedStatFields = [
+            'matches', 'runs', 'wickets', 'strikeRate', 'economy',
+            'bestScore', 'bestBowling', 'manOfMatches', 'tournamentWins',
+            'totalBallsBatted', 'totalBallsBowled', 'totalRunsConceded'
+        ];
+        const filteredStats = {};
+        Object.keys(stats || {}).forEach(key => {
+            if (allowedStatFields.includes(key)) {
+                filteredStats[key] = stats[key];
+            }
+        });
+
         const updateField = ballType === 'tennis' ? 'tennisBallStats' : 'leatherBallStats';
 
         await db.collection('users').doc(req.params.id).update({
-            [updateField]: stats
+            [updateField]: filteredStats
         });
 
         const userDoc = await db.collection('users').doc(req.params.id).get();

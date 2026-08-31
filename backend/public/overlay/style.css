@@ -1,0 +1,258 @@
+/* Base styles - transparent background for OBS */
+:root {
+    --bg-primary: rgba(15, 23, 42, 0.9);
+    --bg-secondary: rgba(30, 41, 59, 0.9);
+    --text-primary: #ffffff;
+    --text-secondary: #94a3b8;
+    --accent: #3b82f6;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --success: #10b981;
+    --font-main: 'Outfit', sans-serif;
+    --font-mono: 'Roboto Mono', monospace;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    /* CRITICAL: Transparent background for OBS */
+    background: transparent;
+    color: var(--text-primary);
+    font-family: var(--font-main);
+    overflow: hidden; /* Prevent scrollbars in OBS */
+}
+
+/* Container positioning - bottom center TV style */
+.overlay-container {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 1200px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Main Scoreboard */
+.scoreboard-main {
+    display: flex;
+    background: var(--bg-primary);
+    border-radius: 12px;
+    overflow: hidden;
+    height: 70px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.team-block {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+}
+#team1-block { justify-content: flex-start; }
+#team2-block { justify-content: flex-end; flex-direction: row-reverse; }
+
+.team-logo-container {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.team-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.team-name {
+    font-size: 24px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0 15px;
+}
+
+.team-score {
+    display: flex;
+    align-items: baseline;
+    font-family: var(--font-mono);
+}
+
+.runs { font-size: 40px; font-weight: 800; }
+.slash { font-size: 30px; font-weight: 500; margin: 0 2px; color: var(--text-secondary); }
+.wickets { font-size: 40px; font-weight: 800; }
+.overs { font-size: 20px; font-weight: 500; margin-left: 8px; color: var(--text-secondary); }
+
+/* Dim the inactive team */
+.team-block.inactive { opacity: 0.5; }
+
+/* VS Divider */
+.vs-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100px;
+    background: var(--bg-secondary);
+}
+
+#match-status-badge {
+    background: var(--danger);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Secondary Info Bar */
+.scoreboard-secondary {
+    display: flex;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    height: 40px;
+    overflow: hidden;
+    font-size: 18px;
+    font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.batters-section, .bowler-section {
+    display: flex;
+    flex: 1;
+}
+.batters-section { padding-left: 20px; gap: 20px;}
+.bowler-section { justify-content: flex-end; padding-right: 20px; }
+
+.batter, .bowler {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.batter.active .player-name { color: var(--warning); }
+.player-score { font-family: var(--font-mono); }
+.balls { color: var(--text-secondary); font-size: 14px; }
+
+.match-context {
+    background: var(--accent);
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+/* Recent Balls */
+.recent-balls-container {
+    display: flex;
+    align-items: center;
+    background: rgba(0,0,0,0.6);
+    border-radius: 20px;
+    padding: 4px 12px;
+    width: fit-content;
+    margin-left: auto;
+    margin-top: 4px;
+}
+
+.recent-balls-label {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text-secondary);
+    margin-right: 10px;
+}
+
+.recent-balls {
+    display: flex;
+    gap: 6px;
+}
+
+.ball-bubble {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    background: #334155;
+    color: white;
+}
+.ball-bubble.four { background: var(--accent); }
+.ball-bubble.six { background: var(--success); }
+.ball-bubble.wicket { background: var(--danger); }
+.ball-bubble.extra { background: var(--warning); color: #000; }
+
+/* Event Banner Animation */
+.event-banner {
+    position: absolute;
+    top: -80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--danger);
+    padding: 10px 40px;
+    border-radius: 8px;
+    font-size: 40px;
+    font-weight: 800;
+    letter-spacing: 4px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 10;
+}
+.event-banner.show {
+    top: -120px;
+    opacity: 1;
+}
+.event-banner.bg-accent { background: var(--accent); }
+.event-banner.bg-success { background: var(--success); }
+
+/* Value update animation */
+@keyframes flash {
+    0% { color: inherit; transform: scale(1); }
+    50% { color: var(--accent); transform: scale(1.1); }
+    100% { color: inherit; transform: scale(1); }
+}
+.value-changed {
+    animation: flash 0.5s ease-out;
+}
+
+/* Themes Support */
+.theme-classic { /* Default, already styled above */ }
+
+.theme-stadium-night {
+    --bg-primary: rgba(0, 0, 0, 0.85);
+    --bg-secondary: rgba(20, 20, 20, 0.85);
+    --accent: #f59e0b; /* Gold */
+}
+
+.theme-glass-broadcast {
+    --bg-primary: rgba(255, 255, 255, 0.1);
+    --bg-secondary: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.theme-cricket-green {
+    --bg-primary: rgba(13, 89, 48, 0.9);
+    --bg-secondary: rgba(6, 46, 24, 0.9);
+    --accent: #eab308;
+}

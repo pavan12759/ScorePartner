@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/match_model.dart';
 
 /// Service for real-time match updates using Socket.io
@@ -26,7 +27,8 @@ class SocketService {
   bool get isConnected => _isConnected;
   
   /// Initialize socket connection to backend
-  void connect({String? serverUrl}) {
+  /// ✅ Security: Now sends auth token on connection (required by backend)
+  void connect({String? serverUrl}) async {
     if (_socket != null && _isConnected) {
       return; // Already connected
     }
@@ -43,24 +45,25 @@ class SocketService {
       _socket = null;
     }
     
+    // ✅ Get the current user's auth token for Socket.io authentication
+    String? authToken;
+    try {
+      authToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+    } catch (e) {
+      print('⚠️ Could not get auth token for socket: $e');
+    }
+    
     print('🔌 Attempting to connect to socket at: $effectiveUrl');
     
     _socket = IO.io(effectiveUrl, <String, dynamic>{
-      'transports': ['websocket', 'polling'],  // Add polling fallback for web
-      'autoConnect': false,  // We'll connect manually
-      'reconnection': true,
-      'reconnectionAttempts': 10,
-      'reconnectionDelay': 1000,
-      'forceNew': true,
+      'transports': ['websocket'],
+      'autoConnect': true,
+      if (authToken != null) 'auth': {'token': authToken},
+      if (authToken != null) 'query': {'token': authToken},
     });
-    
-    _setupEventListeners();
-    _socket!.connect();
-  }
-  
-  void _setupEventListeners() {
+
     _socket!.onConnect((_) {
-      print('🔌 Socket connected');
+      print('🔌 Socket connected successfully');
       _isConnected = true;
       _connectionStatusController.add(true);
       

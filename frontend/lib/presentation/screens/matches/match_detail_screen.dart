@@ -28,9 +28,9 @@ import 'package:share_plus/share_plus.dart';
 import '../../widgets/live_audience_island.dart';
 import '../../../data/services/viewer_service.dart';
 import '../../widgets/match/pin_live_score_button.dart';
-import '../broadcast/broadcast_tab.dart';
-import '../broadcast/go_live_screen.dart';
 import '../matches/poster/match_summary_poster_screen.dart';
+import '../broadcast/go_live_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MatchDetailScreen extends StatefulWidget {
   final String matchId;
@@ -64,7 +64,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
     'Stars',
     'Key Moments',
     'News',
-    'Broadcast',
   ];
 
   @override
@@ -164,15 +163,24 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                       ),
                       actions: [
                         // Watch Live Broadcast Button
-                        if (isLiveMatch)
+                        if (isLiveMatch && match.youtubeLiveUrl != null && match.youtubeLiveUrl!.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
                             child: ElevatedButton.icon(
-                              onPressed: () {
-                                _tabController.animateTo(9); // Index for BroadcastTab
+                              onPressed: () async {
+                                final url = Uri.parse(match.youtubeLiveUrl!);
+                                if (await canLaunchUrl(url)) {
+                                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                                } else {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Could not open YouTube link')),
+                                    );
+                                  }
+                                }
                               },
                               icon: const Icon(Icons.live_tv, size: 16, color: Colors.white),
-                              label: const Text('Watch Live', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                              label: const Text('WATCH LIVE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
                                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -356,7 +364,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                       child: KeyMomentsCard(match: match),
                     ),
                     NewsTab(match: match),
-                    BroadcastTab(match: match),
                   ],
                 ),
               ),

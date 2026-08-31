@@ -104,6 +104,10 @@ class MatchModel {
   // Broadcast
   final bool isBroadcasting;
   final String? activeBroadcastId;
+  final String? youtubeLiveUrl;
+  final String? youtubeChannelName;
+  final String? overlayTheme;
+  final bool overlayEnabled;
 
   const MatchModel({
     required this.id,
@@ -164,6 +168,10 @@ class MatchModel {
     this.scorerIds = const [],
     this.isBroadcasting = false,
     this.activeBroadcastId,
+    this.youtubeLiveUrl,
+    this.youtubeChannelName,
+    this.overlayTheme,
+    this.overlayEnabled = false,
   });
 
   /// IDs of users who are admins (can edit match, add scorers)
@@ -454,6 +462,10 @@ class MatchModel {
       playerIds: (data['playerIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
       isBroadcasting: data['isBroadcasting'] ?? false,
       activeBroadcastId: data['activeBroadcastId'],
+      youtubeLiveUrl: data['youtubeLiveUrl'],
+      youtubeChannelName: data['youtubeChannelName'],
+      overlayTheme: data['overlayTheme'],
+      overlayEnabled: data['overlayEnabled'] ?? false,
     );
   }
 
@@ -520,6 +532,10 @@ class MatchModel {
       'playerIds': playerIds,
       'isBroadcasting': isBroadcasting,
       'activeBroadcastId': activeBroadcastId,
+      'youtubeLiveUrl': youtubeLiveUrl,
+      'youtubeChannelName': youtubeChannelName,
+      'overlayTheme': overlayTheme,
+      'overlayEnabled': overlayEnabled,
     };
   }
 
@@ -580,6 +596,10 @@ class MatchModel {
     List<String>? adminIds,
     List<String>? scorerIds,
     List<String>? playerIds,
+    String? youtubeLiveUrl,
+    String? youtubeChannelName,
+    String? overlayTheme,
+    bool? overlayEnabled,
   }) {
     return MatchModel(
       id: id ?? this.id,
@@ -638,6 +658,10 @@ class MatchModel {
       adminIds: adminIds ?? this.adminIds,
       scorerIds: scorerIds ?? this.scorerIds,
       playerIds: playerIds ?? this.playerIds,
+      youtubeLiveUrl: youtubeLiveUrl ?? this.youtubeLiveUrl,
+      youtubeChannelName: youtubeChannelName ?? this.youtubeChannelName,
+      overlayTheme: overlayTheme ?? this.overlayTheme,
+      overlayEnabled: overlayEnabled ?? this.overlayEnabled,
     );
   }
 

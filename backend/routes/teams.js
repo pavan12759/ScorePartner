@@ -148,7 +148,20 @@ router.put('/:id', auth, async (req, res) => {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
-        await db.collection('teams').doc(req.params.id).update(req.body);
+        // ✅ Security: Only allow updating safe fields (prevents overwriting createdBy, spTId, etc.)
+        const allowedFields = [
+            'name', 'logoUrl', 'players', 'captainId', 'captainName',
+            'viceCaptainId', 'viceCaptainName', 'adminIds', 'description',
+            'homeGround', 'city', 'inviteLinkEnabled'
+        ];
+        const filteredUpdates = {};
+        Object.keys(req.body).forEach(key => {
+            if (allowedFields.includes(key)) {
+                filteredUpdates[key] = req.body[key];
+            }
+        });
+
+        await db.collection('teams').doc(req.params.id).update(filteredUpdates);
 
         const updatedDoc = await db.collection('teams').doc(req.params.id).get();
 
@@ -561,7 +574,8 @@ router.put('/:id/join-requests/:requestId/reject', auth, async (req, res) => {
 // @route   PUT /api/teams/:id/rename
 // @desc    Rename team and propagate to matches & tournaments
 // @access  Public/Private (team creator or captain)
-router.put('/:id/rename', optionalAuth, async (req, res) => {
+// ✅ Security Fix: Changed from optionalAuth to auth — require authentication
+router.put('/:id/rename', auth, async (req, res) => {
     try {
         const { name } = req.body;
         if (!name || !name.trim()) {
@@ -577,7 +591,8 @@ router.put('/:id/rename', optionalAuth, async (req, res) => {
         }
 
         const teamData = teamDoc.data();
-        if (req.user && req.user.uid && teamData.createdBy && teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid && teamData.viceCaptainId !== req.user.uid) {
+        // ✅ Security: Always check authorization (no more optional bypass)
+        if (teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid && teamData.viceCaptainId !== req.user.uid) {
             return res.status(403).json({ error: 'Not authorized' });
         }
 

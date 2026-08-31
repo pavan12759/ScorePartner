@@ -88,6 +88,13 @@ router.post('/end', auth, async (req, res) => {
 
     const broadcastData = broadcastDoc.data();
 
+    // ✅ Security: Only the broadcaster or crew members can end a broadcast
+    const isOwner = req.user.uid === broadcastData.broadcasterId;
+    const isCrew = broadcastData.crew && broadcastData.crew[req.user.uid];
+    if (!isOwner && !isCrew) {
+      return res.status(403).json({ error: 'Not authorized to end this broadcast' });
+    }
+
     await broadcastRef.update({
       status: 'ended',
       endedAt: new Date().toISOString(),
@@ -140,7 +147,9 @@ router.get('/match/:matchId', async (req, res) => {
 router.post('/:id/crew', auth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId, crewCode, role } = req.body;
+    const { crewCode, role } = req.body;
+    // ✅ Security: Use authenticated user's ID, not the body-supplied userId
+    const userId = req.user.uid;
     const db = getDb(req);
 
     const broadcastRef = db.collection('broadcasts').doc(id);

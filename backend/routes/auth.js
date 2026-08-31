@@ -76,6 +76,7 @@ router.post('/register', registerLimiter, async (req, res) => {
             email: email.toLowerCase(),
             password: hashedPassword,
             name,
+            nameLowercase: name.toLowerCase(),
             spPId,
             phoneNumber: phoneNumber || '',
             role: 'player',
@@ -212,6 +213,10 @@ router.put('/profile', auth, async (req, res) => {
                 filteredUpdates[key] = updates[key];
             }
         });
+
+        if (filteredUpdates.name) {
+            filteredUpdates.nameLowercase = filteredUpdates.name.toLowerCase();
+        }
 
         filteredUpdates.lastActiveAt = new Date();
 
