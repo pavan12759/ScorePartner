@@ -24,10 +24,13 @@ class ApiService {
   // For real device use your computer's IP: 'http://192.168.x.x:5000/api'
 
   List<String> get _candidateBaseUrls {
-    final urls = <String>[_baseUrl];
+    final urls = <String>[];
     if (_baseUrl.contains('localhost')) {
-      urls.add(_baseUrl.replaceAll('localhost', '192.168.1.42'));
+      urls.add(_baseUrl.replaceAll('localhost', '192.168.1.28'));
+      urls.add(_baseUrl);
       urls.add(_baseUrl.replaceAll('localhost', '10.0.2.2'));
+    } else {
+      urls.add(_baseUrl);
     }
     return urls;
   }

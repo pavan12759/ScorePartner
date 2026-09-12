@@ -64,6 +64,7 @@ app.use('/api/tournaments', require('./routes/tournaments'));
 app.use('/api/leaderboard', require('./routes/leaderboard'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/broadcast', require('./routes/broadcast'));
+app.use('/api/ai', require('./routes/ai'));
 
 // Serve static files from 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));

@@ -16,6 +16,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/state/scorepartner_skeleton.dart';
 import '../../widgets/state/scorepartner_empty_state.dart';
 import '../../widgets/state/scorepartner_error_state.dart';
+import '../ai/ai_chat_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -199,6 +200,9 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             
+            // ScorePartner AI Entry Card
+            _buildAIEntryCard(context),
+
             // Matches Near You Section
             _MatchesNearYouSection(dataService: dataService),
 
@@ -989,6 +993,181 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 Icon(Icons.chevron_right, color: Colors.grey),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAIEntryCard(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF1E1E2C), const Color(0xFF2D2036)]
+              : [const Color(0xFF1F2430), const Color(0xFF2C3246)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryOrange.withOpacity(0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(
+          color: AppTheme.primaryOrange.withOpacity(0.35),
+          width: 1.2,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AIChatScreen()),
+            );
+          },
+          borderRadius: BorderRadius.circular(20.r),
+          child: Padding(
+            padding: EdgeInsets.all(18.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(10.w),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppTheme.primaryOrange,
+                            AppTheme.primaryOrange.withOpacity(0.8),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryOrange.withOpacity(0.4),
+                            blurRadius: 10,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.auto_awesome,
+                        color: Colors.white,
+                        size: 20.sp,
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'ScorePartner AI',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 17.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                              SizedBox(width: 8.w),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 7.w,
+                                  vertical: 2.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryOrange.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(10.r),
+                                  border: Border.all(
+                                    color: AppTheme.primaryOrange.withOpacity(0.6),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Text(
+                                  'BETA',
+                                  style: TextStyle(
+                                    fontSize: 9.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.primaryOrange,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 3.h),
+                          Text(
+                            'Your intelligent cricket assistant',
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: EdgeInsets.all(8.w),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.08),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.arrow_forward,
+                        color: AppTheme.primaryOrange,
+                        size: 18.sp,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 14.h),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.07),
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.08),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.chat_bubble_outline_rounded,
+                        size: 14.sp,
+                        color: AppTheme.primaryOrange,
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Text(
+                          'Ask: "Who won today?", "Find Rahul", "DLS rules"...',
+                          style: TextStyle(
+                            fontSize: 11.5.sp,
+                            color: Colors.white.withOpacity(0.85),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
