@@ -52,7 +52,11 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen>
   @override
   void initState() {
     super.initState();
-    Provider.of<AuthProvider>(context, listen: false).clearError();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<AuthProvider>(context, listen: false).clearError();
+      }
+    });
 
     // ── Stagger entrance ──
     _staggerController = AnimationController(

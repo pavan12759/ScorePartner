@@ -18,7 +18,7 @@ class InfoTab extends StatelessWidget {
       padding: EdgeInsets.all(16.w),
       child: Column(
         children: [
-          _buildInfoCard('Match Info', [
+          _buildInfoCard(context, 'Match Info', [
             _buildSeriesRow(context),
             _buildInfoRow(context, 'Match', '${match.team1Name} vs ${match.team2Name}'),
             _buildInfoRow(context, 'Date', '${match.scheduledDate.day}/${match.scheduledDate.month}/${match.scheduledDate.year}'),
@@ -41,7 +41,7 @@ class InfoTab extends StatelessWidget {
           
           SizedBox(height: 16.h),
           
-          _buildInfoCard('Venue Guide', [
+          _buildInfoCard(context, 'Venue Guide', [
              _buildVenueRow(context, 'Stadium', match.ground),
              _buildInfoRow(context, 'City', match.location),
              _buildInfoRow(context, 'Capacity', 'N/A'),
@@ -51,8 +51,9 @@ class InfoTab extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoCard(String title, List<Widget> children) {
+  Widget _buildInfoCard(BuildContext context, String title, List<Widget> children) {
     return Card(
+      color: ThemeHelper.of(context).cardBg,
       child: Padding(
         padding: EdgeInsets.all(16.0.w),
         child: Column(
@@ -67,7 +68,7 @@ class InfoTab extends StatelessWidget {
                 letterSpacing: 1.2,
               ),
             ),
-            Divider(height: 24.h, color: Colors.grey),
+            Divider(height: 24.h, color: ThemeHelper.of(context).dividerColor),
             ...children,
           ],
         ),
@@ -100,7 +101,7 @@ class InfoTab extends StatelessWidget {
             child: Text(
               'SERIES',
               style: TextStyle(
-                color: Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Colors.black45,
+                color: ThemeHelper.of(context).textSecondary,
                 fontSize: 11.sp,
                 fontWeight: FontWeight.bold,
               ),
@@ -152,7 +153,7 @@ class InfoTab extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14.sp,
-                      color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87,
+                      color: ThemeHelper.of(context).textPrimary,
                     ),
                   ),
           ),
@@ -172,7 +173,7 @@ class InfoTab extends StatelessWidget {
             child: Text(
               label.toUpperCase(),
               style: TextStyle(
-                color: Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Colors.black45,
+                color: ThemeHelper.of(context).textSecondary,
                 fontSize: 11.sp,
                 fontWeight: FontWeight.bold,
               ),
@@ -184,7 +185,7 @@ class InfoTab extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14.sp,
-                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87,
+                color: ThemeHelper.of(context).textPrimary,
               ),
             ),
           ),
@@ -205,7 +206,7 @@ class InfoTab extends StatelessWidget {
             child: Text(
               label.toUpperCase(),
               style: TextStyle(
-                color: Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Colors.black45,
+                color: ThemeHelper.of(context).textSecondary,
                 fontSize: 11.sp,
                 fontWeight: FontWeight.bold,
               ),

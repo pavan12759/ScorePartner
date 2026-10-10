@@ -79,13 +79,13 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
         title: Text(
           'Manage Matches',
           style: TextStyle(
-            color: Colors.black,
+            color: ThemeHelper.of(context).textPrimary,
             fontSize: 24.sp,
             fontWeight: FontWeight.bold,
             letterSpacing: -0.5,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: ThemeHelper.of(context).scaffoldBg,
         centerTitle: false,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -108,7 +108,7 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
                   child: Container(
                     height: 44.h,
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
+                      color: ThemeHelper.of(context).dividerColor,
                       borderRadius: BorderRadius.circular(12.r),
                     ),
                     child: TextField(
@@ -116,11 +116,11 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
                       onChanged: (value) => setState(() => _searchQuery = value),
                       decoration: InputDecoration(
                         hintText: 'Search your matches...',
-                        hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14.sp),
-                        prefixIcon: Icon(Icons.search, color: Colors.grey[500], size: 20.sp),
+                        hintStyle: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 14.sp),
+                        prefixIcon: Icon(Icons.search, color: ThemeHelper.of(context).textSecondary, size: 20.sp),
                         suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
-                              icon: Icon(Icons.clear, color: Colors.grey[500], size: 18.sp),
+                              icon: Icon(Icons.clear, color: ThemeHelper.of(context).textSecondary, size: 18.sp),
                               onPressed: () {
                                 _searchController.clear();
                                 setState(() => _searchQuery = '');
@@ -138,7 +138,7 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 16.0.w, vertical: 8.0.h),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: ThemeHelper.of(context).dividerColor,
                     borderRadius: BorderRadius.circular(12.r),
                   ),
                   child: TabBar(
@@ -149,7 +149,7 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
                       borderRadius: BorderRadius.circular(12.r),
                     ),
                     labelColor: Colors.white,
-                    unselectedLabelColor: Colors.grey[600],
+                    unselectedLabelColor: ThemeHelper.of(context).textSecondary,
                     labelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 14.sp),
                     tabs: const [
                       Tab(text: 'Live'),
@@ -296,11 +296,11 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: Offset(0, 4),
           ),
@@ -333,7 +333,7 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
                       child: Text(
                         statusText,
                         style: TextStyle(
-                          color: Colors.white,
+                          color: ThemeHelper.of(context).cardBg,
                           fontSize: 10.sp,
                           fontWeight: FontWeight.bold,
                         ),
@@ -366,7 +366,7 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
                     if (isCreator)
                       PopupMenuButton<String>(
                         padding: EdgeInsets.zero,
-                        icon: Icon(Icons.more_vert, color: Colors.grey, size: 20.sp),
+                        icon: Icon(Icons.more_vert, color: ThemeHelper.of(context).textSecondary, size: 20.sp),
                         onSelected: (value) async {
                           if (value == 'delete') {
                             final confirm = await showDialog<bool>(
@@ -428,7 +428,7 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
                   style: TextStyle(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey,
+                    color: ThemeHelper.of(context).textSecondary,
                   ),
                 ),
                 SizedBox(height: 8.h),
@@ -436,7 +436,7 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                      Expanded(child: Text(match.team1Name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp))),
-                     Text('vs', style: TextStyle(color: Colors.grey[400], fontWeight: FontWeight.bold)),
+                     Text('vs', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontWeight: FontWeight.bold)),
                      Expanded(child: Text(match.team2Name, textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp))),
                   ],
                 ),
@@ -466,9 +466,9 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
                     _buildInfoChip(Icons.location_on_outlined, match.location),
                     SizedBox(width: 16.w),
                     _buildInfoChip(Icons.calendar_today_outlined, '${match.scheduledDate.day}/${match.scheduledDate.month}'),
-                    const Spacer(),
+                    Spacer(),
                     IconButton(
-                      icon: Icon(Icons.share, size: 20.sp, color: Colors.grey[600]),
+                      icon: Icon(Icons.share, size: 20.sp, color: ThemeHelper.of(context).textSecondary),
                       padding: EdgeInsets.zero,
                       constraints: BoxConstraints(),
                       onPressed: () {
@@ -489,11 +489,11 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14.sp, color: Colors.grey[600]),
+        Icon(icon, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
         SizedBox(width: 4.w),
         Text(
           text,
-          style: TextStyle(color: Colors.grey[600], fontSize: 12.sp),
+          style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp),
         ),
       ],
     );

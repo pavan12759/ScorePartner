@@ -3,8 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/user_model.dart';
+import 'api_service.dart';
 
 /// Firebase Authentication Service
 /// Supports: Phone OTP, Email Link, Google Sign-In
@@ -16,8 +16,9 @@ class AuthService {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
-
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: '685168729318-1alvpokvlbduor0s3q16btu6qnfc59fc.apps.googleusercontent.com',
+  );
   final StreamController<UserModel?> _authStateController =
       StreamController<UserModel?>.broadcast();
 
@@ -28,7 +29,6 @@ class AuthService {
 
   // Store verification ID for phone auth
   String? _verificationId;
-  int? _resendToken;
 
   /// Initialize the service and listen to auth state changes
   void initialize() {
@@ -103,74 +103,103 @@ class AuthService {
     );
   }
 
-  // ==================== PHONE AUTHENTICATION ====================
-  
-  // Note: Firebase handles reCAPTCHA automatically on web.
-  // The invisible reCAPTCHA is used by default when Firebase Auth SDK detects web platform.
-  // Make sure 'recaptcha-container' div exists in index.html for fallback scenarios.
+  // ==================== PHONE AUTHENTICATION (MSG91) ====================
 
-  /// Start phone number verification
+  /// Start phone number verification via MSG91 OTP (routed through backend)
   Future<void> signInWithPhone(String phoneNumber) async {
-    debugPrint('📱 Sending OTP to $phoneNumber');
-    
-    await _auth.verifyPhoneNumber(
-      phoneNumber: phoneNumber,
-      verificationCompleted: (PhoneAuthCredential credential) async {
-        // Auto-verification on Android
-        debugPrint('✅ Auto-verification completed');
-        await _auth.signInWithCredential(credential);
-      },
-      verificationFailed: (FirebaseAuthException e) {
-        debugPrint('❌ Phone verification failed: ${e.message}');
-        throw Exception(e.message ?? 'Phone verification failed');
-      },
-      codeSent: (String verificationId, int? resendToken) {
-        debugPrint('📨 OTP sent successfully');
-        _verificationId = verificationId;
-        _resendToken = resendToken;
-      },
-      codeAutoRetrievalTimeout: (String verificationId) {
-        _verificationId = verificationId;
-      },
-      forceResendingToken: _resendToken,
-      timeout: const Duration(seconds: 60),
-    );
+    debugPrint('📱 Sending MSG91 OTP to $phoneNumber via backend');
+    _verificationId = phoneNumber;
+
+    try {
+      final response = await ApiService.instance.post('/auth/otp/send', {
+        'phoneNumber': phoneNumber,
+      });
+
+      debugPrint('📨 MSG91 OTP response: ${response['message']}');
+    } catch (e) {
+      debugPrint('❌ Phone OTP send failed: $e');
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
+    }
   }
 
-  /// Verify phone OTP
+  /// Resend phone OTP via MSG91
+  Future<void> resendOtp(String phoneNumber, {String retryType = 'text'}) async {
+    debugPrint('🔄 Resending MSG91 OTP to $phoneNumber via backend');
+
+    try {
+      final response = await ApiService.instance.post('/auth/otp/resend', {
+        'phoneNumber': phoneNumber,
+        'retryType': retryType,
+      });
+
+      debugPrint('📨 MSG91 OTP resent successfully: ${response['message']}');
+    } catch (e) {
+      debugPrint('❌ Phone OTP resend failed: $e');
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
+    }
+  }
+
+  /// Verify phone OTP via MSG91
   Future<UserModel> verifyOtp(String phoneNumber, String otp) async {
-    if (_verificationId == null) {
+    final targetPhone = (_verificationId != null && _verificationId!.isNotEmpty)
+        ? _verificationId!
+        : phoneNumber;
+    if (targetPhone.isEmpty) {
       throw Exception('No verification in progress. Please request OTP first.');
     }
     
-    debugPrint('🔐 Verifying OTP...');
-    
+    debugPrint('🔐 Verifying MSG91 OTP with backend for $targetPhone...');
+
     try {
-      final credential = PhoneAuthProvider.credential(
-        verificationId: _verificationId!,
-        smsCode: otp,
-      );
-      
-      final userCredential = await _auth.signInWithCredential(credential);
-      
-      if (userCredential.user == null) {
-        throw Exception('Sign in failed');
+      final response = await ApiService.instance.post('/auth/otp/verify', {
+        'phoneNumber': targetPhone,
+        'otp': otp.trim(),
+      });
+
+      return await _handleAuthSuccess(response);
+    } catch (e) {
+      debugPrint('❌ Failed to verify OTP: $e');
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
+    }
+  }
+
+  /// Helper to finalize authentication with tokens and user profile
+  Future<UserModel> _handleAuthSuccess(Map<String, dynamic> response) async {
+    // Save backend JWT token for API requests
+    final token = response['token'] as String?;
+    if (token != null) {
+      await ApiService.instance.setAuthToken(token);
+    }
+
+    // Sign in to Firebase Auth with custom token
+    final customToken = response['customToken'] as String?;
+    if (customToken != null) {
+      try {
+        debugPrint('🔑 Signing in with Firebase custom token...');
+        final userCredential = await _auth.signInWithCustomToken(customToken);
+        if (userCredential.user != null) {
+          _currentUser = await _loadUserProfile(userCredential.user!);
+          _authStateController.add(_currentUser);
+          _verificationId = null;
+          debugPrint('✅ Phone OTP verified and signed in to Firebase');
+          return _currentUser!;
+        }
+      } catch (firebaseErr) {
+        debugPrint('⚠️ Firebase custom token sign-in warning: $firebaseErr');
       }
-      
-      _currentUser = await _loadUserProfile(userCredential.user!);
+    }
+
+    // Fallback: Use profile data from backend response
+    if (response['user'] != null) {
+      final userData = response['user'] as Map<String, dynamic>;
+      _currentUser = UserModel.fromMap(userData);
       _authStateController.add(_currentUser);
       _verificationId = null;
-      
-      debugPrint('✅ Phone OTP verified successfully');
+      debugPrint('✅ Phone OTP verified using backend user profile');
       return _currentUser!;
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'invalid-verification-code' || e.code == 'invalid-credential') {
-        throw Exception('Invalid OTP');
-      }
-      throw Exception(e.message ?? 'Failed to verify OTP');
-    } catch (e) {
-      throw Exception('Failed to verify OTP: $e');
     }
+
+    throw Exception('Verification succeeded but failed to load user profile');
   }
 
   // ==================== EMAIL AUTHENTICATION ====================
@@ -320,23 +349,29 @@ class AuthService {
     debugPrint('🔵 Starting Google Sign-In...');
     
     try {
-      // Trigger the Google Sign-In flow (7.x API)
-      final GoogleSignInAccount? googleUser = await _googleSignIn.authenticate();
-      
-      if (googleUser == null) {
-        throw Exception('Google Sign-In cancelled');
+      UserCredential userCredential;
+
+      if (kIsWeb) {
+        // On web, use Firebase Auth's signInWithPopup directly
+        // (google_sign_in plugin's authenticate() is not supported on web)
+        final googleProvider = GoogleAuthProvider();
+        userCredential = await _auth.signInWithPopup(googleProvider);
+      } else {
+        // On mobile/desktop, use the google_sign_in plugin
+        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+        
+        if (googleUser == null) {
+          throw Exception('Google Sign-In cancelled');
+        }
+        
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        
+        final credential = GoogleAuthProvider.credential(
+          idToken: googleAuth.idToken,
+        );
+        
+        userCredential = await _auth.signInWithCredential(credential);
       }
-      
-      // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
-      
-      // Create a new credential (v7.x: accessToken no longer available, use idToken only)
-      final credential = GoogleAuthProvider.credential(
-        idToken: googleAuth.idToken,
-      );
-      
-      // Sign in to Firebase with the Google credential
-      final userCredential = await _auth.signInWithCredential(credential);
       
       if (userCredential.user == null) {
         throw Exception('Google Sign-In failed');
@@ -393,6 +428,12 @@ class AuthService {
       await _googleSignIn.disconnect();
     } catch (e) {
       debugPrint('Google sign-out error: $e');
+    }
+
+    try {
+      await ApiService.instance.setAuthToken(null);
+    } catch (e) {
+      debugPrint('API token clear error: $e');
     }
     
     await _auth.signOut();

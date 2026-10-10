@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -29,7 +30,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: ThemeHelper.of(context).dividerColor!,
       appBar: AppBar(
         title: const Text('Leaderboard'),
         backgroundColor: AppTheme.primaryOrange,
@@ -148,11 +149,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     if (rank == 1) {
       rankColor = Colors.amber;
     } else if (rank == 2) {
-      rankColor = Colors.grey[400]!;
+      rankColor = ThemeHelper.of(context).textSecondary!;
     } else if (rank == 3) {
       rankColor = Colors.brown[300]!;
     } else {
-      rankColor = Colors.grey[200]!;
+      rankColor = ThemeHelper.of(context).dividerColor!;
     }
 
     String statLabel;
@@ -209,7 +210,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                 child: rank <= 3
                     ? Icon(
                         Icons.emoji_events,
-                        color: rank == 1 ? Colors.white : Colors.black54,
+                        color: rank == 1 ? Colors.white : ThemeHelper.of(context).textSecondary,
                         size: 20.sp,
                       )
                     : Text(
@@ -232,7 +233,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                   SizedBox(height: 2.h),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary),
                   ),
                 ],
               ),
@@ -252,7 +253,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                 ),
                 Text(
                   statLabel,
-                  style: TextStyle(fontSize: 11.sp, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary),
                 ),
               ],
             ),

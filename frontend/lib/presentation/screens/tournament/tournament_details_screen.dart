@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -491,9 +492,9 @@ https://scorepartner.in/tournament/${t.id}
               height: 220.h,
               padding: EdgeInsets.all(10.w),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: ThemeHelper.of(context).cardBg,
                 borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(color: Colors.grey[300]!),
+                border: Border.all(color: ThemeHelper.of(context).dividerColor!),
               ),
               child: QrImageView(
                 data: 'https://scorepartner.in/tournament/${_tournament.id}',
@@ -504,7 +505,7 @@ https://scorepartner.in/tournament/${t.id}
             SizedBox(height: 12.h),
             Text(
               'Tournament ID: ${_tournament.id}',
-              style: TextStyle(fontSize: 11.sp, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 8.h),
@@ -536,14 +537,14 @@ https://scorepartner.in/tournament/${t.id}
         
         if (snapshot.connectionState == ConnectionState.active && !snapshot.hasData) {
           // Document was deleted. Return a placeholder or empty Scaffold while the deletion pop finishes.
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return Scaffold(body: Center(child: CircularProgressIndicator()));
         }
 
         if (snapshot.hasData && snapshot.data != null) {
           _tournament = snapshot.data!;
         }
         return Scaffold(
-          backgroundColor: Colors.grey[100],
+          backgroundColor: ThemeHelper.of(context).dividerColor!,
           body: NestedScrollView(
             headerSliverBuilder: (context, innerBoxIsScrolled) => [
               SliverAppBar(
@@ -760,11 +761,11 @@ https://scorepartner.in/tournament/${t.id}
             _tabController.animateTo(item['tabIndex']);
           },
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
+            duration: Duration(milliseconds: 250),
             curve: Curves.easeInOut,
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
             decoration: BoxDecoration(
-              color: isSelected ? AppTheme.primaryOrange : Colors.grey.shade100,
+              color: isSelected ? AppTheme.primaryOrange : ThemeHelper.of(context).dividerColor!,
               borderRadius: BorderRadius.circular(25.r),
               boxShadow: isSelected
                   ? [
@@ -778,7 +779,7 @@ https://scorepartner.in/tournament/${t.id}
               border: isSelected
                   ? null
                   : Border.all(
-                      color: Colors.grey.shade300,
+                      color: ThemeHelper.of(context).dividerColor!,
                       width: 1.w,
                     ),
             ),
@@ -793,7 +794,7 @@ https://scorepartner.in/tournament/${t.id}
                     children: [
                       Icon(
                         item['icon'],
-                        color: isSelected ? Colors.white : Colors.black54,
+                        color: isSelected ? Colors.white : ThemeHelper.of(context).textSecondary,
                         size: 18,
                       ),
                     ],
@@ -803,7 +804,7 @@ https://scorepartner.in/tournament/${t.id}
                 Text(
                   item['label'],
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.black87,
+                    color: isSelected ? Colors.white : ThemeHelper.of(context).textPrimary,
                     fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
                     fontSize: 13.sp,
                     letterSpacing: isSelected ? 0.3 : 0,
@@ -829,11 +830,11 @@ https://scorepartner.in/tournament/${t.id}
           // ======== Tournament Details Card ========
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: ThemeHelper.of(context).cardBg,
               borderRadius: BorderRadius.circular(16.r),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
+                  color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.06),
                   blurRadius: 12,
                   offset: Offset(0, 4),
                 ),
@@ -875,7 +876,7 @@ https://scorepartner.in/tournament/${t.id}
                         child: Text(
                           t.effectiveStatus.toUpperCase(),
                           style: TextStyle(
-                            color: Colors.white,
+                            color: ThemeHelper.of(context).cardBg,
                             fontWeight: FontWeight.bold,
                             fontSize: 11.sp,
                             letterSpacing: 0.5,
@@ -945,11 +946,11 @@ https://scorepartner.in/tournament/${t.id}
           // ======== Prize & Entry Card ========
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: ThemeHelper.of(context).cardBg,
               borderRadius: BorderRadius.circular(16.r),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
+                  color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.06),
                   blurRadius: 12,
                   offset: Offset(0, 4),
                 ),
@@ -1029,7 +1030,7 @@ https://scorepartner.in/tournament/${t.id}
                                       'Entry Fee',
                                       style: TextStyle(
                                         fontSize: 11.sp,
-                                        color: Colors.grey[600],
+                                        color: ThemeHelper.of(context).textSecondary,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -1078,7 +1079,7 @@ https://scorepartner.in/tournament/${t.id}
                                       'Prize Pool',
                                       style: TextStyle(
                                         fontSize: 11.sp,
-                                        color: Colors.grey[600],
+                                        color: ThemeHelper.of(context).textSecondary,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -1165,7 +1166,7 @@ https://scorepartner.in/tournament/${t.id}
                 label,
                 style: TextStyle(
                   fontSize: 11.sp,
-                  color: Colors.grey[500],
+                  color: ThemeHelper.of(context).textSecondary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -1190,7 +1191,7 @@ https://scorepartner.in/tournament/${t.id}
                       style: TextStyle(
                         fontSize: 13.sp,
                         fontWeight: FontWeight.w700,
-                        color: Colors.black87,
+                        color: ThemeHelper.of(context).textPrimary,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1218,16 +1219,16 @@ https://scorepartner.in/tournament/${t.id}
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(12.r),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+        boxShadow: [BoxShadow(color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05), blurRadius: 8)],
       ),
       child: Column(
         children: [
           Icon(icon, color: AppTheme.primaryOrange, size: 28.sp),
           SizedBox(height: 8.h),
           Text(value, style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold)),
-          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12.sp)),
+          Text(label, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
         ],
       ),
     );
@@ -1254,16 +1255,16 @@ https://scorepartner.in/tournament/${t.id}
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.sports_cricket, size: 64.sp, color: Colors.grey[400]),
+            Icon(Icons.sports_cricket, size: 64.sp, color: ThemeHelper.of(context).textSecondary),
             SizedBox(height: 16.h),
             Text(
               'No Fixtures Yet',
-              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: ThemeHelper.of(context).textSecondary),
             ),
             SizedBox(height: 8.h),
             Text(
               'Generate fixtures to start the tournament',
-                style: TextStyle(color: Colors.grey[500]),
+                style: TextStyle(color: ThemeHelper.of(context).textSecondary),
             ),
             SizedBox(height: 24.h),
             Row(
@@ -1376,8 +1377,8 @@ https://scorepartner.in/tournament/${t.id}
               
               return FloatingActionButton.extended(
                 onPressed: _navigateToCreateMatch,
-                icon: Icon(Icons.add, color: Colors.white),
-                label: const Text('Create Match', style: TextStyle(color: Colors.white)),
+                icon: Icon(Icons.add, color: ThemeHelper.of(context).cardBg,),
+                label: Text('Create Match', style: TextStyle(color: ThemeHelper.of(context).cardBg,)),
                 backgroundColor: AppTheme.primaryOrange,
               );
             },
@@ -1394,10 +1395,10 @@ https://scorepartner.in/tournament/${t.id}
     return Container(
       margin: EdgeInsets.only(bottom: 8.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(12.r),
         border: isLive ? Border.all(color: Colors.green, width: 2.w) : null,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+        boxShadow: [BoxShadow(color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05), blurRadius: 8)],
       ),
       child: Material(
         color: Colors.transparent,
@@ -1414,7 +1415,7 @@ https://scorepartner.in/tournament/${t.id}
                   children: [
                     Text(
                       fixture.round,
-                      style: TextStyle(fontSize: 11.sp, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary),
                     ),
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
@@ -1468,7 +1469,7 @@ https://scorepartner.in/tournament/${t.id}
                                 style: TextStyle(
                                   fontSize: 14.sp,
                                   fontWeight: FontWeight.bold,
-                                  color: fixture.winnerId == fixture.team1Id ? Colors.green : Colors.black87,
+                                  color: fixture.winnerId == fixture.team1Id ? Colors.green : ThemeHelper.of(context).textPrimary,
                                 ),
                               ),
                             ),
@@ -1478,12 +1479,12 @@ https://scorepartner.in/tournament/${t.id}
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
                       decoration: BoxDecoration(
-                        color: Colors.grey[100],
+                        color: ThemeHelper.of(context).dividerColor!,
                         borderRadius: BorderRadius.circular(8.r),
                       ),
                       child: Text(
                         'VS',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[600]),
+                        style: TextStyle(fontWeight: FontWeight.bold, color: ThemeHelper.of(context).textSecondary),
                       ),
                     ),
                     Expanded(
@@ -1516,7 +1517,7 @@ https://scorepartner.in/tournament/${t.id}
                                 style: TextStyle(
                                   fontSize: 14.sp,
                                   fontWeight: FontWeight.bold,
-                                  color: fixture.winnerId == fixture.team2Id ? Colors.green : Colors.black87,
+                                  color: fixture.winnerId == fixture.team2Id ? Colors.green : ThemeHelper.of(context).textPrimary,
                                 ),
                               ),
                             ),
@@ -1559,7 +1560,7 @@ https://scorepartner.in/tournament/${t.id}
                   SizedBox(height: 8.h),
                   Text(
                     _formatDate(fixture.scheduledDate!),
-                    style: TextStyle(fontSize: 11.sp, color: Colors.grey[500]),
+                    style: TextStyle(fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary),
                   ),
                 ],
               ],
@@ -1915,10 +1916,10 @@ https://scorepartner.in/tournament/${t.id}
             margin: EdgeInsets.only(bottom: 12.h),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12.r),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+              boxShadow: [BoxShadow(color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05), blurRadius: 8)],
             ),
             child: Material(
-              color: Colors.white,
+              color: ThemeHelper.of(context).cardBg,
               borderRadius: BorderRadius.circular(12.r),
               clipBehavior: Clip.antiAlias,
               child: ListTile(
@@ -1937,11 +1938,11 @@ https://scorepartner.in/tournament/${t.id}
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SizedBox(height: 4.h),
-                        Text('Captain: ${team.captainName}', style: TextStyle(fontSize: 12.sp, color: Colors.grey[600])),
-                        Text('Players: ${team.players.length}', style: TextStyle(fontSize: 12.sp, color: Colors.grey[600])),
+                        Text('Captain: ${team.captainName}', style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary)),
+                        Text('Players: ${team.players.length}', style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary)),
                       ],
                     )
-                  : Text('ID: $teamId', style: TextStyle(fontSize: 12.sp, color: Colors.grey[600])),
+                  : Text('ID: $teamId', style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary)),
               trailing: team != null
                   ? Container(
                       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
@@ -1979,8 +1980,8 @@ https://scorepartner.in/tournament/${t.id}
               
               return FloatingActionButton.extended(
                 onPressed: _showAddTeamDialog,
-                icon: Icon(Icons.add, color: Colors.white),
-                label: const Text('Add Team', style: TextStyle(color: Colors.white)),
+                icon: Icon(Icons.add, color: ThemeHelper.of(context).cardBg,),
+                label: Text('Add Team', style: TextStyle(color: ThemeHelper.of(context).cardBg,)),
                 backgroundColor: AppTheme.primaryOrange,
               );
             },
@@ -2040,9 +2041,9 @@ https://scorepartner.in/tournament/${t.id}
             padding: EdgeInsets.all(12.w),
             margin: EdgeInsets.only(bottom: 12.h),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: ThemeHelper.of(context).cardBg,
               borderRadius: BorderRadius.circular(8.r),
-              border: Border.all(color: Colors.grey[200]!),
+              border: Border.all(color: ThemeHelper.of(context).dividerColor!),
             ),
             child: Row(
               children: [
@@ -2072,12 +2073,12 @@ https://scorepartner.in/tournament/${t.id}
                   ),
                   child: Row(
                     children: [
-                      Expanded(flex: 3, child: Text('TEAM', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12.sp))),
-                      Expanded(child: Text('P', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12.sp), textAlign: TextAlign.center)),
-                      Expanded(child: Text('W', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12.sp), textAlign: TextAlign.center)),
-                      Expanded(child: Text('L', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12.sp), textAlign: TextAlign.center)),
-                      Expanded(child: Text('NRR', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12.sp), textAlign: TextAlign.center)),
-                      Expanded(child: Text('PTS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12.sp), textAlign: TextAlign.center)),
+                      Expanded(flex: 3, child: Text('TEAM', style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.bold, fontSize: 12.sp))),
+                      Expanded(child: Text('P', style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.bold, fontSize: 12.sp), textAlign: TextAlign.center)),
+                      Expanded(child: Text('W', style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.bold, fontSize: 12.sp), textAlign: TextAlign.center)),
+                      Expanded(child: Text('L', style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.bold, fontSize: 12.sp), textAlign: TextAlign.center)),
+                      Expanded(child: Text('NRR', style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.bold, fontSize: 12.sp), textAlign: TextAlign.center)),
+                      Expanded(child: Text('PTS', style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.bold, fontSize: 12.sp), textAlign: TextAlign.center)),
                     ],
                   ),
                 ),
@@ -2097,7 +2098,7 @@ https://scorepartner.in/tournament/${t.id}
                     return Container(
                       height: 48.h, // Fixed height instead of IntrinsicHeight to prevent RenderFlex overflow
                       decoration: BoxDecoration(
-                        border: Border(bottom: BorderSide(color: Colors.grey[100]!)),
+                        border: Border(bottom: BorderSide(color: ThemeHelper.of(context).dividerColor!)),
                         color: isQualified ? Colors.green.withOpacity(0.02) : null,
                       ),
                       child: Row(
@@ -2110,7 +2111,7 @@ https://scorepartner.in/tournament/${t.id}
                               padding: EdgeInsets.symmetric(horizontal: 12.w),
                               child: Row(
                                 children: [
-                                  Text('${idx + 1}', style: TextStyle(fontSize: 11.sp, color: Colors.grey[600], fontWeight: FontWeight.bold)),
+                                  Text('${idx + 1}', style: TextStyle(fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary, fontWeight: FontWeight.bold)),
                                   SizedBox(width: 8.w),
                                   Expanded(
                                     child: Text(
@@ -2395,7 +2396,7 @@ https://scorepartner.in/tournament/${t.id}
                           );
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Failed to generate invite link', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red),
+                            SnackBar(content: Text('Failed to generate invite link', style: TextStyle(color: ThemeHelper.of(context).cardBg,)), backgroundColor: Colors.red),
                           );
                         }
                       }
@@ -2441,8 +2442,8 @@ https://scorepartner.in/tournament/${t.id}
         Container(
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
           decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+            color: ThemeHelper.of(context).cardBg,
+            border: Border(bottom: BorderSide(color: ThemeHelper.of(context).dividerColor!)),
           ),
           child: Row(
             children: [
@@ -2489,7 +2490,7 @@ https://scorepartner.in/tournament/${t.id}
           style: TextStyle(
             fontSize: 14.sp,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected ? AppTheme.primaryOrange : Colors.grey[600],
+            color: isSelected ? AppTheme.primaryOrange : ThemeHelper.of(context).textSecondary,
             letterSpacing: 1.0,
           ),
         ),
@@ -2572,15 +2573,15 @@ https://scorepartner.in/tournament/${t.id}
         decoration: BoxDecoration(
           color: Colors.grey[50],
           borderRadius: BorderRadius.circular(8.r),
-          border: Border.all(color: Colors.grey[200]!),
+          border: Border.all(color: ThemeHelper.of(context).dividerColor!),
         ),
         child: Row(
           children: [
-            Icon(icon, color: Colors.grey[400], size: 20.sp),
+            Icon(icon, color: ThemeHelper.of(context).textSecondary, size: 20.sp),
             SizedBox(width: 12.w),
-            Text(title, style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w500, fontSize: 13.sp)),
-            const Spacer(),
-            Text('No data', style: TextStyle(color: Colors.grey[400], fontSize: 12.sp)),
+            Text(title, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontWeight: FontWeight.w500, fontSize: 13.sp)),
+            Spacer(),
+            Text('No data', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
           ],
         ),
       );
@@ -2588,9 +2589,9 @@ https://scorepartner.in/tournament/${t.id}
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: ThemeHelper.of(context).dividerColor!),
       ),
       child: Column(
         children: [
@@ -2600,17 +2601,17 @@ https://scorepartner.in/tournament/${t.id}
             decoration: BoxDecoration(
               color: Colors.grey[50],
               borderRadius: BorderRadius.vertical(top: Radius.circular(8.r)),
-              border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+              border: Border(bottom: BorderSide(color: ThemeHelper.of(context).dividerColor!)),
             ),
             child: Row(
               children: [
-                Icon(icon, color: Colors.grey[700], size: 18.sp),
+                Icon(icon, color: ThemeHelper.of(context).textSecondary, size: 18.sp),
                 SizedBox(width: 8.w),
                 Expanded(
                   child: Text(
                     title,
                     style: TextStyle(
-                      color: Colors.black87,
+                      color: ThemeHelper.of(context).textPrimary,
                       fontWeight: FontWeight.w600,
                       fontSize: 13.sp,
                     ),
@@ -2618,7 +2619,7 @@ https://scorepartner.in/tournament/${t.id}
                 ),
                 Text(
                   '${data.length} players',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 11.sp, fontWeight: FontWeight.w500),
+                  style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
@@ -2630,7 +2631,7 @@ https://scorepartner.in/tournament/${t.id}
               padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
               decoration: BoxDecoration(
                 color: Colors.amber[50],
-                border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+                border: Border(bottom: BorderSide(color: ThemeHelper.of(context).dividerColor!)),
               ),
               child: Row(
                 children: [
@@ -2648,7 +2649,7 @@ https://scorepartner.in/tournament/${t.id}
                         style: TextStyle(
                           fontSize: 12.sp,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: ThemeHelper.of(context).cardBg,
                         ),
                       ),
                     ),
@@ -2664,13 +2665,13 @@ https://scorepartner.in/tournament/${t.id}
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 13.sp,
-                            color: Colors.black87,
+                            color: ThemeHelper.of(context).textPrimary,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           data.first.teamName,
-                          style: TextStyle(color: Colors.grey[600], fontSize: 11.sp),
+                          style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp),
                         ),
                       ],
                     ),
@@ -2681,7 +2682,7 @@ https://scorepartner.in/tournament/${t.id}
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 13.sp,
-                      color: Colors.black87,
+                      color: ThemeHelper.of(context).textPrimary,
                     ),
                   ),
                 ],
@@ -2703,7 +2704,7 @@ https://scorepartner.in/tournament/${t.id}
                 border: Border(
                   bottom: isLast
                       ? BorderSide.none
-                      : BorderSide(color: Colors.grey[200]!, width: 0.5),
+                      : BorderSide(color: ThemeHelper.of(context).dividerColor!, width: 0.5),
                 ),
               ),
               child: Row(
@@ -2714,12 +2715,12 @@ https://scorepartner.in/tournament/${t.id}
                     height: 28.h,
                     decoration: BoxDecoration(
                       color: rank == 2
-                          ? Colors.grey[300]
+                          ? ThemeHelper.of(context).dividerColor!
                           : rank == 3
                               ? Colors.amber[200]
                               : Colors.transparent,
                       shape: rank <= 3 ? BoxShape.circle : BoxShape.rectangle,
-                      border: rank > 3 ? Border.all(color: Colors.grey[300]!) : null,
+                      border: rank > 3 ? Border.all(color: ThemeHelper.of(context).dividerColor!) : null,
                       borderRadius: rank > 3 ? BorderRadius.circular(14.r) : null,
                     ),
                     child: Center(
@@ -2731,8 +2732,8 @@ https://scorepartner.in/tournament/${t.id}
                           color: rank == 2
                               ? Colors.white
                               : rank == 3
-                                  ? Colors.black87
-                                  : Colors.grey[600],
+                                  ? ThemeHelper.of(context).textPrimary
+                                  : ThemeHelper.of(context).textSecondary,
                         ),
                       ),
                     ),
@@ -2748,13 +2749,13 @@ https://scorepartner.in/tournament/${t.id}
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                             fontSize: 12.sp,
-                            color: Colors.black87,
+                            color: ThemeHelper.of(context).textPrimary,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           player.teamName,
-                          style: TextStyle(color: Colors.grey[500], fontSize: 10.sp),
+                          style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 10.sp),
                         ),
                       ],
                     ),
@@ -2765,7 +2766,7 @@ https://scorepartner.in/tournament/${t.id}
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 12.sp,
-                      color: Colors.black87,
+                      color: ThemeHelper.of(context).textPrimary,
                     ),
                   ),
                 ],
@@ -2882,7 +2883,7 @@ https://scorepartner.in/tournament/${t.id}
                     shape: BoxShape.circle,
                     boxShadow: [BoxShadow(color: Colors.amber.withOpacity(0.4), blurRadius: 20, spreadRadius: 2)],
                   ),
-                  child: Icon(Icons.emoji_events_rounded, size: 40.sp, color: Colors.white),
+                  child: Icon(Icons.emoji_events_rounded, size: 40.sp, color: ThemeHelper.of(context).cardBg,),
                 ),
                 SizedBox(height: 16.h),
                 Container(
@@ -2906,7 +2907,7 @@ https://scorepartner.in/tournament/${t.id}
                 Text(
                   hasData ? mvp!.name : 'To Be Announced',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: ThemeHelper.of(context).cardBg,
                     fontSize: 26.sp,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.5,
@@ -2917,7 +2918,7 @@ https://scorepartner.in/tournament/${t.id}
                   SizedBox(height: 6.h),
                   Text(
                     mvp!.teamName,
-                    style: TextStyle(color: Colors.white60, fontSize: 13.sp, fontWeight: FontWeight.w500),
+                    style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 13.sp, fontWeight: FontWeight.w500),
                   ),
                   SizedBox(height: 20.h),
                   // Stats Pills
@@ -2947,12 +2948,12 @@ https://scorepartner.in/tournament/${t.id}
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.star_rounded, size: 16.sp, color: Colors.white),
+                        Icon(Icons.star_rounded, size: 16.sp, color: ThemeHelper.of(context).cardBg,),
                         SizedBox(width: 4.w),
                         Text(
                           'MVP Score: ${mvp.mvpScore}',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: ThemeHelper.of(context).cardBg,
                             fontSize: 13.sp,
                             fontWeight: FontWeight.w800,
                           ),
@@ -2965,7 +2966,7 @@ https://scorepartner.in/tournament/${t.id}
                     padding: EdgeInsets.only(top: 12.h),
                     child: Text(
                       'MVP will be calculated once matches are played',
-                      style: TextStyle(color: Colors.white38, fontSize: 12.sp),
+                      style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -3023,14 +3024,14 @@ https://scorepartner.in/tournament/${t.id}
           // ── MVP LEADERBOARD ──
           if (sortedMvp.length > 1) ...[
             SizedBox(height: 24.h),
-            _buildCategoryHeader('📊', 'MVP LEADERBOARD', const Color(0xFF37474F)),
+            _buildCategoryHeader('📊', 'MVP LEADERBOARD', Color(0xFF37474F)),
             SizedBox(height: 12.h),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: ThemeHelper.of(context).cardBg,
                 borderRadius: BorderRadius.circular(16.r),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 16, offset: const Offset(0, 4)),
+                  BoxShadow(color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.06), blurRadius: 16, offset: Offset(0, 4)),
                 ],
               ),
               child: Column(
@@ -3044,11 +3045,11 @@ https://scorepartner.in/tournament/${t.id}
                     ),
                     child: Row(
                       children: [
-                        SizedBox(width: 32.w, child: Text('#', style: TextStyle(color: Colors.white70, fontSize: 12.sp, fontWeight: FontWeight.w700))),
-                        Expanded(child: Text('PLAYER', style: TextStyle(color: Colors.white70, fontSize: 11.sp, fontWeight: FontWeight.w700, letterSpacing: 0.5))),
-                        SizedBox(width: 45.w, child: Text('R', style: TextStyle(color: Colors.white70, fontSize: 11.sp, fontWeight: FontWeight.w700), textAlign: TextAlign.center)),
-                        SizedBox(width: 35.w, child: Text('W', style: TextStyle(color: Colors.white70, fontSize: 11.sp, fontWeight: FontWeight.w700), textAlign: TextAlign.center)),
-                        SizedBox(width: 55.w, child: Text('PTS', style: TextStyle(color: Colors.white70, fontSize: 11.sp, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
+                        SizedBox(width: 32.w, child: Text('#', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp, fontWeight: FontWeight.w700))),
+                        Expanded(child: Text('PLAYER', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp, fontWeight: FontWeight.w700, letterSpacing: 0.5))),
+                        SizedBox(width: 45.w, child: Text('R', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp, fontWeight: FontWeight.w700), textAlign: TextAlign.center)),
+                        SizedBox(width: 35.w, child: Text('W', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp, fontWeight: FontWeight.w700), textAlign: TextAlign.center)),
+                        SizedBox(width: 55.w, child: Text('PTS', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
                       ],
                     ),
                   ),
@@ -3064,21 +3065,21 @@ https://scorepartner.in/tournament/${t.id}
                       rowBg = const Color(0xFFFFF8E1);
                       rankBgColor = const Color(0xFFFFD700);
                     } else if (rank == 2) {
-                      rowBg = const Color(0xFFF5F5F5);
-                      rankBgColor = const Color(0xFFC0C0C0);
+                      rowBg = Color(0xFFF5F5F5);
+                      rankBgColor = Color(0xFFC0C0C0);
                     } else if (rank == 3) {
-                      rowBg = const Color(0xFFFBE9E7);
-                      rankBgColor = const Color(0xFFCD7F32);
+                      rowBg = Color(0xFFFBE9E7);
+                      rankBgColor = Color(0xFFCD7F32);
                     } else {
                       rowBg = null;
-                      rankBgColor = Colors.grey[200]!;
+                      rankBgColor = ThemeHelper.of(context).dividerColor!;
                     }
 
                     return Container(
                       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
                       decoration: BoxDecoration(
                         color: rowBg,
-                        border: Border(bottom: BorderSide(color: Colors.grey[100]!, width: 0.5)),
+                        border: Border(bottom: BorderSide(color: ThemeHelper.of(context).dividerColor!, width: 0.5)),
                       ),
                       child: Row(
                         children: [
@@ -3097,7 +3098,7 @@ https://scorepartner.in/tournament/${t.id}
                                 style: TextStyle(
                                   fontSize: 11.sp,
                                   fontWeight: FontWeight.bold,
-                                  color: rank <= 3 ? Colors.white : Colors.grey[600],
+                                  color: rank <= 3 ? Colors.white : ThemeHelper.of(context).textSecondary,
                                 ),
                               ),
                             ),
@@ -3114,7 +3115,7 @@ https://scorepartner.in/tournament/${t.id}
                                 ),
                                 Text(
                                   candidate.teamName,
-                                  style: TextStyle(color: Colors.grey[500], fontSize: 10.sp),
+                                  style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 10.sp),
                                 ),
                               ],
                             ),
@@ -3128,7 +3129,7 @@ https://scorepartner.in/tournament/${t.id}
                               style: TextStyle(
                                 fontSize: 14.sp,
                                 fontWeight: FontWeight.w800,
-                                color: rank == 1 ? const Color(0xFFD4A000) : rank <= 3 ? AppTheme.primaryOrange : Colors.black87,
+                                color: rank == 1 ? Color(0xFFD4A000) : rank <= 3 ? AppTheme.primaryOrange : ThemeHelper.of(context).textPrimary,
                               ),
                               textAlign: TextAlign.right,
                             ),
@@ -3158,12 +3159,12 @@ https://scorepartner.in/tournament/${t.id}
         children: [
           Text(
             value,
-            style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w800),
+            style: TextStyle(color: ThemeHelper.of(context).cardBg, fontSize: 16.sp, fontWeight: FontWeight.w800),
           ),
           SizedBox(height: 2.h),
           Text(
             label,
-            style: TextStyle(color: Colors.white54, fontSize: 10.sp, fontWeight: FontWeight.w600),
+            style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 10.sp, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -3181,7 +3182,7 @@ https://scorepartner.in/tournament/${t.id}
     return Container(
       padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(color: accentColor.withOpacity(0.15)),
         boxShadow: [
@@ -3215,7 +3216,7 @@ https://scorepartner.in/tournament/${t.id}
             style: TextStyle(
               fontSize: 15.sp,
               fontWeight: FontWeight.w800,
-              color: Colors.black87,
+              color: ThemeHelper.of(context).textPrimary,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -3224,7 +3225,7 @@ https://scorepartner.in/tournament/${t.id}
             SizedBox(height: 2.h),
             Text(
               teamName,
-              style: TextStyle(color: Colors.grey[500], fontSize: 11.sp),
+              style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -3256,11 +3257,11 @@ https://scorepartner.in/tournament/${t.id}
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 64.sp, color: Colors.grey[400]),
+          Icon(icon, size: 64.sp, color: ThemeHelper.of(context).textSecondary),
           SizedBox(height: 16.h),
-          Text(title, style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+          Text(title, style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600, color: ThemeHelper.of(context).textSecondary)),
           SizedBox(height: 8.h),
-          Text(subtitle, style: TextStyle(color: Colors.grey[500]), textAlign: TextAlign.center),
+          Text(subtitle, style: TextStyle(color: ThemeHelper.of(context).textSecondary), textAlign: TextAlign.center),
         ],
       ),
     );
@@ -3291,7 +3292,7 @@ https://scorepartner.in/tournament/${t.id}
         children: [
           Icon(Icons.admin_panel_settings, size: 18.sp, color: AppTheme.primaryOrange),
           SizedBox(width: 12.w),
-          Expanded(child: Text('Organizer', style: TextStyle(color: Colors.grey[600]))),
+          Expanded(child: Text('Organizer', style: TextStyle(color: ThemeHelper.of(context).textSecondary))),
           GestureDetector(
             onTap: () => _navigateToOrganizerProfile(organizerId),
             child: Text(
@@ -3338,7 +3339,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
         children: [
           Icon(icon, size: 18.sp, color: AppTheme.primaryOrange),
           SizedBox(width: 12.w),
-          Expanded(child: Text(label, style: TextStyle(color: Colors.grey[600]))),
+          Expanded(child: Text(label, style: TextStyle(color: ThemeHelper.of(context).textSecondary))),
           Text(value, style: TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
@@ -3381,7 +3382,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.75,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: ThemeHelper.of(context).cardBg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -3400,7 +3401,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
                     backgroundColor: AppTheme.primaryOrange,
                     child: Text(
                       team.name.isNotEmpty ? team.name[0].toUpperCase() : '?',
-                      style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: ThemeHelper.of(context).cardBg, fontSize: 20.sp, fontWeight: FontWeight.bold),
                     ),
                   ),
                   SizedBox(width: 16.w),
@@ -3414,7 +3415,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
                         ),
                         Text(
                           '${team.players.length} Players',
-                          style: TextStyle(color: Colors.grey[600], fontSize: 13.sp),
+                          style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 13.sp),
                         ),
                       ],
                     ),
@@ -3432,15 +3433,15 @@ void _navigateToOrganizerProfile(String organizerId) async {
               child: ListView.separated(
                 padding: EdgeInsets.all(16.w),
                 itemCount: team.players.length,
-                separatorBuilder: (_, __) => const Divider(),
+                separatorBuilder: (_, __) => Divider(),
                 itemBuilder: (context, index) {
                   final player = team.players[index];
                   final isWicketKeeper = player.role.toLowerCase().contains('wicket keeper') || player.role.toLowerCase().contains('wk');
                   
                   return ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: Colors.grey[200],
-                      child: Icon(Icons.person, color: Colors.grey[600]),
+                      backgroundColor: ThemeHelper.of(context).dividerColor!,
+                      child: Icon(Icons.person, color: ThemeHelper.of(context).textSecondary),
                     ),
                     title: Row(
                       children: [
@@ -3453,7 +3454,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
                               color: Colors.blue,
                               shape: BoxShape.circle,
                             ),
-                            child: Text('C', style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.bold)),
+                            child: Text('C', style: TextStyle(color: ThemeHelper.of(context).cardBg, fontSize: 10.sp, fontWeight: FontWeight.bold)),
                           ),
                         ],
                         if (player.isViceCaptain) ...[
@@ -3464,7 +3465,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
                               color: Colors.lightBlue,
                               shape: BoxShape.circle,
                             ),
-                            child: Text('VC', style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.bold)),
+                            child: Text('VC', style: TextStyle(color: ThemeHelper.of(context).cardBg, fontSize: 10.sp, fontWeight: FontWeight.bold)),
                           ),
                         ],
                         if (isWicketKeeper) ...[
@@ -3475,12 +3476,12 @@ void _navigateToOrganizerProfile(String organizerId) async {
                               color: Colors.green,
                               borderRadius: BorderRadius.circular(4.r),
                             ),
-                            child: Text('WK', style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.bold)),
+                            child: Text('WK', style: TextStyle(color: ThemeHelper.of(context).cardBg, fontSize: 10.sp, fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ],
                     ),
-                    subtitle: Text(player.role.isNotEmpty ? player.role : 'Player', style: TextStyle(color: Colors.grey[600], fontSize: 12.sp)),
+                    subtitle: Text(player.role.isNotEmpty ? player.role : 'Player', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
                     trailing: player.isRegistered 
                       ? Icon(Icons.verified, color: Colors.blue, size: 16.sp)
                       : null,
@@ -3545,7 +3546,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: ThemeHelper.of(context).scaffoldBg,
       body: Column(
         children: [
           // 1. Horizontal Scroll Filter Bar
@@ -3574,7 +3575,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
                         color: isSelected ? AppTheme.primaryOrange : Colors.white,
                         borderRadius: BorderRadius.circular(20.r),
                         border: Border.all(
-                          color: isSelected ? AppTheme.primaryOrange : Colors.grey[300]!,
+                          color: isSelected ? AppTheme.primaryOrange : ThemeHelper.of(context).dividerColor!,
                         ),
                         boxShadow: isSelected ? [
                           BoxShadow(color: AppTheme.primaryOrange.withOpacity(0.3), blurRadius: 6, offset: Offset(0, 2))
@@ -3583,7 +3584,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
                       child: Text(
                         f['label']!,
                         style: TextStyle(
-                          color: isSelected ? Colors.white : Colors.black87,
+                          color: isSelected ? Colors.white : ThemeHelper.of(context).textPrimary,
                           fontWeight: FontWeight.bold,
                           fontSize: 12.sp,
                         ),
@@ -3608,7 +3609,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(20.r),
-                  border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+                  border: Border.all(color: ThemeHelper.of(context).cardBg.withOpacity(0.1), width: 1),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.2),
@@ -3622,7 +3623,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
                     Container(
                       padding: EdgeInsets.all(12.w),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                        color: ThemeHelper.of(context).cardBg.withOpacity(0.05),
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.cyanAccent.withOpacity(0.3)),
                       ),
@@ -3636,7 +3637,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
                           Text(
                             'AI Posters',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: ThemeHelper.of(context).cardBg,
                               fontWeight: FontWeight.w900,
                               fontSize: 16.sp,
                               letterSpacing: 0.5,
@@ -3645,7 +3646,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
                           SizedBox(height: 4.h),
                           Text(
                             'Generate premium player moments',
-                            style: TextStyle(color: Colors.white70, fontSize: 11.sp),
+                            style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp),
                           ),
                         ],
                       ),
@@ -3687,17 +3688,17 @@ void _navigateToOrganizerProfile(String organizerId) async {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.photo_library_outlined, size: 64.sp, color: Colors.grey[300]),
+                        Icon(Icons.photo_library_outlined, size: 64.sp, color: ThemeHelper.of(context).dividerColor!),
                         SizedBox(height: 12.h),
                         Text(
                           'No Moments in this category.',
-                          style: TextStyle(color: Colors.grey[500], fontWeight: FontWeight.bold),
+                          style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontWeight: FontWeight.bold),
                         ),
                         if (canManage) ...[
                           SizedBox(height: 8.h),
                           Text(
                             'Tap "Generate" to add your first cinematic sports moment!',
-                            style: TextStyle(color: Colors.grey[400], fontSize: 12.sp),
+                            style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp),
                           ),
                         ]
                       ],
@@ -3746,11 +3747,11 @@ void _navigateToOrganizerProfile(String organizerId) async {
       borderRadius: BorderRadius.circular(16.r),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: ThemeHelper.of(context).cardBg,
           borderRadius: BorderRadius.circular(16.r),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.06),
               blurRadius: 10,
               offset: Offset(0, 4),
             ),
@@ -3768,7 +3769,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
                 ),
               )
             else
-              const Positioned.fill(child: Icon(Icons.photo, color: Colors.grey)),
+              Positioned.fill(child: Icon(Icons.photo, color: ThemeHelper.of(context).textSecondary)),
 
             // Gradient Tint
             Positioned.fill(
@@ -3795,9 +3796,9 @@ void _navigateToOrganizerProfile(String organizerId) async {
                     child: Container(
                       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
+                        color: ThemeHelper.of(context).cardBg.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.w),
+                        border: Border.all(color: ThemeHelper.of(context).cardBg.withOpacity(0.3), width: 1.w),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -3813,7 +3814,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
                           Text(
                             item.badgeName!.toUpperCase(),
                             style: TextStyle(
-                              color: Colors.white,
+                              color: ThemeHelper.of(context).cardBg,
                               fontSize: 9.sp,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.5,
@@ -3839,7 +3840,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
                   if (item.playerName != null && item.playerName!.isNotEmpty)
                     Text(
                       item.playerName!.toUpperCase(),
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12.sp),
+                      style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.bold, fontSize: 12.sp),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -3851,7 +3852,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
                   SizedBox(height: 2.h),
                   Text(
                     item.description,
-                    style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 9.sp),
+                    style: TextStyle(color: ThemeHelper.of(context).cardBg.withOpacity(0.75), fontSize: 9.sp),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -3888,7 +3889,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
         child: Container(
           width: 360.w,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: ThemeHelper.of(context).cardBg,
             borderRadius: BorderRadius.circular(24.r),
             boxShadow: [
               BoxShadow(
@@ -3912,15 +3913,15 @@ void _navigateToOrganizerProfile(String organizerId) async {
                       image: imageProvider != null
                           ? DecorationImage(image: imageProvider, fit: BoxFit.cover)
                           : null,
-                      color: Colors.black87,
+                      color: ThemeHelper.of(context).textPrimary,
                     ),
                   ),
                   Positioned(
                     top: 12.h,
                     right: 12.w,
                     child: IconButton(
-                      icon: Icon(Icons.close, color: Colors.white, size: 24.sp),
-                      style: IconButton.styleFrom(backgroundColor: Colors.black54),
+                      icon: Icon(Icons.close, color: ThemeHelper.of(context).cardBg, size: 24.sp),
+                      style: IconButton.styleFrom(backgroundColor: ThemeHelper.of(context).textSecondary),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
@@ -3936,9 +3937,9 @@ void _navigateToOrganizerProfile(String organizerId) async {
                           child: Container(
                             padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
+                              color: ThemeHelper.of(context).cardBg.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(16.r),
-                              border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5.w),
+                              border: Border.all(color: ThemeHelper.of(context).cardBg.withOpacity(0.3), width: 1.5.w),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -3954,7 +3955,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
                                 Text(
                                   item.badgeName!.toUpperCase(),
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: ThemeHelper.of(context).cardBg,
                                     fontSize: 12.sp,
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: 1.0,
@@ -3990,7 +3991,7 @@ void _navigateToOrganizerProfile(String organizerId) async {
                         ),
                         Text(
                           DateFormat('dd MMM yyyy').format(item.createdAt),
-                          style: TextStyle(color: Colors.grey[500], fontSize: 10.sp, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 10.sp, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -3998,13 +3999,13 @@ void _navigateToOrganizerProfile(String organizerId) async {
                     if (item.playerName != null && item.playerName!.isNotEmpty) ...[
                       Text(
                         item.playerName!.toUpperCase(),
-                        style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w900, fontSize: 20.sp, letterSpacing: 0.5),
+                        style: TextStyle(color: ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w900, fontSize: 20.sp, letterSpacing: 0.5),
                       ),
                       SizedBox(height: 4.h),
                     ],
                     Text(
                       item.description,
-                      style: TextStyle(color: Colors.grey[700], fontSize: 13.sp, height: 1.4, fontWeight: FontWeight.w500),
+                      style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 13.sp, height: 1.4, fontWeight: FontWeight.w500),
                     ),
                     SizedBox(height: 20.h),
 
@@ -4290,14 +4291,14 @@ class _AnimatedTournamentHeaderState extends State<_AnimatedTournamentHeader>
                             height: 8.h,
                             margin: EdgeInsets.only(right: 6.w),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: ThemeHelper.of(context).cardBg,
                               shape: BoxShape.circle,
                             ),
                           ),
                         Text(
                           widget.status.toUpperCase(),
                           style: TextStyle(
-                            color: Colors.white,
+                            color: ThemeHelper.of(context).cardBg,
                             fontWeight: FontWeight.bold,
                             fontSize: 11.sp,
                             letterSpacing: 1,
@@ -4317,13 +4318,13 @@ class _AnimatedTournamentHeaderState extends State<_AnimatedTournamentHeader>
                       child: Text(
                         widget.tournamentName,
                         style: TextStyle(
-                          color: Colors.white,
+                          color: ThemeHelper.of(context).cardBg,
                           fontSize: 22.sp,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.5,
                           shadows: [
                             Shadow(
-                              color: Colors.black38,
+                              color: ThemeHelper.of(context).textSecondary,
                               offset: Offset(0, 2),
                               blurRadius: 4,
                             ),
@@ -4334,12 +4335,12 @@ class _AnimatedTournamentHeaderState extends State<_AnimatedTournamentHeader>
                       ),
                     ),
                     SizedBox(width: 8.w),
-                    Icon(Icons.remove_red_eye, color: Colors.white70, size: 16.sp),
+                    Icon(Icons.remove_red_eye, color: ThemeHelper.of(context).textSecondary, size: 16.sp),
                     SizedBox(width: 4.w),
                     Text(
                       '${widget.views}',
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: ThemeHelper.of(context).textSecondary,
                         fontSize: 14.sp,
                         fontWeight: FontWeight.bold,
                       ),
@@ -4371,17 +4372,17 @@ class _AnimatedTournamentHeaderState extends State<_AnimatedTournamentHeader>
                         Container(
                           padding: EdgeInsets.all(6.w),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: ThemeHelper.of(context).cardBg.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(8.r),
                           ),
-                          child: Icon(Icons.location_on, color: Colors.white, size: 16.sp),
+                          child: Icon(Icons.location_on, color: ThemeHelper.of(context).cardBg, size: 16.sp),
                         ),
                         SizedBox(width: 8.w),
                         Flexible(
                           child: Text(
                             widget.location,
                             style: TextStyle(
-                              color: Colors.white,
+                              color: ThemeHelper.of(context).cardBg,
                               fontSize: 13.sp,
                               fontWeight: FontWeight.w500,
                               decoration: TextDecoration.underline,
@@ -4391,7 +4392,7 @@ class _AnimatedTournamentHeaderState extends State<_AnimatedTournamentHeader>
                           ),
                         ),
                         SizedBox(width: 4.w),
-                        Icon(Icons.chevron_right, color: Colors.white70, size: 16.sp),
+                        Icon(Icons.chevron_right, color: ThemeHelper.of(context).textSecondary, size: 16.sp),
                       ],
                     ),
                   ),
@@ -4408,7 +4409,7 @@ class _AnimatedTournamentHeaderState extends State<_AnimatedTournamentHeader>
     return Icon(
       icon,
       size: size,
-      color: Colors.white.withOpacity(opacity),
+      color: ThemeHelper.of(context).cardBg.withOpacity(opacity),
     );
   }
 

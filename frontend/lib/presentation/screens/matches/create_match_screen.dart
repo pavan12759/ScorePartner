@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 
 import '../../../../data/models/match_model.dart';
 import '../../../../data/models/team_model.dart';
@@ -477,7 +478,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                 child: Center(
                   child: CircleAvatar(
                     backgroundColor: Colors.orange,
-                    child: Text('VS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    child: Text('VS', style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ),
@@ -499,7 +500,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                       padding: EdgeInsets.only(right: format != 'Custom' ? 4 : 0),
                       child: ChoiceChip(
                         showCheckmark: false,
-                        label: Text(format, style: TextStyle(fontSize: 12.sp, color: isSelected ? Colors.white : Colors.black87)),
+                        label: Text(format, style: TextStyle(fontSize: 12.sp, color: isSelected ? Colors.white : ThemeHelper.of(context).textPrimary)),
                         selected: isSelected,
                         selectedColor: format == 'T20'
                             ? Colors.green
@@ -508,8 +509,8 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                                 : format == 'Test'
                                     ? Colors.red
                                     : Colors.orange,
-                        backgroundColor: Colors.grey[100],
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r), side: BorderSide(color: isSelected ? Colors.transparent : Colors.grey[300]!)),
+                        backgroundColor: ThemeHelper.of(context).dividerColor,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r), side: BorderSide(color: isSelected ? Colors.transparent : ThemeHelper.of(context).dividerColor!)),
                         onSelected: (_) => _onFormatChanged(format),
                       ),
                     ),
@@ -525,7 +526,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                         : _matchFormat == 'Test'
                             ? 'Unlimited overs • 4 innings • New ball every 80 ov'
                             : 'Custom overs • Set powerplay below',
-                style: TextStyle(fontSize: 11.sp, color: Colors.grey[600], fontStyle: FontStyle.italic),
+                style: TextStyle(fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary, fontStyle: FontStyle.italic),
               ),
               SizedBox(height: 16.h),
 
@@ -577,7 +578,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                       decoration: InputDecoration(
                         labelText: 'Overs',
                         prefixIcon: Icon(Icons.timer),
-                        fillColor: _matchFormat == 'Custom' ? null : Colors.grey[100],
+                        fillColor: _matchFormat == 'Custom' ? null : ThemeHelper.of(context).dividerColor,
                         filled: _matchFormat != 'Custom',
                       ),
                       validator: (val) => val!.isEmpty ? 'Required' : null,
@@ -597,7 +598,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                     prefixIcon: Icon(Icons.flash_on, color: Colors.amber),
                     hintText: 'e.g. 6',
                     helperText: 'Field restrictions apply during powerplay',
-                    helperStyle: TextStyle(fontSize: 11.sp, color: Colors.grey[500]),
+                    helperStyle: TextStyle(fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.r)),
                   ),
                   validator: (val) {
@@ -641,7 +642,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Team $teamNumber', style: TextStyle(color: Colors.grey[600], fontSize: 12.sp)),
+              Text('Team $teamNumber', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
               SizedBox(height: 8.h),
               DropdownButtonFormField<String>(
                 value: teamNumber == 1 ? _selectedTeam1Id : _selectedTeam2Id,
@@ -680,7 +681,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
       color: Colors.grey[50],
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.r),
-        side: BorderSide(color: Colors.grey[200]!),
+        side: BorderSide(color: ThemeHelper.of(context).dividerColor!),
       ),
       child: Padding(
         padding: EdgeInsets.all(16.w),
@@ -701,11 +702,11 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                       contentPadding: EdgeInsets.symmetric(horizontal: 16.w),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(30.r),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
+                        borderSide: BorderSide(color: ThemeHelper.of(context).dividerColor!),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(30.r),
-                        borderSide: BorderSide(color: Colors.grey[200]!),
+                        borderSide: BorderSide(color: ThemeHelper.of(context).dividerColor!),
                       ),
                     ),
                   ),
@@ -749,7 +750,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                 hintText: 'Search via SPT ID',
                 prefixIcon: Icon(Icons.group),
                 filled: true,
-                fillColor: Colors.grey[100],
+                fillColor: ThemeHelper.of(context).dividerColor,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8.r),
                 ),

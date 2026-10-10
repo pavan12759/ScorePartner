@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
@@ -40,7 +41,7 @@ class _JoinRequestsScreenState extends State<JoinRequestsScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('Accept', style: TextStyle(color: Colors.white)),
+            child: Text('Accept', style: TextStyle(color: ThemeHelper.of(context).cardBg,)),
           ),
         ],
       ),
@@ -166,7 +167,7 @@ class _JoinRequestsScreenState extends State<JoinRequestsScreen> {
                   SizedBox(height: 4.h),
                   Text(
                     'Please check your connection',
-                    style: TextStyle(fontSize: 13.sp, color: Colors.grey[500]),
+                    style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textSecondary),
                   ),
                 ],
               ),
@@ -196,7 +197,7 @@ class _JoinRequestsScreenState extends State<JoinRequestsScreen> {
                   SizedBox(height: 4.h),
                   Text(
                     'Share your invite link to get join requests',
-                    style: TextStyle(fontSize: 14.sp, color: Colors.grey[500]),
+                    style: TextStyle(fontSize: 14.sp, color: ThemeHelper.of(context).textSecondary),
                   ),
                 ],
               ),
@@ -223,7 +224,7 @@ class _JoinRequestsScreenState extends State<JoinRequestsScreen> {
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.04),
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -276,11 +277,11 @@ class _JoinRequestsScreenState extends State<JoinRequestsScreen> {
                       if (request.playerCity.isNotEmpty)
                         Row(
                           children: [
-                            Icon(Icons.location_on, size: 12.sp, color: Colors.grey[500]),
+                            Icon(Icons.location_on, size: 12.sp, color: ThemeHelper.of(context).textSecondary),
                             SizedBox(width: 2.w),
                             Text(
                               request.playerCity,
-                              style: TextStyle(fontSize: 12.sp, color: Colors.grey[500]),
+                              style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary),
                             ),
                           ],
                         ),
@@ -322,7 +323,7 @@ class _JoinRequestsScreenState extends State<JoinRequestsScreen> {
                 return Container(
                   padding: EdgeInsets.all(10.w),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.grey[800] : Colors.grey[50],
+                    color: isDark ? ThemeHelper.of(context).textSecondary : Colors.grey[50],
                     borderRadius: BorderRadius.circular(10.r),
                   ),
                   child: Row(
@@ -421,7 +422,7 @@ class _JoinRequestsScreenState extends State<JoinRequestsScreen> {
         ),
         Text(
           label,
-          style: TextStyle(fontSize: 10.sp, color: Colors.grey[500]),
+          style: TextStyle(fontSize: 10.sp, color: ThemeHelper.of(context).textSecondary),
         ),
       ],
     );

@@ -13,6 +13,7 @@ import '../broadcast/go_live_screen.dart';
 import '../../widgets/state/scorepartner_skeleton.dart';
 import '../../widgets/state/scorepartner_empty_state.dart';
 import '../../widgets/state/scorepartner_error_state.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 
 class LiveScoringScreen extends StatelessWidget {
   final String matchId;
@@ -130,7 +131,7 @@ class LiveScoringScreen extends StatelessWidget {
                 return Center(
                   child: Card(
                     margin: EdgeInsets.all(24.w),
-                    color: Colors.white,
+                    color: ThemeHelper.of(context).cardBg,
                     child: ScorePartnerErrorState(
                       message: snapshot.error.toString(),
                     ),
@@ -142,7 +143,7 @@ class LiveScoringScreen extends StatelessWidget {
                 return Center(
                   child: Card(
                     margin: EdgeInsets.all(24.w),
-                    color: Colors.white,
+                    color: ThemeHelper.of(context).cardBg,
                     child: ScorePartnerEmptyState(
                       title: 'Match not found',
                       description: 'This match may have been deleted or is unavailable.',

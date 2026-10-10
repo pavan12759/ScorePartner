@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +12,7 @@ import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import '../../../data/models/user_model.dart';
 import '../../../data/models/achievement_model.dart';
 import '../../../data/models/match_model.dart';
+import '../../../core/utils/image_utils.dart';
 import '../../../data/services/auth_service.dart';
 import '../../../data/services/firebase_data_service.dart';
 import '../../widgets/genz_badge_widget.dart';
@@ -109,6 +111,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
+  Stream<UserModel?>? _userStream;
+  Future<List<MatchModel>>? _recentMatchesFuture;
+  String? _currentUserId;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final authProvider = Provider.of<AuthProvider>(context);
+    final uid = authProvider.user?.uid;
+    if (uid != null && uid != _currentUserId) {
+      _currentUserId = uid;
+      _userStream = FirebaseDataService.instance.streamUser(uid);
+      _recentMatchesFuture = FirebaseDataService.instance.getUserPlayedMatches(uid);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -128,14 +146,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     return StreamBuilder<UserModel?>(
-      stream: FirebaseDataService.instance.streamUser(initialUser.uid),
+      stream: _userStream,
       initialData: initialUser,
       builder: (context, snapshot) {
         final user = snapshot.data ?? initialUser;
         
         return Scaffold(
           key: _scaffoldKey,
-          backgroundColor: Colors.white,
+          backgroundColor: ThemeHelper.of(context).scaffoldBg,
           endDrawer: _buildProfileDrawer(context),
           body: CustomScrollView(
             slivers: [
@@ -172,13 +190,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    icon: Icon(Icons.settings_outlined, color: Colors.black),
+                    icon: Icon(Icons.settings_outlined, color: ThemeHelper.of(context).textPrimary),
                     onPressed: () => _showSettingsSheet(context),
                   ),
                   Text(
                     user.name.isNotEmpty ? user.name : 'Player',
                     style: TextStyle(
-                      color: Colors.black,
+                      color: ThemeHelper.of(context).textPrimary,
                       fontSize: 16.sp,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1,
@@ -188,7 +206,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: Icon(Icons.menu, color: Colors.black),
+                        icon: Icon(Icons.menu, color: ThemeHelper.of(context).textPrimary),
                         onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
                       ),
                     ],
@@ -211,7 +229,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         CircleAvatar(
                           radius: 48,
-                          backgroundColor: Colors.grey[100],
+                          backgroundColor: ThemeHelper.of(context).dividerColor!,
                           child: user.profileImageUrl.isNotEmpty
                               ? ClipOval(
                                   child: _buildProfileImage(user.profileImageUrl, 96),
@@ -227,7 +245,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             decoration: BoxDecoration(
                               color: AppTheme.stadiumOrange,
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.black, width: 2.w),
+                              border: Border.all(color: ThemeHelper.of(context).textPrimary, width: 2.w),
                             ),
                             child: Icon(Icons.add, size: 14.sp, color: Colors.white),
                           ),
@@ -252,7 +270,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 style: TextStyle(
                                   fontSize: 18.sp,
                                   fontWeight: FontWeight.w900,
-                                  color: Colors.black87,
+                                  color: ThemeHelper.of(context).textPrimary,
                                   letterSpacing: 0.5,
                                 ),
                                 overflow: TextOverflow.ellipsis,
@@ -299,20 +317,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Container(
                               padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
                               decoration: BoxDecoration(
-                                color: Colors.grey[200],
+                                color: ThemeHelper.of(context).dividerColor!,
                                 borderRadius: BorderRadius.circular(8.r),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.sports_cricket, size: 12.sp, color: Colors.grey[700]),
+                                  Icon(Icons.sports_cricket, size: 12.sp, color: ThemeHelper.of(context).textSecondary),
                                   SizedBox(width: 4.w),
                                     Text(
                                       user.battingStyle.isNotEmpty ? user.battingStyle : 'RHB',
                                       style: TextStyle(
                                         fontSize: 10.sp,
                                         fontWeight: FontWeight.w900,
-                                        color: Colors.grey[800],
+                                        color: ThemeHelper.of(context).textSecondary,
                                       ),
                                     ),
                                 ],
@@ -442,11 +460,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Container(
                               padding: EdgeInsets.all(8.w),
                               decoration: BoxDecoration(
-                                color: Colors.grey[200],
+                                color: ThemeHelper.of(context).dividerColor!,
                                 borderRadius: BorderRadius.circular(8.r),
-                                border: Border.all(color: Colors.grey[300]!),
+                                border: Border.all(color: ThemeHelper.of(context).dividerColor!),
                               ),
-                              child: Icon(Icons.share, size: 16.sp, color: Colors.black),
+                              child: Icon(Icons.share, size: 16.sp, color: ThemeHelper.of(context).textPrimary),
                             ),
                           ],
                         ),
@@ -462,9 +480,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
               padding: EdgeInsets.symmetric(vertical: 12.h),
               decoration: BoxDecoration(
-                color: Colors.grey[50],
+                color: ThemeHelper.of(context).containerColor,
                 borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(color: Colors.grey[200]!),
+                border: Border.all(color: ThemeHelper.of(context).dividerColor!),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -481,7 +499,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                        ),
                      );
                    }),
-                   Container(width: 1.w, height: 35.h, color: Colors.grey[300]),
+                   Container(width: 1.w, height: 35.h, color: ThemeHelper.of(context).dividerColor!),
                    _buildFollowerItem(_followingCount.toString(), 'FOLLOWING', onTap: () {
                      Navigator.push(
                        context,
@@ -494,7 +512,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                        ),
                      );
                    }),
-                   Container(width: 1.w, height: 35.h, color: Colors.grey[300]),
+                   Container(width: 1.w, height: 35.h, color: ThemeHelper.of(context).dividerColor!),
                    _buildFollowerItem(((user.tennisBallStats.matches * 0.3).round()).toString(), 'TEAMS'),
                  ],
               ),
@@ -505,9 +523,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
               padding: EdgeInsets.all(12.w),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: ThemeHelper.of(context).cardBg,
                 borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(color: Colors.grey[200]!),
+                border: Border.all(color: ThemeHelper.of(context).dividerColor!),
                 boxShadow: [
                   BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: Offset(0, 2))
                 ]
@@ -518,23 +536,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // Passion/Location tags
                   Row(
                     children: [
-                      Icon(Icons.sports_cricket, size: 14.sp, color: Colors.grey[600]),
+                      Icon(Icons.sports_cricket, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
                       SizedBox(width: 4.w),
                       Text(
                         'PASSIONATE ${user.role.isNotEmpty ? user.role.toUpperCase() : "CRICKETER"} | ',
                         style: TextStyle(
-                          color: Colors.grey[600],
+                          color: ThemeHelper.of(context).textSecondary,
                           fontSize: 10.sp,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
                         ),
                       ),
-                      Icon(Icons.location_on, size: 14.sp, color: Colors.grey[600]),
+                      Icon(Icons.location_on, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
                       SizedBox(width: 2.w),
                       Text(
                         '${user.location.isNotEmpty ? user.location.toUpperCase() : "INDIA"}',
                         style: TextStyle(
-                          color: Colors.grey[600],
+                          color: ThemeHelper.of(context).textSecondary,
                           fontSize: 10.sp,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
@@ -549,7 +567,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       user.bio,
                       style: TextStyle(
-                        color: Colors.black87,
+                        color: ThemeHelper.of(context).textPrimary,
                         fontSize: 13.sp,
                         height: 1.4,
                       ),
@@ -559,7 +577,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   SizedBox(height: 12.h),
                   
                   // Divider
-                  Divider(color: Colors.grey[200], height: 1.h),
+                  Divider(color: ThemeHelper.of(context).dividerColor!, height: 1.h),
                   
                   SizedBox(height: 12.h),
                   
@@ -576,7 +594,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onTap: () => _openInstagram(user.instagramUrl.isNotEmpty ? user.instagramUrl : user.name.toLowerCase().replaceAll(' ', '_')),
                         ),
                       ),
-                      Container(width: 1.w, height: 30.h, color: Colors.grey[300]),
+                      Container(width: 1.w, height: 30.h, color: ThemeHelper.of(context).dividerColor!),
                       // Cricket ID
                       Expanded(
                         child: _buildSocialLinkItem(
@@ -609,8 +627,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             height: 60.h,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white,
-              border: Border.all(color: Colors.grey[300]!, width: 1.5.w),
+              color: ThemeHelper.of(context).cardBg,
+              border: Border.all(color: ThemeHelper.of(context).dividerColor!, width: 1.5.w),
             ),
             child: Stack(
               alignment: Alignment.center,
@@ -632,7 +650,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             title,
             style: TextStyle(
               fontSize: 11.sp,
-              color: Colors.black87,
+              color: ThemeHelper.of(context).textPrimary,
               fontWeight: FontWeight.w500,
             ),
             overflow: TextOverflow.ellipsis,
@@ -650,7 +668,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: TextStyle(
             fontSize: 18.sp,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: ThemeHelper.of(context).textPrimary,
           ),
         ),
         SizedBox(height: 2.h),
@@ -658,7 +676,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           label,
           style: TextStyle(
             fontSize: 13.sp,
-            color: Colors.grey[600],
+            color: ThemeHelper.of(context).textSecondary,
           ),
         ),
       ],
@@ -686,7 +704,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: TextStyle(
               fontSize: 18.sp,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: ThemeHelper.of(context).textPrimary,
             ),
           ),
           SizedBox(height: 2.h),
@@ -694,7 +712,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             label,
             style: TextStyle(
               fontSize: 12.sp,
-              color: Colors.grey[600],
+              color: ThemeHelper.of(context).textSecondary,
             ),
           ),
         ],
@@ -721,7 +739,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               label,
               style: TextStyle(
                 fontSize: 10.sp,
-                color: Colors.grey[600],
+                color: ThemeHelper.of(context).textSecondary,
               ),
             ),
             Text(
@@ -729,7 +747,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: TextStyle(
                 fontSize: 11.sp,
                 fontWeight: FontWeight.w600,
-                color: onTap != null ? color : Colors.grey[800],
+                color: onTap != null ? color : ThemeHelper.of(context).textSecondary,
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -824,11 +842,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: Colors.white, size: 14.sp),
+        Icon(icon, color: ThemeHelper.of(context).cardBg, size: 14.sp),
         SizedBox(width: 4.w),
         Text(
           text,
-          style: TextStyle(color: Colors.white, fontSize: 12.sp),
+          style: TextStyle(color: ThemeHelper.of(context).cardBg, fontSize: 12.sp),
         ),
       ],
     );
@@ -841,7 +859,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context) => Container(
         padding: EdgeInsets.all(24.w),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: ThemeHelper.of(context).cardBg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -994,14 +1012,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             
-            const Spacer(),
+            Spacer(),
             
             // Footer
             Padding(
               padding: EdgeInsets.all(16.w),
               child: Text(
                 'ScorePartner v1.0',
-                style: TextStyle(color: Colors.grey[400], fontSize: 12.sp),
+                style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp),
               ),
             ),
           ],
@@ -1021,7 +1039,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         padding: EdgeInsets.all(24.w),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: ThemeHelper.of(context).cardBg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: SingleChildScrollView(
@@ -1067,9 +1085,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       color: Colors.transparent,
       child: ListTile(
         contentPadding: EdgeInsets.zero,
-        leading: Icon(icon, color: isDestructive ? Colors.red : Colors.grey[700]),
-        title: Text(label, style: TextStyle(color: isDestructive ? Colors.red : Colors.black87, fontWeight: FontWeight.w500)),
-        trailing: Icon(Icons.chevron_right, color: Colors.grey[400]),
+        leading: Icon(icon, color: isDestructive ? Colors.red : ThemeHelper.of(context).textSecondary),
+        title: Text(label, style: TextStyle(color: isDestructive ? Colors.red : ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w500)),
+        trailing: Icon(Icons.chevron_right, color: ThemeHelper.of(context).textSecondary),
         onTap: onTap,
       ),
     );
@@ -1095,7 +1113,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           return Container(
             height: MediaQuery.of(context).size.height * 0.85,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: ThemeHelper.of(context).cardBg,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
@@ -1105,7 +1123,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   width: 40.w,
                   height: 4.h,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: ThemeHelper.of(context).dividerColor!,
                     borderRadius: BorderRadius.circular(2.r),
                   ),
                 ),
@@ -1129,8 +1147,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             CircleAvatar(
                               radius: 50,
-                              backgroundColor: Colors.grey[200],
-                              child: Icon(Icons.person, size: 50.sp, color: Colors.grey[400]),
+                              backgroundColor: ThemeHelper.of(context).dividerColor!,
+                              child: Icon(Icons.person, size: 50.sp, color: ThemeHelper.of(context).textSecondary),
                             ),
                             Positioned(
                               bottom: 0.h,
@@ -1179,7 +1197,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
                             ),
                             child: _isUpdating 
-                              ? const CircularProgressIndicator(color: Colors.white)
+                              ? CircularProgressIndicator(color: Colors.white)
                               : Text('Save Changes', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white)),
                           ),
                         ),
@@ -1206,9 +1224,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         maxLength: maxLength,
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, color: Colors.grey[600]),
+          prefixIcon: Icon(icon, color: ThemeHelper.of(context).textSecondary),
           filled: true,
-          fillColor: Colors.grey[100],
+          fillColor: ThemeHelper.of(context).dividerColor!,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
           focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide(color: Color(0xFFFF6B35), width: 2.w)),
         ),
@@ -1221,7 +1239,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       margin: EdgeInsets.only(bottom: 16.h),
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: ThemeHelper.of(context).dividerColor!,
         borderRadius: BorderRadius.circular(12.r),
       ),
       child: DropdownButtonFormField<String>(
@@ -1289,21 +1307,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileImage(String url, double size) {
-    if (url.startsWith('data:')) {
-      try {
-        final base64Str = url.split(',').last;
-        final bytes = base64Decode(base64Str);
-        return Image.memory(bytes, width: size, height: size, fit: BoxFit.cover);
-      } catch (_) {
-        return Icon(Icons.person, size: size * 0.5, color: Colors.grey);
-      }
-    }
-    return Image.network(
-      '$url?t=${DateTime.now().millisecondsSinceEpoch}',
-      width: size,
-      height: size,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => Icon(Icons.person, size: size * 0.5, color: Colors.grey),
+    return ImageUtils.buildProfileImage(
+      url, 
+      size, 
+      fallbackIcon: Icons.person, 
+      fallbackColor: ThemeHelper.of(context).textSecondary
     );
   }
 
@@ -1396,7 +1404,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       margin: EdgeInsets.all(16.w),
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
@@ -1433,7 +1441,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: TextStyle(
               fontSize: 18.sp,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: ThemeHelper.of(context).textPrimary,
             ),
           ),
           SizedBox(height: 12.h),
@@ -1500,7 +1508,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Container(
         padding: EdgeInsets.all(16.w),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: ThemeHelper.of(context).cardBg,
           borderRadius: BorderRadius.circular(16.r),
           boxShadow: [
             BoxShadow(
@@ -1526,14 +1534,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: TextStyle(
                 fontSize: 12.sp,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: ThemeHelper.of(context).textPrimary,
               ),
             ),
             Text(
               subtitle,
               style: TextStyle(
                 fontSize: 10.sp,
-                color: Colors.grey[600],
+                color: ThemeHelper.of(context).textSecondary,
               ),
             ),
           ],
@@ -1552,14 +1560,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: TextStyle(
             fontSize: 22.sp,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: ThemeHelper.of(context).textPrimary,
           ),
         ),
         Text(
           label,
           style: TextStyle(
             fontSize: 11.sp,
-            color: Colors.grey[600],
+            color: ThemeHelper.of(context).textSecondary,
           ),
         ),
       ],
@@ -1570,7 +1578,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       height: 40.h,
       width: 1.w,
-      color: Colors.grey[200],
+      color: ThemeHelper.of(context).dividerColor!,
     );
   }
 
@@ -1580,7 +1588,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 16.w),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: ThemeHelper.of(context).cardBg,
           borderRadius: BorderRadius.circular(16.r),
           boxShadow: [
             BoxShadow(
@@ -1594,12 +1602,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Tab Bar
             Container(
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: ThemeHelper.of(context).dividerColor!,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
               ),
               child: TabBar(
                 labelColor: AppTheme.primaryOrange,
-                unselectedLabelColor: Colors.grey,
+                unselectedLabelColor: ThemeHelper.of(context).textSecondary,
                 indicatorColor: AppTheme.primaryOrange,
                 indicatorWeight: 3,
                 labelStyle: TextStyle(fontWeight: FontWeight.bold),
@@ -1705,7 +1713,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: TextStyle(
                 fontSize: 16.sp,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: ThemeHelper.of(context).textPrimary,
               ),
             ),
           ],
@@ -1713,7 +1721,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         SizedBox(height: 12.h),
         Container(
           decoration: BoxDecoration(
-            color: Colors.grey[50],
+            color: ThemeHelper.of(context).containerColor,
             borderRadius: BorderRadius.circular(12.r),
           ),
           child: Column(children: stats),
@@ -1727,7 +1735,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: Colors.grey[200]!, width: 0.5),
+          bottom: BorderSide(color: ThemeHelper.of(context).dividerColor!, width: 0.5),
         ),
       ),
       child: Row(
@@ -1736,7 +1744,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(
             label,
             style: TextStyle(
-              color: Colors.grey[700],
+              color: ThemeHelper.of(context).textSecondary,
               fontSize: 14.sp,
             ),
           ),
@@ -1745,7 +1753,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14.sp,
-              color: highlight ? AppTheme.primaryOrange : Colors.black87,
+              color: highlight ? AppTheme.primaryOrange : ThemeHelper.of(context).textPrimary,
             ),
           ),
         ],
@@ -1755,7 +1763,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildGuestView(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: ThemeHelper.of(context).scaffoldBg,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -1790,13 +1798,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 SizedBox(height: 32.h),
                 Text(
                   'Welcome to\nScorePartner!',
-                  style: TextStyle(fontSize: 28.sp, fontWeight: FontWeight.bold, color: Colors.black87, height: 1.2),
+                  style: TextStyle(fontSize: 28.sp, fontWeight: FontWeight.bold, color: ThemeHelper.of(context).textPrimary, height: 1.2),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 16.h),
                 Text(
                   'Track your cricket stats, join matches,\nand connect with players.',
-                  style: TextStyle(fontSize: 15.sp, color: Colors.grey[600], height: 1.5),
+                  style: TextStyle(fontSize: 15.sp, color: ThemeHelper.of(context).textSecondary, height: 1.5),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 48.h),
@@ -1839,7 +1847,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // Terms text
                 Text(
                   'By signing up, you agree to our\nTerms of Service and Privacy Policy',
-                  style: TextStyle(fontSize: 12.sp, color: Colors.grey[500], height: 1.4),
+                  style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary, height: 1.4),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -1913,7 +1921,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           SizedBox(height: 12.h),
           FutureBuilder<List<MatchModel>>(
-            future: FirebaseDataService.instance.getUserPlayedMatches(userId),
+            future: _recentMatchesFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Center(child: Padding(padding: EdgeInsets.all(16.w), child: CircularProgressIndicator()));
@@ -1922,10 +1930,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 return Container(
                   padding: EdgeInsets.all(24.w),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: ThemeHelper.of(context).dividerColor!,
                     borderRadius: BorderRadius.circular(12.r),
                   ),
-                  child: const Center(child: Text('No matches played yet', style: TextStyle(color: Colors.grey))),
+                  child: Center(child: Text('No matches played yet', style: TextStyle(color: ThemeHelper.of(context).textSecondary))),
                 );
               }
               final matches = snapshot.data!.take(4).toList();
@@ -1945,7 +1953,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
         boxShadow: [
@@ -1957,7 +1965,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('${match.scheduledDate.day}/${match.scheduledDate.month}/${match.scheduledDate.year}', style: TextStyle(color: Colors.grey[500], fontSize: 12.sp)),
+              Text('${match.scheduledDate.day}/${match.scheduledDate.month}/${match.scheduledDate.year}', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                 decoration: BoxDecoration(
@@ -1983,7 +1991,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-              const Text('vs', style: TextStyle(color: Colors.grey)),
+              Text('vs', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -1997,7 +2005,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           if (isCompleted) ...[
             Divider(height: 20.h),
-            Text(resultText, style: TextStyle(color: Colors.grey[600], fontSize: 12.sp)),
+            Text(resultText, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
           ],
         ],
       ),
@@ -2010,7 +2018,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: isWin ? Colors.green.withValues(alpha: 0.3) : Colors.red.withValues(alpha: 0.3)),
         boxShadow: [
@@ -2022,7 +2030,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(match['date'], style: TextStyle(color: Colors.grey[500], fontSize: 12.sp)),
+              Text(match['date'], style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                 decoration: BoxDecoration(
@@ -2048,7 +2056,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-              const Text('vs', style: TextStyle(color: Colors.grey)),
+              Text('vs', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -2064,10 +2072,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(match['result'], style: TextStyle(color: Colors.grey[600], fontSize: 12.sp)),
+              Text(match['result'], style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
               Row(
                 children: [
-                  Text('Your Score: ', style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+                  Text('Your Score: ', style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary)),
                   Text(match['playerScore'], style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryOrange)),
                 ],
               ),
@@ -2118,7 +2126,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: Offset(0, 2)),
@@ -2137,7 +2145,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Text(tournament['name'], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp)),
                     SizedBox(height: 2.h),
-                    Text('${tournament['status']} • ${tournament['date']}', style: TextStyle(color: Colors.grey[600], fontSize: 12.sp)),
+                    Text('${tournament['status']} • ${tournament['date']}', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
                   ],
                 ),
               ),
@@ -2161,7 +2169,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       children: [
         Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp)),
-        Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 11.sp)),
+        Text(label, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp)),
       ],
     );
   }
@@ -2218,7 +2226,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: Offset(0, 2)),
@@ -2245,13 +2253,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SizedBox(height: 2.h),
           Text(
             reward['tournament'],
-            style: TextStyle(color: Colors.grey[600], fontSize: 11.sp),
+            style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           Text(
             reward['date'],
-            style: TextStyle(color: Colors.grey[400], fontSize: 10.sp),
+            style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 10.sp),
           ),
         ],
       ),
@@ -2284,7 +2292,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 20.h),
             padding: EdgeInsets.all(4.w),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: ThemeHelper.of(context).cardBg,
               borderRadius: BorderRadius.circular(30.r),
               boxShadow: [
                 BoxShadow(
@@ -2302,7 +2310,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: AppTheme.primaryOrange,
               ),
               labelColor: Colors.white,
-              unselectedLabelColor: Colors.grey[600],
+              unselectedLabelColor: ThemeHelper.of(context).textSecondary,
               tabs: const [
                 Tab(icon: Icon(Icons.query_stats), text: 'Stats'),
                 Tab(icon: Icon(Icons.emoji_events), text: 'Achieve'),
@@ -2340,7 +2348,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           TabBar(
             labelColor: AppTheme.primaryOrange,
-            unselectedLabelColor: Colors.grey,
+            unselectedLabelColor: ThemeHelper.of(context).textSecondary,
             indicatorColor: AppTheme.primaryOrange,
             tabs: [
               Tab(
@@ -2385,11 +2393,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.emoji_events_outlined, size: 48.sp, color: Colors.grey[300]),
+            Icon(Icons.emoji_events_outlined, size: 48.sp, color: ThemeHelper.of(context).dividerColor!),
             SizedBox(height: 16.h),
-            Text('No achievements yet', style: TextStyle(color: Colors.grey[500])),
+            Text('No achievements yet', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
             SizedBox(height: 4.h),
-            Text('Play matches to earn badges!', style: TextStyle(fontSize: 12.sp, color: Colors.grey[400])),
+            Text('Play matches to earn badges!', style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary)),
           ],
         ),
       );
@@ -2420,12 +2428,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 SizedBox(height: 2.h),
                 Text(
                   '${ach.earnedAt.day}/${ach.earnedAt.month}/${ach.earnedAt.year}',
-                  style: TextStyle(fontSize: 10.sp, color: Colors.grey[400]),
+                  style: TextStyle(fontSize: 10.sp, color: ThemeHelper.of(context).textSecondary),
                 ),
               ],
             ),
             trailing: IconButton(
-              icon: Icon(Icons.share, color: Colors.grey, size: 20.sp),
+              icon: Icon(Icons.share, color: ThemeHelper.of(context).textSecondary, size: 20.sp),
               onPressed: () => _showFullRewardDialog(context, ach, user),
             ),
           ),
@@ -2442,19 +2450,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     return FutureBuilder<List<MatchModel>>(
-      future: FirebaseDataService.instance.getUserPlayedMatches(userId),
+      future: _recentMatchesFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(child: CircularProgressIndicator());
         }
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.sports_cricket, size: 48.sp, color: Colors.grey[300]),
+                Icon(Icons.sports_cricket, size: 48.sp, color: ThemeHelper.of(context).dividerColor!),
                 SizedBox(height: 16.h),
-                Text('No matches played yet', style: TextStyle(color: Colors.grey[500])),
+                Text('No matches played yet', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
               ],
             ),
           );
@@ -2479,9 +2487,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.workspace_premium, size: 48.sp, color: Colors.grey[300]),
+            Icon(Icons.workspace_premium, size: 48.sp, color: ThemeHelper.of(context).dividerColor!),
             SizedBox(height: 16.h),
-            Text('No tournament history', style: TextStyle(color: Colors.grey[500])),
+            Text('No tournament history', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
           ],
         ),
       );
@@ -2536,9 +2544,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.card_giftcard, size: 48.sp, color: Colors.grey[300]),
+            Icon(Icons.card_giftcard, size: 48.sp, color: ThemeHelper.of(context).dividerColor!),
             SizedBox(height: 16.h),
-            Text('No rewards yet', style: TextStyle(color: Colors.grey[500])),
+            Text('No rewards yet', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
           ],
         ),
       );

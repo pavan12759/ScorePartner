@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'dart:convert';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -6,6 +7,7 @@ import '../../../data/models/user_model.dart';
 import '../../../data/models/team_model.dart';
 import '../../../data/models/match_model.dart';
 import '../../../data/services/firebase_data_service.dart';
+import 'package:scorepatner/core/utils/image_utils.dart';
 import '../profile/player_profile_screen.dart';
 import 'dart:math';
 import '../tournament/tournament_details_screen.dart';
@@ -44,7 +46,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: ThemeHelper.of(context).scaffoldBg,
       body: SafeArea(
         child: Column(
           children: [
@@ -52,10 +54,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
             Container(
               padding: EdgeInsets.fromLTRB(20, 20, 20, 16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: ThemeHelper.of(context).cardBg,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
                     blurRadius: 10,
                     offset: Offset(0, 2),
                   ),
@@ -78,20 +80,20 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                   // Search Bar
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
+                      color: ThemeHelper.of(context).dividerColor!,
                       borderRadius: BorderRadius.circular(16.r),
-                      border: Border.all(color: Colors.grey[200]!),
+                      border: Border.all(color: ThemeHelper.of(context).dividerColor!),
                     ),
                     child: TextField(
                       controller: _searchController,
                       onChanged: (value) => setState(() => _searchQuery = value),
                       decoration: InputDecoration(
                         hintText: 'Search tournaments, players, matches...',
-                        hintStyle: TextStyle(color: Colors.grey[500], fontSize: 15.sp),
-                        prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                        hintStyle: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 15.sp),
+                        prefixIcon: Icon(Icons.search, color: ThemeHelper.of(context).textSecondary),
                         suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
-                                icon: Icon(Icons.clear, color: Colors.grey[600]),
+                                icon: Icon(Icons.clear, color: ThemeHelper.of(context).textSecondary),
                                 onPressed: () {
                                   _searchController.clear();
                                   setState(() => _searchQuery = '');
@@ -108,13 +110,13 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                   // Tab Bar
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
+                      color: ThemeHelper.of(context).dividerColor!,
                       borderRadius: BorderRadius.circular(12.r),
                     ),
                     child: TabBar(
                       controller: _tabController,
                       labelColor: Colors.white,
-                      unselectedLabelColor: Colors.grey[600],
+                      unselectedLabelColor: ThemeHelper.of(context).textSecondary,
                       indicator: BoxDecoration(
                         color: AppTheme.primaryOrange,
                         borderRadius: BorderRadius.circular(12.r),
@@ -209,11 +211,11 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.04),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),
@@ -273,28 +275,28 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                       SizedBox(height: 4.h),
                       Row(
                         children: [
-                          Icon(Icons.location_on_outlined, size: 14.sp, color: Colors.grey[600]),
+                          Icon(Icons.location_on_outlined, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
                           SizedBox(width: 4.w),
                           Expanded(
                             child: Text(
                               tournament.location,
-                              style: TextStyle(color: Colors.grey[600], fontSize: 13.sp),
+                              style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 13.sp),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           SizedBox(width: 12.w),
-                          Icon(Icons.groups_outlined, size: 14.sp, color: Colors.grey[600]),
+                          Icon(Icons.groups_outlined, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
                           SizedBox(width: 4.w),
                           Text(
                             '${tournament.registeredTeamIds.length} Teams',
-                            style: TextStyle(color: Colors.grey[600], fontSize: 13.sp),
+                            style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 13.sp),
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right, color: Colors.grey[400]),
+                Icon(Icons.chevron_right, color: ThemeHelper.of(context).textSecondary),
               ],
             ),
           ),
@@ -360,26 +362,18 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
 
   ImageProvider? _getProfileImageProvider(String url) {
     if (url.isEmpty) return null;
-    if (url.trim().startsWith('data:')) {
-      try {
-        final base64Str = url.split(',').last.trim();
-        return MemoryImage(base64Decode(base64Str));
-      } catch (_) {
-        return null;
-      }
-    }
-    return NetworkImage(url);
+    return ImageUtils.getProfileImageProvider(url, fallbackAsset: 'assets/images/default_avatar.png');
   }
 
   Widget _buildPlayerCardReal(UserModel player) {
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.04),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),
@@ -471,12 +465,12 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                     ),
                     Text(
                       'Matches',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 11.sp),
+                      style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp),
                     ),
                   ],
                 ),
                 SizedBox(width: 8.w),
-                Icon(Icons.chevron_right, color: Colors.grey[400]),
+                Icon(Icons.chevron_right, color: ThemeHelper.of(context).textSecondary),
               ],
             ),
           ),
@@ -532,11 +526,11 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.04),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),
@@ -584,7 +578,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                           SizedBox(height: 4.h),
                           Text(
                             '${match.team1Score.runs}/${match.team1Score.wickets}',
-                            style: TextStyle(color: Colors.grey[600], fontSize: 13.sp),
+                            style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 13.sp),
                           ),
                         ],
                       ),
@@ -592,7 +586,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                       decoration: BoxDecoration(
-                        color: Colors.grey[100],
+                        color: ThemeHelper.of(context).dividerColor!,
                         borderRadius: BorderRadius.circular(8.r),
                       ),
                       child: Text(
@@ -624,7 +618,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                           SizedBox(height: 4.h),
                           Text(
                             '${match.team2Score.runs}/${match.team2Score.wickets}',
-                            style: TextStyle(color: Colors.grey[600], fontSize: 13.sp),
+                            style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 13.sp),
                           ),
                         ],
                       ),

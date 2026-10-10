@@ -222,33 +222,45 @@ class _ScorePartnerAppState extends State<ScorePartnerApp> {
                 themeMode: themeProvider.themeMode,
                 builder: (context, widget) {
                   ErrorWidget.builder = (FlutterErrorDetails details) {
+                    // Log technical details for debugging
+                    debugPrint('ErrorWidget: ${details.exception}');
+                    debugPrint('Stack: ${details.stack}');
+
                     return Material(
-                      color: Colors.white,
+                      color: Theme.of(context).scaffoldBackgroundColor,
                       child: SafeArea(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Startup Error:',
-                                style: TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.error_outline_rounded,
+                                  size: 64,
+                                  color: const Color(0xFFFF8D48),
                                 ),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                details.exception.toString(),
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                details.stack.toString(),
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                            ],
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Something went wrong',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Please restart the app. If the problem persists, contact support.',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -257,7 +269,7 @@ class _ScorePartnerAppState extends State<ScorePartnerApp> {
 
                   return MediaQuery.withClampedTextScaling(
                     minScaleFactor: 1.0,
-                    maxScaleFactor: 1.2,
+                    maxScaleFactor: 2.0,
                     child: widget ?? const SizedBox.shrink(),
                   );
                 },

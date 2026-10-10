@@ -316,7 +316,7 @@ class _MatchHighlightsGeneratorScreenState extends State<MatchHighlightsGenerato
   Widget build(BuildContext context) {
     if (_isLoadingMatch) {
       return Scaffold(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: ThemeHelper.of(context).textSecondary,
         appBar: AppBar(
           title: const Text('Generate Highlight Badge'),
           backgroundColor: Colors.transparent,
@@ -330,7 +330,7 @@ class _MatchHighlightsGeneratorScreenState extends State<MatchHighlightsGenerato
 
     if (_match == null) {
       return Scaffold(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: ThemeHelper.of(context).textSecondary,
         appBar: AppBar(
           title: const Text('Error'),
           backgroundColor: Colors.transparent,
@@ -348,7 +348,7 @@ class _MatchHighlightsGeneratorScreenState extends State<MatchHighlightsGenerato
           'Share Key Moment Badge',
           style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white),
         ),
-        backgroundColor: Colors.grey[900],
+        backgroundColor: ThemeHelper.of(context).textSecondary,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -409,11 +409,11 @@ class _MatchHighlightsGeneratorScreenState extends State<MatchHighlightsGenerato
                         onTap: () => _selectMilestone(milestone),
                         borderRadius: BorderRadius.circular(16.r),
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
+                          duration: Duration(milliseconds: 200),
                           width: 140.w,
                           padding: EdgeInsets.all(10.w),
                           decoration: BoxDecoration(
-                            color: isSelected ? color.withOpacity(0.2) : Colors.grey[900],
+                            color: isSelected ? color.withOpacity(0.2) : ThemeHelper.of(context).textSecondary,
                             borderRadius: BorderRadius.circular(16.r),
                             border: Border.all(
                               color: isSelected ? color : Colors.white.withOpacity(0.08),
@@ -428,7 +428,7 @@ class _MatchHighlightsGeneratorScreenState extends State<MatchHighlightsGenerato
                               Text(
                                 milestone.playerName ?? 'Team Victory',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: ThemeHelper.of(context).cardBg,
                                   fontSize: 12.sp,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -516,7 +516,7 @@ class _MatchHighlightsGeneratorScreenState extends State<MatchHighlightsGenerato
                     SizedBox(height: 8.h),
                     TextField(
                       controller: _descController,
-                      style: TextStyle(color: Colors.white, fontSize: 14.sp),
+                      style: TextStyle(color: ThemeHelper.of(context).cardBg, fontSize: 14.sp),
                       maxLines: 3,
                       decoration: InputDecoration(
                         hintText: 'Enter description...',
@@ -529,7 +529,7 @@ class _MatchHighlightsGeneratorScreenState extends State<MatchHighlightsGenerato
                           borderSide: BorderSide(color: AppTheme.primaryOrange),
                           borderRadius: BorderRadius.circular(12.r),
                         ),
-                        fillColor: Colors.grey[900],
+                        fillColor: ThemeHelper.of(context).textSecondary,
                         filled: true,
                       ),
                       onChanged: (val) {
@@ -547,9 +547,9 @@ class _MatchHighlightsGeneratorScreenState extends State<MatchHighlightsGenerato
                           child: ElevatedButton.icon(
                             onPressed: () => _pickImage(ImageSource.gallery),
                             icon: Icon(Icons.photo_library),
-                            label: const Text('Add Gallery Photo'),
+                            label: Text('Add Gallery Photo'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.grey[900],
+                              backgroundColor: ThemeHelper.of(context).textSecondary,
                               foregroundColor: Colors.white,
                               padding: EdgeInsets.symmetric(vertical: 14.h),
                               shape: RoundedRectangleBorder(
@@ -564,9 +564,9 @@ class _MatchHighlightsGeneratorScreenState extends State<MatchHighlightsGenerato
                           child: ElevatedButton.icon(
                             onPressed: () => _pickImage(ImageSource.camera),
                             icon: Icon(Icons.camera_alt),
-                            label: const Text('Take Photo'),
+                            label: Text('Take Photo'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.grey[900],
+                              backgroundColor: ThemeHelper.of(context).textSecondary,
                               foregroundColor: Colors.white,
                               padding: EdgeInsets.symmetric(vertical: 14.h),
                               shape: RoundedRectangleBorder(
@@ -596,7 +596,7 @@ class _MatchHighlightsGeneratorScreenState extends State<MatchHighlightsGenerato
                               height: 20.h,
                               width: 20.w,
                               child: CircularProgressIndicator(
-                                color: Colors.white,
+                                color: ThemeHelper.of(context).cardBg,
                                 strokeWidth: 2,
                               ),
                             )

@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import 'package:provider/provider.dart';
@@ -46,12 +47,12 @@ class ProfileScreen extends StatelessWidget {
                   width: 80.w,
                   height: 80.h,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: ThemeHelper.of(context).dividerColor!,
                     borderRadius: BorderRadius.circular(40.r),
                   ),
                   child: user.profileImageUrl.isNotEmpty
                       ? null
-                      : Icon(Icons.person, size: 40.sp, color: Colors.grey),
+                      : Icon(Icons.person, size: 40.sp, color: ThemeHelper.of(context).textSecondary),
                 ),
                 SizedBox(width: 16.w),
                 Expanded(
@@ -86,12 +87,12 @@ class ProfileScreen extends StatelessWidget {
 
                       Text(
                         user.location,
-                        style: TextStyle(fontSize: 16.sp, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 16.sp, color: ThemeHelper.of(context).textSecondary),
                       ),
                       SizedBox(height: 4.h),
                       Text(
                         'Age: ${user.age}',
-                        style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 14.sp, color: ThemeHelper.of(context).textSecondary),
                       ),
                     ],
                   ),
@@ -247,7 +248,7 @@ class ProfileScreen extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: Colors.grey[200],
         borderRadius: BorderRadius.circular(8.r),
       ),
       child: Column(
@@ -316,7 +317,7 @@ class ProfileScreen extends StatelessWidget {
               return Container(
                 padding: EdgeInsets.all(16.w),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: ThemeHelper.of(context).dividerColor!,
                   borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: const Text('No matches played yet.'),
@@ -336,12 +337,12 @@ class ProfileScreen extends StatelessWidget {
                     width: 280.w,
                     padding: EdgeInsets.all(12.w),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: ThemeHelper.of(context).cardBg,
                       borderRadius: BorderRadius.circular(12.r),
-                      border: Border.all(color: Colors.grey[200]!),
+                      border: Border.all(color: ThemeHelper.of(context).dividerColor!),
                       boxShadow: [
                          BoxShadow(
-                           color: Colors.black.withOpacity(0.05),
+                           color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
                            blurRadius: 5,
                            offset: Offset(0, 2),
                          ),
@@ -352,7 +353,7 @@ class ProfileScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(match.matchName, maxLines: 1, overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+                            style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary)),
                         SizedBox(height: 8.h),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,

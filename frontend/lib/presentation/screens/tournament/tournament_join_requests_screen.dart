@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
@@ -121,7 +122,7 @@ class _TournamentJoinRequestsScreenState extends State<TournamentJoinRequestsScr
               );
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Reject', style: TextStyle(color: Colors.white)),
+            child: Text('Reject', style: TextStyle(color: ThemeHelper.of(context).cardBg,)),
           ),
         ],
       ),
@@ -131,7 +132,7 @@ class _TournamentJoinRequestsScreenState extends State<TournamentJoinRequestsScr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: ThemeHelper.of(context).dividerColor!,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,16 +170,16 @@ class _TournamentJoinRequestsScreenState extends State<TournamentJoinRequestsScr
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.inbox_outlined, size: 80.sp, color: Colors.grey[300]),
+          Icon(Icons.inbox_outlined, size: 80.sp, color: ThemeHelper.of(context).dividerColor!),
           SizedBox(height: 16.h),
           Text(
             'No Requests Yet',
-            style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: Colors.grey[800]),
+            style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: ThemeHelper.of(context).textSecondary),
           ),
           SizedBox(height: 8.h),
           Text(
             'Share the invite link to get teams to join.',
-            style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 14.sp, color: ThemeHelper.of(context).textSecondary),
           ),
         ],
       ),
@@ -236,11 +237,11 @@ class _TournamentJoinRequestsScreenState extends State<TournamentJoinRequestsScr
                       SizedBox(height: 4.h),
                       Text(
                         'Requested by: ${request.requestedByUserName} (${request.requestedByUserRole})',
-                        style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary),
                       ),
                       Text(
                         timeago.format(request.requestedAt),
-                        style: TextStyle(fontSize: 12.sp, color: Colors.grey[500]),
+                        style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary),
                       ),
                     ],
                   ),

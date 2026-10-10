@@ -8,6 +8,7 @@ import 'package:scorepatner/presentation/widgets/team_logo_widget.dart';
 import 'package:intl/intl.dart';
 import 'match_summary_theme.dart';
 import 'match_poster_customization.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 
 /// The renderable poster card widget.
 /// This widget builds the visual poster from read-only data.

@@ -62,7 +62,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Sign in with phone number (OTP flow)
+  /// Sign in with phone number (OTP flow via MSG91)
   Future<void> signInWithPhone(
     String phoneNumber,
     Function(String) onVerificationId,
@@ -75,8 +75,24 @@ class AuthProvider extends ChangeNotifier {
       _clearError();
     } catch (e) {
       _setError(e.toString());
+      rethrow;
+    } finally {
+      _setLoading(false);
     }
-    _setLoading(false);
+  }
+
+  /// Resend phone OTP via MSG91
+  Future<void> resendOtp(String phoneNumber, {String retryType = 'text'}) async {
+    _setLoading(true);
+    try {
+      await _authService.resendOtp(phoneNumber, retryType: retryType);
+      _clearError();
+    } catch (e) {
+      _setError(e.toString());
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
   }
 
   /// Sign in with email (OTP flow)
@@ -108,18 +124,20 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(false);
   }
 
-  /// Verify OTP code
+  /// Verify OTP code via MSG91
   Future<void> verifyOtp(String verificationId, String otp) async {
     _setLoading(true);
     try {
-      // verificationId is actually the phoneNumber in our new flow
+      // verificationId is the phoneNumber in our MSG91 flow
       UserModel userModel = await _authService.verifyOtp(verificationId, otp);
       _user = userModel;
       _clearError();
     } catch (e) {
       _setError(e.toString());
+      rethrow;
+    } finally {
+      _setLoading(false);
     }
-    _setLoading(false);
   }
 
   /// Sign in with Google

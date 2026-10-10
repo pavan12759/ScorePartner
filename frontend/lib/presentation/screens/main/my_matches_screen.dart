@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../data/models/match_model.dart';
 import '../../../../data/models/team_model.dart';
 import '../../../../data/services/firebase_data_service.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../matches/match_detail_screen.dart';
 import '../tournament/tournament_details_screen.dart';
+import '../teams/team_details_screen.dart';
+import '../teams/create_team_screen.dart';
+import '../../widgets/team_logo_widget.dart';
 
 class MyMatchesScreen extends StatefulWidget {
   const MyMatchesScreen({super.key});
@@ -21,6 +24,9 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
   bool _isLoading = true;
   List<MatchModel> _matches = [];
   List<TournamentModel> _tournaments = [];
+  List<TeamModel> _teams = [];
+  String? _currentUserId;
+  String? _currentUserSpPId;
 
   @override
   void initState() {
@@ -49,11 +55,19 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
     final userTeams = await dataService.getUserTeams(userId);
     final playerTeams = spPId.isNotEmpty ? await dataService.getTeamsWhereUserIsPlayer(userId, spPId) : [];
     
+    // Merge and deduplicate player's teams (captain teams + member player teams)
+    final teamIdsSet = <String>{};
+    final allTeams = <TeamModel>[];
+    for (var t in [...userTeams, ...playerTeams]) {
+      if (!teamIdsSet.contains(t.id)) {
+        teamIdsSet.add(t.id);
+        allTeams.add(t);
+      }
+    }
+    allTeams.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
     // Combine team IDs
-    final allTeamIds = <String>{
-      ...userTeams.map((t) => t.id),
-      ...playerTeams.map((t) => t.id),
-    }.toList();
+    final allTeamIds = allTeams.map((t) => t.id).toList();
     
     // Get tournament matches where user's teams are playing
     List<MatchModel> tournamentMatches = [];
@@ -101,6 +115,9 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
       setState(() {
         _matches = allMatches;
         _tournaments = allTournaments;
+        _teams = allTeams;
+        _currentUserId = userId;
+        _currentUserSpPId = spPId;
         _isLoading = false;
       });
     }
@@ -130,29 +147,40 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
     ).toList();
   }
 
+  List<TeamModel> get _filteredTeams {
+    if (_searchQuery.isEmpty) return _teams;
+    final query = _searchQuery.toLowerCase();
+    return _teams.where((t) => 
+      t.name.toLowerCase().contains(query) ||
+      t.captainName.toLowerCase().contains(query) ||
+      t.viceCaptainName.toLowerCase().contains(query) ||
+      t.spTId.toLowerCase().contains(query)
+    ).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2, // Matches, Tournaments
+      length: 3, // Matches, Teams, Tournaments
       child: Scaffold(
-        backgroundColor: Colors.grey[50],
+        backgroundColor: ThemeHelper.of(context).scaffoldBg,
         appBar: AppBar(
         title: Text(
           'My Cricket',
           style: TextStyle(
-            color: Colors.black,
+            color: ThemeHelper.of(context).textPrimary,
             fontSize: 24.sp,
             fontWeight: FontWeight.bold,
             letterSpacing: -0.5,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: ThemeHelper.of(context).scaffoldBg,
         centerTitle: false,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: IconThemeData(color: ThemeHelper.of(context).textPrimary),
         actions: [
           IconButton(
-            icon: Icon(Icons.notifications_outlined, color: Colors.black),
+            icon: Icon(Icons.notifications_outlined, color: ThemeHelper.of(context).textPrimary),
             onPressed: () => _showNotifications(context),
           ),
         ],
@@ -166,7 +194,7 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
                   child: Container(
                     height: 44.h,
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
+                      color: ThemeHelper.of(context).dividerColor!,
                       borderRadius: BorderRadius.circular(12.r),
                     ),
                     child: TextField(
@@ -174,11 +202,11 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
                       onChanged: (value) => setState(() => _searchQuery = value),
                       decoration: InputDecoration(
                         hintText: 'Search...',
-                        hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14.sp),
-                        prefixIcon: Icon(Icons.search, color: Colors.grey[500], size: 20.sp),
+                        hintStyle: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 14.sp),
+                        prefixIcon: Icon(Icons.search, color: ThemeHelper.of(context).textSecondary, size: 20.sp),
                         suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
-                              icon: Icon(Icons.clear, color: Colors.grey[500], size: 18.sp),
+                              icon: Icon(Icons.clear, color: ThemeHelper.of(context).textSecondary, size: 18.sp),
                               onPressed: () {
                                 _searchController.clear();
                                 setState(() => _searchQuery = '');
@@ -196,7 +224,7 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 16.0.w, vertical: 8.0.h),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: ThemeHelper.of(context).dividerColor!,
                     borderRadius: BorderRadius.circular(12.r),
                   ),
                   child: TabBar(
@@ -207,10 +235,12 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
                       borderRadius: BorderRadius.circular(12.r),
                     ),
                     labelColor: Colors.white,
-                    unselectedLabelColor: Colors.grey[600],
-                    labelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 14.sp),
+                    unselectedLabelColor: ThemeHelper.of(context).textSecondary,
+                    labelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.sp),
+                    labelPadding: EdgeInsets.symmetric(horizontal: 4.w),
                     tabs: const [
                       Tab(text: 'Matches'),
+                      Tab(text: 'Teams'),
                       Tab(text: 'Tournaments'),
                     ],
                   ),
@@ -225,6 +255,7 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
           : TabBarView(
           children: [
             _buildMatchList(),
+            _buildTeamList(),
             _buildTournamentList(),
           ],
         ),
@@ -236,13 +267,29 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
     final matches = _filteredMatches;
     
     if (matches.isEmpty) {
-      return _buildEmptyState('matches');
+      return RefreshIndicator(
+        onRefresh: _fetchData,
+        color: AppTheme.primaryOrange,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Container(
+            height: MediaQuery.of(context).size.height * 0.55,
+            alignment: Alignment.center,
+            child: _buildEmptyState('matches'),
+          ),
+        ),
+      );
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.fromLTRB(16, 16, 16, 100),
-      itemCount: matches.length,
-      itemBuilder: (context, index) => _buildMatchCard(matches[index]),
+    return RefreshIndicator(
+      onRefresh: _fetchData,
+      color: AppTheme.primaryOrange,
+      child: ListView.builder(
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 100),
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: matches.length,
+        itemBuilder: (context, index) => _buildMatchCard(matches[index]),
+      ),
     );
   }
 
@@ -250,13 +297,106 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
     final tournaments = _filteredTournaments;
     
     if (tournaments.isEmpty) {
-      return _buildEmptyState('tournaments');
+      return RefreshIndicator(
+        onRefresh: _fetchData,
+        color: AppTheme.primaryOrange,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Container(
+            height: MediaQuery.of(context).size.height * 0.55,
+            alignment: Alignment.center,
+            child: _buildEmptyState('tournaments'),
+          ),
+        ),
+      );
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.fromLTRB(16, 16, 16, 100),
-      itemCount: tournaments.length,
-      itemBuilder: (context, index) => _buildTournamentCard(tournaments[index]),
+    return RefreshIndicator(
+      onRefresh: _fetchData,
+      color: AppTheme.primaryOrange,
+      child: ListView.builder(
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 100),
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: tournaments.length,
+        itemBuilder: (context, index) => _buildTournamentCard(tournaments[index]),
+      ),
+    );
+  }
+
+  Widget _buildTeamList() {
+    final teams = _filteredTeams;
+
+    if (teams.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _fetchData,
+        color: AppTheme.primaryOrange,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Container(
+            height: MediaQuery.of(context).size.height * 0.55,
+            alignment: Alignment.center,
+            child: _buildEmptyState('teams'),
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _fetchData,
+      color: AppTheme.primaryOrange,
+      child: ListView.builder(
+        padding: EdgeInsets.fromLTRB(16, 12, 16, 100),
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: teams.length + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: 12.h, top: 4.h),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${teams.length} ${teams.length == 1 ? "Team" : "Teams"}',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: ThemeHelper.of(context).textSecondary,
+                    ),
+                  ),
+                  InkWell(
+                    onTap: _navigateToCreateTeam,
+                    borderRadius: BorderRadius.circular(20.r),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryOrange.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(20.r),
+                        border: Border.all(color: AppTheme.primaryOrange.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add, size: 16.sp, color: AppTheme.primaryOrange),
+                          SizedBox(width: 4.w),
+                          Text(
+                            'Create Team',
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primaryOrange,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+          return _buildTeamCard(teams[index - 1]);
+        },
+      ),
     );
   }
 
@@ -269,6 +409,10 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
       icon = Icons.sports_cricket_outlined;
       title = 'No matches found';
       subtitle = 'Matches you are playing in will appear here';
+    } else if (type == 'teams') {
+      icon = Icons.groups_outlined;
+      title = 'No teams found';
+      subtitle = 'Teams you created or joined as a player will appear here';
     } else {
       icon = Icons.emoji_events_outlined;
       title = 'No tournaments found';
@@ -282,10 +426,10 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
           Container(
             padding: EdgeInsets.all(24.w),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: ThemeHelper.of(context).dividerColor!,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 48.sp, color: Colors.grey[400]),
+            child: Icon(icon, size: 48.sp, color: ThemeHelper.of(context).textSecondary),
           ),
           SizedBox(height: 20.h),
           Text(
@@ -293,17 +437,279 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
             style: TextStyle(
               fontSize: 18.sp,
               fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              color: ThemeHelper.of(context).textPrimary,
             ),
           ),
           SizedBox(height: 8.h),
-          Text(
-            subtitle,
-            style: TextStyle(color: Colors.grey[600], fontSize: 14.sp),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 32.w),
+            child: Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 14.sp),
+            ),
           ),
+          if (type == 'teams') ...[
+            SizedBox(height: 20.h),
+            ElevatedButton.icon(
+              onPressed: _navigateToCreateTeam,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryOrange,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+              ),
+              icon: Icon(Icons.add, size: 18.sp),
+              label: Text(
+                'Create Team',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.sp),
+              ),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  Widget _buildTeamCard(TeamModel team) {
+    final userId = _currentUserId;
+    final isCaptain = team.captainId == userId;
+    TeamPlayer? playerMembership;
+    for (final p in team.players) {
+      if (p.userId == userId || (_currentUserSpPId != null && _currentUserSpPId!.isNotEmpty && p.spPId == _currentUserSpPId)) {
+        playerMembership = p;
+        break;
+      }
+    }
+    final isPlayer = playerMembership != null;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 12.h),
+      decoration: BoxDecoration(
+        color: ThemeHelper.of(context).cardBg,
+        borderRadius: BorderRadius.circular(16.r),
+        boxShadow: [
+          BoxShadow(
+            color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => TeamDetailsScreen(team: team),
+              ),
+            ).then((_) => _fetchData());
+          },
+          borderRadius: BorderRadius.circular(16.r),
+          child: Padding(
+            padding: EdgeInsets.all(16.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TeamLogoWidget(
+                      teamName: team.name,
+                      logoUrl: team.logoUrl,
+                      size: 48.sp,
+                    ),
+                    SizedBox(width: 14.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  team.name,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16.sp,
+                                    color: ThemeHelper.of(context).textPrimary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (team.spTId.isNotEmpty)
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryOrange.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(6.r),
+                                    border: Border.all(color: AppTheme.primaryOrange.withOpacity(0.25)),
+                                  ),
+                                  child: Text(
+                                    team.spTId,
+                                    style: TextStyle(
+                                      fontSize: 10.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.primaryOrange,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          SizedBox(height: 4.h),
+                          Row(
+                            children: [
+                              Icon(Icons.person_outline, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
+                              SizedBox(width: 4.w),
+                              Expanded(
+                                child: Text(
+                                  'Captain: ${team.captainName.isNotEmpty ? team.captainName : "Not assigned"}',
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    color: ThemeHelper.of(context).textSecondary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12.h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        if (isCaptain)
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryOrange.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.star, size: 12.sp, color: AppTheme.primaryOrange),
+                                SizedBox(width: 4.w),
+                                Text(
+                                  'Captain',
+                                  style: TextStyle(
+                                    fontSize: 11.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.primaryOrange,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else if (isPlayer)
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.sports_cricket, size: 12.sp, color: Colors.blue),
+                                SizedBox(width: 4.w),
+                                Text(
+                                  playerMembership.role.isNotEmpty
+                                      ? 'Player • ${playerMembership.role}'
+                                      : 'Player',
+                                  style: TextStyle(
+                                    fontSize: 11.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                    Text(
+                      '${team.players.length} Players',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                        color: ThemeHelper.of(context).textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 10.h),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                  decoration: BoxDecoration(
+                    color: ThemeHelper.of(context).dividerColor!.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildTeamStatItem('Played', '${team.matchesPlayed}'),
+                      Container(width: 1.w, height: 20.h, color: ThemeHelper.of(context).textSecondary.withOpacity(0.2)),
+                      _buildTeamStatItem('Won', '${team.matchesWon}', color: Colors.green),
+                      Container(width: 1.w, height: 20.h, color: ThemeHelper.of(context).textSecondary.withOpacity(0.2)),
+                      _buildTeamStatItem('Lost', '${team.matchesLost}', color: Colors.redAccent),
+                      if (team.matchesPlayed > 0) ...[
+                        Container(width: 1.w, height: 20.h, color: ThemeHelper.of(context).textSecondary.withOpacity(0.2)),
+                        _buildTeamStatItem('Win %', '${team.winPercentage.toStringAsFixed(0)}%'),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTeamStatItem(String label, String value, {Color? color}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.bold,
+            color: color ?? ThemeHelper.of(context).textPrimary,
+          ),
+        ),
+        SizedBox(height: 2.h),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.sp,
+            color: ThemeHelper.of(context).textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _navigateToCreateTeam() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CreateTeamScreen()),
+    );
+    if (result != null) {
+      _fetchData();
+    }
   }
 
   Widget _buildMatchCard(MatchModel match) {
@@ -332,11 +738,11 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: Offset(0, 4),
           ),
@@ -365,7 +771,7 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
                       child: Text(
                         statusText,
                         style: TextStyle(
-                          color: Colors.white,
+                          color: ThemeHelper.of(context).cardBg,
                           fontSize: 10.sp,
                           fontWeight: FontWeight.bold,
                         ),
@@ -404,7 +810,7 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
                   style: TextStyle(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey,
+                    color: ThemeHelper.of(context).textSecondary,
                   ),
                 ),
                 SizedBox(height: 8.h),
@@ -412,7 +818,7 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                      Expanded(child: Text(match.team1Name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp))),
-                     Text('vs', style: TextStyle(color: Colors.grey[400], fontWeight: FontWeight.bold)),
+                     Text('vs', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontWeight: FontWeight.bold)),
                      Expanded(child: Text(match.team2Name, textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp))),
                   ],
                 ),
@@ -463,11 +869,11 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: Offset(0, 4),
           ),
@@ -495,7 +901,7 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
                         gradient: AppTheme.primaryGradient,
                         borderRadius: BorderRadius.circular(12.r),
                       ),
-                      child: Icon(Icons.emoji_events, color: Colors.white, size: 24.sp),
+                      child: Icon(Icons.emoji_events, color: ThemeHelper.of(context).cardBg, size: 24.sp),
                     ),
                     SizedBox(width: 16.w),
                     Expanded(
@@ -525,7 +931,7 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
                                 child: Text(
                                   statusText,
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: ThemeHelper.of(context).cardBg,
                                     fontSize: 10.sp,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -536,12 +942,12 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
                           SizedBox(height: 8.h),
                           Row(
                             children: [
-                              Icon(Icons.location_on_outlined, size: 14.sp, color: Colors.grey[600]),
+                              Icon(Icons.location_on_outlined, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
                               SizedBox(width: 4.w),
                               Expanded(
                                 child: Text(
                                   tournament.location,
-                                  style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
+                                  style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
@@ -573,11 +979,11 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14.sp, color: Colors.grey[600]),
+        Icon(icon, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
         SizedBox(width: 4.w),
         Text(
           text,
-          style: TextStyle(color: Colors.grey[600], fontSize: 12.sp),
+          style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp),
         ),
       ],
     );
@@ -591,7 +997,7 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.7,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: ThemeHelper.of(context).cardBg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -601,7 +1007,7 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
               width: 40.w,
               height: 4.h,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: ThemeHelper.of(context).dividerColor!,
                 borderRadius: BorderRadius.circular(2.r),
               ),
             ),
@@ -705,12 +1111,12 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
                 SizedBox(height: 4.h),
                 Text(
                   message,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 13.sp),
+                  style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 13.sp),
                 ),
                 SizedBox(height: 4.h),
                 Text(
                   time,
-                  style: TextStyle(color: Colors.grey[500], fontSize: 11.sp),
+                  style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp),
                 ),
               ],
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../../../data/models/team_model.dart';
@@ -93,9 +94,9 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: ThemeHelper.of(context).scaffoldBg,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: ThemeHelper.of(context).scaffoldBg,
           elevation: 0,
           leading: IconButton(
             icon: Icon(Icons.arrow_back, color: AppTheme.primaryOrange),
@@ -147,8 +148,8 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
         floatingActionButton: FloatingActionButton.extended(
           onPressed: _navigateToCreateTournament,
           backgroundColor: AppTheme.primaryOrange,
-          icon: Icon(Icons.add, color: Colors.white),
-          label: const Text('Create', style: TextStyle(color: Colors.white)),
+          icon: Icon(Icons.add, color: ThemeHelper.of(context).cardBg,),
+          label: Text('Create', style: TextStyle(color: ThemeHelper.of(context).cardBg,)),
         ),
       ),
     );
@@ -193,7 +194,7 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
       decoration: BoxDecoration(
         color: AppTheme.cardDark,
         borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: ThemeHelper.of(context).cardBg.withOpacity(0.05)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
@@ -229,7 +230,7 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
                           ),
                         ],
                       ),
-                      child: Icon(Icons.emoji_events, color: Colors.white, size: 28.sp),
+                      child: Icon(Icons.emoji_events, color: ThemeHelper.of(context).cardBg, size: 28.sp),
                     ),
                     SizedBox(width: 16.w),
                     
@@ -250,7 +251,7 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
                                         style: TextStyle(
                                           fontWeight: FontWeight.w900, 
                                           fontSize: 14.sp,
-                                          color: Colors.white,
+                                          color: ThemeHelper.of(context).cardBg,
                                           letterSpacing: 0.5,
                                         ),
                                         maxLines: 1,
@@ -258,11 +259,11 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
                                       ),
                                     ),
                                     SizedBox(width: 8.w),
-                                    Icon(Icons.remove_red_eye, color: Colors.white54, size: 12.sp),
+                                    Icon(Icons.remove_red_eye, color: ThemeHelper.of(context).textSecondary, size: 12.sp),
                                     SizedBox(width: 4.w),
                                     Text(
                                       '${tournament.views}',
-                                      style: TextStyle(color: Colors.white54, fontSize: 11.sp),
+                                      style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp),
                                     ),
                                   ],
                                 ),
@@ -289,12 +290,12 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
                           SizedBox(height: 8.h),
                           Row(
                             children: [
-                              Icon(Icons.location_on_outlined, size: 14.sp, color: Colors.white38),
+                              Icon(Icons.location_on_outlined, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
                               SizedBox(width: 4.w),
                               Expanded(
                                 child: Text(
                                   tournament.location,
-                                  style: TextStyle(fontSize: 12.sp, color: Colors.white54),
+                                  style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
@@ -303,7 +304,7 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
                           SizedBox(height: 4.h),
                           Text(
                             'By ${tournament.organizerName}',
-                            style: TextStyle(fontSize: 11.sp, color: Colors.white38),
+                            style: TextStyle(fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary),
                           ),
                         ],
                       ),
@@ -314,7 +315,7 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
                 Container(
                   margin: EdgeInsets.symmetric(vertical: 16.h),
                   height: 1.h,
-                  color: Colors.white.withOpacity(0.05),
+                  color: ThemeHelper.of(context).cardBg.withOpacity(0.05),
                 ),
                 
                 // Footer Stats
@@ -345,8 +346,8 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(value, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12.sp, color: Colors.white)),
-            Text(label, style: TextStyle(color: Colors.white38, fontSize: 10.sp)),
+            Text(value, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12.sp, color: ThemeHelper.of(context).cardBg,)),
+            Text(label, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 10.sp)),
           ],
         ),
       ],

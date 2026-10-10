@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/team_model.dart';
@@ -21,7 +22,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: ThemeHelper.of(context).dividerColor!,
       appBar: AppBar(
         title: const Text('Tournaments'),
         backgroundColor: AppTheme.primaryOrange,
@@ -214,13 +215,13 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
               // Info Row
               Row(
                 children: [
-                  Icon(Icons.location_on, size: 14.sp, color: Colors.grey[600]),
+                  Icon(Icons.location_on, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
                   SizedBox(width: 4.w),
-                  Text(tournament.location, style: TextStyle(color: Colors.grey[600])),
+                  Text(tournament.location, style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
                   SizedBox(width: 16.w),
-                  Icon(Icons.sports_cricket, size: 14.sp, color: Colors.grey[600]),
+                  Icon(Icons.sports_cricket, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
                   SizedBox(width: 4.w),
-                  Text('${tournament.overs} overs', style: TextStyle(color: Colors.grey[600])),
+                  Text('${tournament.overs} overs', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
                 ],
               ),
               SizedBox(height: 8.h),
@@ -231,7 +232,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                 children: [
                   Text(
                     '${_formatDate(tournament.startDate)} - ${_formatDate(tournament.endDate)}',
-                    style: TextStyle(fontSize: 13.sp, color: Colors.grey[700]),
+                    style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textSecondary),
                   ),
                   Row(
                     children: [
@@ -270,7 +271,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                       if (tournament.entryFee > 0)
                         Row(
                           children: [
-                            Icon(Icons.payments, size: 16.sp, color: Colors.grey[700]),
+                            Icon(Icons.payments, size: 16.sp, color: ThemeHelper.of(context).textSecondary),
                             SizedBox(width: 4.w),
                             Text('Entry: ₹${tournament.entryFee.toStringAsFixed(0)}'),
                           ],

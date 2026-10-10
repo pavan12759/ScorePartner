@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/match_model.dart';
@@ -33,7 +34,7 @@ class _LiveFeedScreenState extends State<LiveFeedScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: ThemeHelper.of(context).dividerColor!,
       appBar: AppBar(
         title: const Text('Matches'),
         backgroundColor: AppTheme.primaryOrange,
@@ -78,7 +79,7 @@ class _LiveFeedScreenState extends State<LiveFeedScreen>
                 Icon(
                   status == 'live' ? Icons.sports_cricket : Icons.calendar_today,
                   size: 64.sp,
-                  color: Colors.grey[400],
+                  color: ThemeHelper.of(context).textSecondary,
                 ),
                 SizedBox(height: 16.h),
                 Text(
@@ -89,7 +90,7 @@ class _LiveFeedScreenState extends State<LiveFeedScreen>
                           : 'No completed matches',
                   style: TextStyle(
                     fontSize: 16.sp,
-                    color: Colors.grey[600],
+                    color: ThemeHelper.of(context).textSecondary,
                   ),
                 ),
               ],
@@ -162,12 +163,12 @@ class _LiveFeedScreenState extends State<LiveFeedScreen>
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.circle, color: Colors.white, size: 8.sp),
+                          Icon(Icons.circle, color: ThemeHelper.of(context).cardBg, size: 8.sp),
                           SizedBox(width: 4.w),
                           Text(
                             'LIVE',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: ThemeHelper.of(context).cardBg,
                               fontSize: 11.sp,
                               fontWeight: FontWeight.bold,
                             ),
@@ -181,12 +182,12 @@ class _LiveFeedScreenState extends State<LiveFeedScreen>
                       style: TextStyle(
                         fontSize: 11.sp,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey[600],
+                        color: ThemeHelper.of(context).textSecondary,
                       ),
                     ),
                   Text(
                     match.matchType,
-                    style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary),
                   ),
                 ],
               ),
@@ -212,7 +213,7 @@ class _LiveFeedScreenState extends State<LiveFeedScreen>
                           style: TextStyle(
                             fontSize: 18.sp,
                             fontWeight: FontWeight.bold,
-                            color: match.currentBattingTeam == 'team1' ? AppTheme.primaryOrange : Colors.grey[700],
+                            color: match.currentBattingTeam == 'team1' ? AppTheme.primaryOrange : ThemeHelper.of(context).textSecondary,
                           ),
                         ),
                       ],
@@ -221,7 +222,7 @@ class _LiveFeedScreenState extends State<LiveFeedScreen>
                   Container(
                     padding: EdgeInsets.all(8.w),
                     decoration: BoxDecoration(
-                      color: Colors.grey[200],
+                      color: ThemeHelper.of(context).dividerColor!,
                       shape: BoxShape.circle,
                     ),
                     child: const Text('vs', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -243,7 +244,7 @@ class _LiveFeedScreenState extends State<LiveFeedScreen>
                           style: TextStyle(
                             fontSize: 18.sp,
                             fontWeight: FontWeight.bold,
-                            color: match.currentBattingTeam == 'team2' ? AppTheme.primaryOrange : Colors.grey[700],
+                            color: match.currentBattingTeam == 'team2' ? AppTheme.primaryOrange : ThemeHelper.of(context).textSecondary,
                           ),
                         ),
                       ],
@@ -259,11 +260,11 @@ class _LiveFeedScreenState extends State<LiveFeedScreen>
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.location_on, size: 14.sp, color: Colors.grey[500]),
+                      Icon(Icons.location_on, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
                       SizedBox(width: 4.w),
                       Text(
                         match.ground,
-                        style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary),
                       ),
                     ],
                   ),

@@ -45,6 +45,10 @@ class PinLiveScoreButton extends StatelessWidget {
 
         if (iconOnly) {
           return IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            iconSize: 20.sp,
+            visualDensity: VisualDensity.compact,
             icon: AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
               transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),

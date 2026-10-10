@@ -9,6 +9,7 @@ import 'package:scorepatner/data/services/firebase_data_service.dart';
 import 'package:scorepatner/presentation/screens/profile/player_profile_screen.dart';
 import 'package:scorepatner/presentation/widgets/match_initialization_dialog.dart';
 import 'package:scorepatner/presentation/screens/matches/poster/match_summary_poster_screen.dart';
+import 'package:scorepatner/core/utils/image_utils.dart';
 
 class LiveTab extends StatefulWidget {
   final MatchModel match;
@@ -30,16 +31,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
   }
 
   ImageProvider _getProfileImageProvider(String url) {
-    if (url.isEmpty) return const AssetImage('assets/images/default_avatar.png'); // Fallback though we usually don't reach here if empty is checked
-    if (url.trim().startsWith('data:')) {
-      try {
-        final base64Str = url.split(',').last.trim();
-        return MemoryImage(base64Decode(base64Str));
-      } catch (_) {
-        return const AssetImage('assets/images/default_avatar.png');
-      }
-    }
-    return NetworkImage(url);
+    return ImageUtils.getProfileImageProvider(url);
   }
 
   @override
@@ -71,22 +63,22 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
 
     return SingleChildScrollView(
       controller: _scrollController,
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 20.h),
+      padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 80.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Batters Section
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: ThemeHelper.of(context).cardBg,
               borderRadius: BorderRadius.circular(8.r),
-              border: Border.all(color: const Color(0xFFD6DBE9)),
+              border: Border.all(color: ThemeHelper.of(context).dividerColor),
             ),
             child: Column(
               children: [
                 _buildBatterHeader(),
                  if (currentBatters.isEmpty)
-                   Padding(padding: EdgeInsets.all(24.w), child: Text("No batters on crease", style: TextStyle(color: Colors.black38, fontStyle: FontStyle.italic)))
+                   Padding(padding: EdgeInsets.all(24.w), child: Text("No batters on crease", style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontStyle: FontStyle.italic)))
                 else
                    ...currentBatters.map((b) => _buildBatterRow(b)).toList(),
                    
@@ -98,11 +90,11 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                     ),
                     child: Row(
                       children: [
-                        Text('EXTRAS', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11.sp, color: Colors.grey, letterSpacing: 1)),
-                        const Spacer(),
+                        Text('EXTRAS', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary, letterSpacing: 1)),
+                        Spacer(),
                         Text(
                           '${battingTeam.extras.total} (b ${battingTeam.extras.byes}, lb ${battingTeam.extras.legByes}, w ${battingTeam.extras.wides}, nb ${battingTeam.extras.noBalls}, p 0)',
-                          style: TextStyle(fontSize: 12.sp, color: Colors.black87, fontWeight: FontWeight.w600),
+                          style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -153,17 +145,19 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                         ),
                         child: Row(
                           children: [
-                            Text('PARTNERSHIP', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11.sp, color: Colors.grey, letterSpacing: 1)),
-                            SizedBox(width: 12.w),
+                            Text('PARTNERSHIP', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary, letterSpacing: 1)),
+                            SizedBox(width: 8.w),
                             Text(
                               '$pRuns ($pBalls)',
-                              style: TextStyle(fontSize: 13.sp, color: Colors.black87, fontWeight: FontWeight.w800),
+                              style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w800),
                             ),
-                            const Spacer(),
-                            Flexible(
+                            SizedBox(width: 8.w),
+                            Expanded(
                               child: Text(
                                 pNames.toUpperCase(),
-                                style: TextStyle(fontSize: 11.sp, color: Colors.grey, fontWeight: FontWeight.w600),
+                                textAlign: TextAlign.end,
+                                style: TextStyle(fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary, fontWeight: FontWeight.w600),
+                                maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -187,9 +181,9 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
           // Bowler Section
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: ThemeHelper.of(context).cardBg,
               borderRadius: BorderRadius.circular(8.r),
-              border: Border.all(color: const Color(0xFFD6DBE9)),
+              border: Border.all(color: ThemeHelper.of(context).dividerColor),
             ),
             child: Column(
               children: [
@@ -233,10 +227,10 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                 ),
               );
             },
-            icon: Icon(Icons.auto_awesome, color: Colors.white),
+            icon: Icon(Icons.auto_awesome, color: ThemeHelper.of(context).textPrimary),
             label: Text('Match Summary Poster', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple,
+              backgroundColor: AppTheme.primaryOrange,
               foregroundColor: Colors.white,
               padding: EdgeInsets.symmetric(vertical: 16.h),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
@@ -296,12 +290,12 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
       width: double.infinity,
       padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: ThemeHelper.of(context).dividerColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.04),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),
@@ -324,7 +318,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
             Text(
               'Target: ${match.target}',
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: ThemeHelper.of(context).textSecondary,
                 fontWeight: FontWeight.w600,
                 fontSize: 14.sp,
               ),
@@ -431,12 +425,12 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
         margin: EdgeInsets.only(bottom: 12.h),
         padding: EdgeInsets.all(16.w),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: ThemeHelper.of(context).cardBg,
           borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: ThemeHelper.of(context).dividerColor),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.04),
               blurRadius: 8,
               offset: Offset(0, 2),
             ),
@@ -453,11 +447,11 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                 width: 48.w,
                 height: 48.h,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: ThemeHelper.of(context).isDark ? Color(0xFF1E1E1E) : ThemeHelper.of(context).dividerColor,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(color: ThemeHelper.of(context).dividerColor),
                 ),
-                child: Icon(Icons.person, color: Colors.grey.shade400, size: 24.sp),
+                child: Icon(Icons.person, color: ThemeHelper.of(context).textSecondary, size: 24.sp),
               );
 
               if (!snapshot.hasData || snapshot.data!.profileImageUrl.isEmpty) {
@@ -469,7 +463,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                 height: 48.h,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(color: ThemeHelper.of(context).dividerColor),
                   image: DecorationImage(
                     image: _getProfileImageProvider(snapshot.data!.profileImageUrl),
                     fit: BoxFit.cover,
@@ -487,7 +481,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                 Text(
                   title, 
                   style: TextStyle(
-                    color: Colors.grey.shade600, 
+                    color: ThemeHelper.of(context).textSecondary, 
                     fontSize: 11.sp, 
                     fontWeight: 
                     FontWeight.bold, 
@@ -498,7 +492,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                 Text(
                   playerName,
                   style: TextStyle(
-                    color: Colors.black87,
+                    color: ThemeHelper.of(context).textPrimary,
                     fontSize: 16.sp, 
                     fontWeight: FontWeight.w800,
                   ),
@@ -511,7 +505,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
             style: TextStyle(
               fontWeight: FontWeight.w600, 
               fontSize: 14.sp, 
-              color: Colors.grey.shade800
+              color: ThemeHelper.of(context).textSecondary
             ),
           ),
         ],
@@ -568,18 +562,18 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(color: themeColor.withOpacity(0.1), width: 2.w),
         boxShadow: [
-          BoxShadow(color: themeColor.withOpacity(0.05), blurRadius: 8, offset: Offset(0, 4)),
+          BoxShadow(color: ThemeHelper.of(context).isDark ? Colors.transparent : themeColor.withOpacity(0.05), blurRadius: 8, offset: Offset(0, 4)),
         ],
       ),
       child: Column(
         children: [
           Text(value, style: TextStyle(fontSize: 28.sp, fontWeight: FontWeight.w900, color: themeColor)),
           SizedBox(height: 6.h),
-          Text(label, textAlign: TextAlign.center, style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+          Text(label, textAlign: TextAlign.center, style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600, color: ThemeHelper.of(context).textSecondary)),
         ],
       ),
     );
@@ -661,7 +655,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                   color: AppTheme.primaryOrange,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.show_chart, color: Colors.white, size: 28.sp),
+                child: Icon(Icons.show_chart, color: ThemeHelper.of(context).cardBg, size: 28.sp),
               ),
               SizedBox(width: 16.w),
               Expanded(
@@ -695,9 +689,9 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
         Container(
           padding: EdgeInsets.all(16.w),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: ThemeHelper.of(context).cardBg,
             borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: ThemeHelper.of(context).dividerColor),
           ),
           child: Column(
             children: [
@@ -831,12 +825,12 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
         width: double.infinity,
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: ThemeHelper.of(context).dividerColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.04),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),
@@ -854,11 +848,11 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                    width: 60.w,
                    height: 60.h,
                    decoration: BoxDecoration(
-                     color: Colors.grey.shade100,
+                     color: ThemeHelper.of(context).isDark ? Color(0xFF1E1E1E) : ThemeHelper.of(context).dividerColor,
                      shape: BoxShape.circle,
-                     border: Border.all(color: Colors.grey.shade300),
+                     border: Border.all(color: ThemeHelper.of(context).dividerColor),
                    ),
-                   child: Icon(Icons.person, color: Colors.grey.shade400, size: 30.sp),
+                   child: Icon(Icons.person, color: ThemeHelper.of(context).textSecondary, size: 30.sp),
                  );
                  
                  if (!snapshot.hasData || snapshot.data!.profileImageUrl.isEmpty) {
@@ -870,7 +864,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                    height: 60.h,
                    decoration: BoxDecoration(
                      shape: BoxShape.circle,
-                     border: Border.all(color: Colors.grey.shade300),
+                     border: Border.all(color: ThemeHelper.of(context).dividerColor),
                      image: DecorationImage(
                        image: _getProfileImageProvider(snapshot.data!.profileImageUrl),
                        fit: BoxFit.cover,
@@ -884,11 +878,11 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
               width: 60.w,
               height: 60.h,
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: ThemeHelper.of(context).isDark ? Color(0xFF1E1E1E) : ThemeHelper.of(context).dividerColor,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(color: ThemeHelper.of(context).dividerColor),
               ),
-              child: Icon(Icons.person, color: Colors.grey.shade400, size: 30.sp),
+              child: Icon(Icons.person, color: ThemeHelper.of(context).textSecondary, size: 30.sp),
             ),
           SizedBox(width: 16.w),
           // Details
@@ -900,7 +894,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                 Text(
                   title.toUpperCase(),
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: ThemeHelper.of(context).textSecondary,
                     fontSize: 11.sp,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.0,
@@ -910,7 +904,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                 Text(
                   playerName,
                   style: TextStyle(
-                    color: Colors.black87,
+                    color: ThemeHelper.of(context).textPrimary,
                     fontSize: 18.sp,
                     fontWeight: FontWeight.w800,
                   ),
@@ -923,7 +917,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                         Text(
                           stat1,
                           style: TextStyle(
-                            color: Colors.grey.shade700,
+                            color: ThemeHelper.of(context).textSecondary,
                             fontWeight: FontWeight.w600,
                             fontSize: 13.sp,
                           ),
@@ -931,13 +925,13 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                       if (stat1 != null && stat2 != null)
                         Text(
                           ' • ',
-                          style: TextStyle(color: Colors.grey.shade400),
+                          style: TextStyle(color: ThemeHelper.of(context).textSecondary),
                         ),
                       if (stat2 != null)
                         Text(
                           stat2,
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: ThemeHelper.of(context).textSecondary,
                             fontWeight: FontWeight.w500,
                             fontSize: 13.sp,
                           ),
@@ -949,7 +943,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
             ),
           ),
           // Action icon (like a chevron to view profile)
-          Icon(Icons.chevron_right, color: Colors.grey.shade400),
+          Icon(Icons.chevron_right, color: ThemeHelper.of(context).textSecondary),
         ],
       ),
     ));
@@ -988,8 +982,8 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
       decoration: BoxDecoration(
-        color: batter.isOnStrike ? const Color(0xFFFFF7E6) : Colors.white,
-        border: Border(bottom: BorderSide(color: const Color(0xFFD6DBE9))),
+        color: batter.isOnStrike ? (ThemeHelper.of(context).isDark ? Color(0xFF3E2723) : const Color(0xFFFFF7E6)) : ThemeHelper.of(context).cardBg,
+        border: Border(bottom: BorderSide(color: ThemeHelper.of(context).dividerColor)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1006,7 +1000,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14.sp,
-                        color: batter.isOut ? Colors.grey : AppTheme.primaryOrange,
+                        color: batter.isOut ? ThemeHelper.of(context).textSecondary : AppTheme.primaryOrange,
                         decoration: batter.isOut ? TextDecoration.lineThrough : TextDecoration.none,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -1023,11 +1017,11 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
           ),
           Row(
             children: [
-               SizedBox(width: 35.w, child: Text('${batter.runs}', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w900, color: Colors.black87, fontSize: 14.sp))),
-               SizedBox(width: 35.w, child: Text('${batter.balls}', textAlign: TextAlign.center, style: TextStyle(color: Colors.black54, fontSize: 14.sp))),
-               SizedBox(width: 35.w, child: Text('${batter.fours}', textAlign: TextAlign.center, style: TextStyle(color: Colors.black54, fontSize: 14.sp))),
-               SizedBox(width: 35.w, child: Text('${batter.sixes}', textAlign: TextAlign.center, style: TextStyle(color: Colors.black54, fontSize: 14.sp))),
-               SizedBox(width: 45.w, child: Text(batter.strikeRate.toStringAsFixed(1), textAlign: TextAlign.center, style: TextStyle(fontSize: 12.sp, color: Colors.black87, fontWeight: FontWeight.w500))),
+               SizedBox(width: 35.w, child: Text('${batter.runs}', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w900, color: ThemeHelper.of(context).textPrimary, fontSize: 14.sp))),
+               SizedBox(width: 35.w, child: Text('${batter.balls}', textAlign: TextAlign.center, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 14.sp))),
+               SizedBox(width: 35.w, child: Text('${batter.fours}', textAlign: TextAlign.center, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 14.sp))),
+               SizedBox(width: 35.w, child: Text('${batter.sixes}', textAlign: TextAlign.center, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 14.sp))),
+               SizedBox(width: 45.w, child: Text(batter.strikeRate.toStringAsFixed(1), textAlign: TextAlign.center, style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w500))),
             ],
           )
         ],
@@ -1083,11 +1077,11 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
           ),
           Row(
             children: [
-               SizedBox(width: 35.w, child: Text(bowler.oversDisplay, textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w900, color: Colors.black87, fontSize: 14.sp))),
-               SizedBox(width: 25.w, child: Text('${bowler.maidens}', textAlign: TextAlign.center, style: TextStyle(color: Colors.black54, fontSize: 14.sp))),
-               SizedBox(width: 35.w, child: Text('${bowler.runs}', textAlign: TextAlign.center, style: TextStyle(color: Colors.black54, fontSize: 14.sp))),
-               SizedBox(width: 35.w, child: Text('${bowler.wickets}', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w900, color: Colors.black87, fontSize: 14.sp))),
-               SizedBox(width: 45.w, child: Text(bowler.economy.toStringAsFixed(1), textAlign: TextAlign.center, style: TextStyle(fontSize: 12.sp, color: Colors.black87, fontWeight: FontWeight.w500))),
+               SizedBox(width: 35.w, child: Text(bowler.oversDisplay, textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w900, color: ThemeHelper.of(context).textPrimary, fontSize: 14.sp))),
+               SizedBox(width: 25.w, child: Text('${bowler.maidens}', textAlign: TextAlign.center, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 14.sp))),
+               SizedBox(width: 35.w, child: Text('${bowler.runs}', textAlign: TextAlign.center, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 14.sp))),
+               SizedBox(width: 35.w, child: Text('${bowler.wickets}', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w900, color: ThemeHelper.of(context).textPrimary, fontSize: 14.sp))),
+               SizedBox(width: 45.w, child: Text(bowler.economy.toStringAsFixed(1), textAlign: TextAlign.center, style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w500))),
             ],
           )
         ],
@@ -1108,17 +1102,17 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
       width: double.infinity,
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(8.r),
         border: Border.all(color: const Color(0xFFD6DBE9)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('RECENT BALLS (THIS OVER)', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12.sp, color: const Color(0xFF1A3365))),
+          Text('RECENT BALLS (THIS OVER)', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12.sp, color: Color(0xFF1A3365))),
           SizedBox(height: 12.h),
           if (thisOverBalls.isEmpty)
-             const Text('No balls bowled yet in this over', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic))
+             Text('No balls bowled yet in this over', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontStyle: FontStyle.italic))
           else
             _buildBallsRow(thisOverBalls),
         ],
@@ -1147,11 +1141,11 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
         SizedBox(height: 12.h),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: ThemeHelper.of(context).cardBg,
             borderRadius: BorderRadius.circular(16.r),
              boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
                   blurRadius: 10,
                   offset: Offset(0, 4),
                 ),
@@ -1164,8 +1158,8 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
               final isLast = index == displayBalls.length - 1;
               
               // Color coding based on event
-              Color markerColor = Colors.grey.shade300;
-              Color textColor = Colors.black87;
+              Color markerColor = ThemeHelper.of(context).dividerColor;
+              Color textColor = ThemeHelper.of(context).textPrimary;
               
               if (ball.wicket != null) {
                 markerColor = Colors.red;
@@ -1180,7 +1174,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                    Container(
                     padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
                     decoration: BoxDecoration(
-                      border: isLast && ball.ballNumber != 1 ? null : Border(bottom: BorderSide(color: Colors.grey.shade100)),
+                      border: isLast && ball.ballNumber != 1 ? null : Border(bottom: BorderSide(color: ThemeHelper.of(context).dividerColor)),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1191,7 +1185,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                           padding: EdgeInsets.only(top: 2.h),
                           child: Text(
                             '${ball.overNumber}.${ball.ballNumber}',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.sp, color: Colors.grey),
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.sp, color: ThemeHelper.of(context).textSecondary),
                           ),
                         ),
                         
@@ -1207,7 +1201,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                             ball.commentary,
                             style: TextStyle(
                               fontSize: 13.sp, 
-                              color: Colors.black87,
+                              color: ThemeHelper.of(context).textPrimary,
                               fontWeight: ball.wicket != null || ball.runs == 4 || ball.runs == 6 ? FontWeight.w600 : FontWeight.normal,
                               height: 1.4
                             ),
@@ -1239,8 +1233,8 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                        width: double.infinity,
                        padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 16.w),
                        decoration: BoxDecoration(
-                         color: Colors.grey.shade50,
-                         border: isLast ? null : Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                         color: ThemeHelper.of(context).dividerColor,
+                         border: isLast ? null : Border(bottom: BorderSide(color: ThemeHelper.of(context).dividerColor)),
                        ),
                        child: Row(
                          children: [
@@ -1248,7 +1242,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                            SizedBox(width: 8.w),
                            Text(
                              '${ball.bowlerName} into the attack',
-                             style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold, color: Colors.black54, fontStyle: FontStyle.italic),
+                             style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold, color: ThemeHelper.of(context).textSecondary, fontStyle: FontStyle.italic),
                            ),
                          ],
                        ),
@@ -1267,8 +1261,8 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: balls.map((ball) {
-          Color bgColor = Colors.white;
-          Color textColor = Colors.black87;
+          Color bgColor = ThemeHelper.of(context).cardBg;
+          Color textColor = ThemeHelper.of(context).textPrimary;
           Color borderColor = const Color(0xFFD6DBE9);
           String label = ball.displayString;
           
@@ -1323,10 +1317,10 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
     return Container(
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-         color: Colors.white,
+         color: ThemeHelper.of(context).cardBg,
          borderRadius: BorderRadius.circular(16.r),
          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: Offset(0, 4)),
+            BoxShadow(color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05), blurRadius: 10, offset: Offset(0, 4)),
          ],
          border: Border.all(color: AppTheme.primaryOrange.withOpacity(0.1)),
       ),
@@ -1337,7 +1331,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
             children: [
               Text('PARTNERSHIP', style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w900, color: AppTheme.primaryOrange, letterSpacing: 1.5)),
               Text('${partnership.wicketNumber}${_getOrdinalSuffix(partnership.wicketNumber)} Wicket'.toUpperCase(), 
-                  style: TextStyle(fontSize: 11.sp, color: Colors.grey, fontWeight: FontWeight.bold)),
+                  style: TextStyle(fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary, fontWeight: FontWeight.bold)),
             ],
           ),
           SizedBox(height: 20.h),
@@ -1346,12 +1340,12 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
             children: [
               Text(
                 '${partnership.runs}', 
-                style: TextStyle(fontSize: 42.sp, fontWeight: FontWeight.w900, color: Colors.black87),
+                style: TextStyle(fontSize: 42.sp, fontWeight: FontWeight.w900, color: ThemeHelper.of(context).textPrimary),
               ),
               SizedBox(width: 8.w),
               Text(
                 '(${partnership.balls})', 
-                style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold, color: Colors.grey),
+                style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold, color: ThemeHelper.of(context).textSecondary),
               ),
             ],
           ),
@@ -1395,7 +1389,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                       style: TextStyle(fontWeight: FontWeight.w900, color: AppTheme.primaryOrange, fontSize: 13.sp, decoration: TextDecoration.underline, decorationColor: Color(0x4DFF9800), decorationStyle: TextDecorationStyle.dotted)),
                   ),
                   Text('${partnership.batter1Runs} (${partnership.batter1Balls})', 
-                      style: TextStyle(fontSize: 13.sp, color: Colors.black54, fontWeight: FontWeight.bold)),
+                      style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textSecondary, fontWeight: FontWeight.bold)),
                 ],
               ),
               Column(
@@ -1407,7 +1401,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                       style: TextStyle(fontWeight: FontWeight.w900, color: Colors.blueAccent, fontSize: 13.sp, decoration: TextDecoration.underline, decorationColor: Color(0x4D448AFF), decorationStyle: TextDecorationStyle.dotted)),
                   ),
                   Text('${partnership.batter2Runs} (${partnership.batter2Balls})', 
-                      style: TextStyle(fontSize: 13.sp, color: Colors.black54, fontWeight: FontWeight.bold)),
+                      style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textSecondary, fontWeight: FontWeight.bold)),
                 ],
               ),
             ],
@@ -1443,10 +1437,10 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
     return Container(
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-         color: Colors.white,
+         color: ThemeHelper.of(context).cardBg,
          borderRadius: BorderRadius.circular(16.r),
          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: Offset(0, 4)),
+            BoxShadow(color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05), blurRadius: 10, offset: Offset(0, 4)),
          ],
          border: Border.all(color: AppTheme.primaryOrange.withOpacity(0.1)),
       ),
@@ -1462,8 +1456,8 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                 child: Text(b1.playerName.split(' ').last.toUpperCase(), style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryOrange, fontSize: 14.sp, decoration: TextDecoration.underline, decorationColor: Color(0x4DFF9800), decorationStyle: TextDecorationStyle.dotted)),
               ),
               SizedBox(width: 8.w),
-              Text('$totalRuns', style: TextStyle(fontSize: 28.sp, fontWeight: FontWeight.w900, color: Colors.black87)),
-              Text(' ($totalBalls)', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: Colors.grey)),
+              Text('$totalRuns', style: TextStyle(fontSize: 28.sp, fontWeight: FontWeight.w900, color: ThemeHelper.of(context).textPrimary)),
+              Text(' ($totalBalls)', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: ThemeHelper.of(context).textSecondary)),
               SizedBox(width: 8.w),
               GestureDetector(
                 onTap: () => _navigateToPlayerProfile(b2.playerId, context),
@@ -1503,7 +1497,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-         color: Colors.red.shade50,
+         color: ThemeHelper.of(context).isDark ? Color(0xFF3B1D1D) : Colors.red.shade50,
          borderRadius: BorderRadius.circular(16.r),
          boxShadow: [
             BoxShadow(color: Colors.red.withOpacity(0.1), blurRadius: 10, offset: Offset(0, 4)),
@@ -1534,7 +1528,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                       child: Text(
                         wicket.playerName.toUpperCase(), 
                         style: TextStyle(
-                          fontWeight: FontWeight.w900, fontSize: 18.sp, letterSpacing: 0.5, color: Colors.black87,
+                          fontWeight: FontWeight.w900, fontSize: 18.sp, letterSpacing: 0.5, color: ThemeHelper.of(context).textPrimary,
                           decoration: TextDecoration.underline,
                           decorationColor: Color(0x4DFF9800),
                           decorationStyle: TextDecorationStyle.dotted,
@@ -1544,7 +1538,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                     SizedBox(height: 4.h),
                     Text(
                       wicket.dismissalString,
-                      style: TextStyle(color: Colors.red.shade800, fontSize: 13.sp, fontStyle: FontStyle.italic, fontWeight: FontWeight.w500),
+                      style: TextStyle(color: ThemeHelper.of(context).isDark ? Colors.red.shade300 : Colors.red.shade800, fontSize: 13.sp, fontStyle: FontStyle.italic, fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
@@ -1552,7 +1546,7 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: ThemeHelper.of(context).cardBg,
                   borderRadius: BorderRadius.circular(12.r),
                   border: Border.all(color: Colors.red.withOpacity(0.2)),
                   boxShadow: [
@@ -1577,22 +1571,22 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
       decoration: BoxDecoration(
-         color: Colors.white,
+         color: ThemeHelper.of(context).cardBg,
          borderRadius: BorderRadius.circular(12.r),
-         border: Border.all(color: Colors.grey.shade200),
+         border: Border.all(color: ThemeHelper.of(context).dividerColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text('EXTRAS: ', style: TextStyle(color: AppTheme.primaryOrange, fontWeight: FontWeight.w900, fontSize: 12.sp, letterSpacing: 1)),
-          Text('${extras.total}', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.black87, fontSize: 15.sp)),
+          Text('${extras.total}', style: TextStyle(fontWeight: FontWeight.w900, color: ThemeHelper.of(context).textPrimary, fontSize: 15.sp)),
           SizedBox(width: 8.w),
-          Container(width: 1.w, height: 16.h, color: Colors.grey.shade300),
+          Container(width: 1.w, height: 16.h, color: ThemeHelper.of(context).dividerColor),
           SizedBox(width: 8.w),
           Flexible(
             child: Text(
               'WD ${extras.wides}, NB ${extras.noBalls}, B ${extras.byes}, LB ${extras.legByes}',
-              style: TextStyle(color: Colors.black54, fontSize: 11.sp, fontWeight: FontWeight.bold),
+              style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp, fontWeight: FontWeight.bold),
               overflow: TextOverflow.ellipsis,
             ),
           ),

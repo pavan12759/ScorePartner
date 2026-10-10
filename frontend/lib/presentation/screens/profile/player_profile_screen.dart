@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/models/match_model.dart';
+import '../../../core/utils/image_utils.dart';
 import 'dart:convert';
 import '../../../data/services/firebase_data_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -44,9 +46,14 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
   int _followerCount = 0;
   int _followingCount = 0;
 
+  Stream<UserModel?>? _playerStream;
+  Future<List<MatchModel>>? _recentMatchesFuture;
+
   @override
   void initState() {
     super.initState();
+    _playerStream = FirebaseDataService.instance.streamUser(widget.player.uid);
+    _recentMatchesFuture = FirebaseDataService.instance.getUserPlayedMatches(widget.player.uid);
     _loadFollowData();
   }
 
@@ -105,14 +112,14 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<UserModel?>(
-      stream: FirebaseDataService.instance.streamUser(widget.player.uid),
+      stream: _playerStream,
       initialData: widget.player,
       builder: (context, snapshot) {
         final player = snapshot.data ?? widget.player;
         debugPrint('🔍 Player Instagram: "${player.instagramUrl}"');
         
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: ThemeHelper.of(context).scaffoldBg,
           body: CustomScrollView(
             slivers: [
               // App Bar
@@ -120,7 +127,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                 expandedHeight: 0,
                 floating: true,
                 pinned: true,
-                backgroundColor: Colors.white,
+                backgroundColor: ThemeHelper.of(context).scaffoldBg,
                 foregroundColor: Colors.black,
                 elevation: 0,
                 title: Text(player.name, style: TextStyle(fontWeight: FontWeight.bold)),
@@ -149,15 +156,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
 
   ImageProvider? _getProfileImageProvider(String url) {
     if (url.isEmpty) return null;
-    if (url.trim().startsWith('data:')) {
-      try {
-        final base64Str = url.split(',').last.trim();
-        return MemoryImage(base64Decode(base64Str));
-      } catch (_) {
-        return null;
-      }
-    }
-    return NetworkImage(url);
+    return ImageUtils.getProfileImageProvider(url, fallbackAsset: 'assets/images/default_avatar.png');
   }
 
   Widget _buildProfileHeader(UserModel player) {
@@ -172,7 +171,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
               // Profile Picture
               CircleAvatar(
                 radius: 48,
-                backgroundColor: Colors.grey[100],
+                backgroundColor: ThemeHelper.of(context).dividerColor!,
                 backgroundImage: _getProfileImageProvider(player.profileImageUrl),
                 child: player.profileImageUrl.isEmpty
                     ? Icon(Icons.person, size: 50.sp, color: Colors.grey.withOpacity(0.5))
@@ -195,7 +194,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                             style: TextStyle(
                               fontSize: 18.sp,
                               fontWeight: FontWeight.w900,
-                              color: Colors.black87,
+                              color: ThemeHelper.of(context).textPrimary,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -240,20 +239,20 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                         Container(
                           padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
                           decoration: BoxDecoration(
-                            color: Colors.grey[200],
+                            color: ThemeHelper.of(context).dividerColor!,
                             borderRadius: BorderRadius.circular(8.r),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.sports_cricket, size: 12.sp, color: Colors.grey[700]),
+                              Icon(Icons.sports_cricket, size: 12.sp, color: ThemeHelper.of(context).textSecondary),
                               SizedBox(width: 4.w),
                               Text(
                                 player.battingStyle.isNotEmpty ? player.battingStyle : 'RHB',
                                 style: TextStyle(
                                   fontSize: 10.sp,
                                   fontWeight: FontWeight.w900,
-                                  color: Colors.grey[800],
+                                  color: ThemeHelper.of(context).textSecondary,
                                 ),
                               ),
                             ],
@@ -319,7 +318,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                                     : const LinearGradient(
                                         colors: [AppTheme.stadiumOrange, Color(0xFFB34200)],
                                       ),
-                                color: _isFollowing ? Colors.grey[200] : null,
+                                color: _isFollowing ? ThemeHelper.of(context).dividerColor! : null,
                                 borderRadius: BorderRadius.circular(8.r),
                               ),
                               child: Center(
@@ -334,7 +333,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                                         style: TextStyle(
                                           fontWeight: FontWeight.w900,
                                           fontSize: 11.sp,
-                                          color: _isFollowing ? Colors.black : Colors.white,
+                                          color: _isFollowing ? ThemeHelper.of(context).textPrimary : Colors.white,
                                           letterSpacing: 1,
                                         ),
                                       ),
@@ -381,10 +380,10 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                           child: Container(
                             padding: EdgeInsets.all(8.w),
                             decoration: BoxDecoration(
-                              color: Colors.grey[200],
+                              color: ThemeHelper.of(context).dividerColor!,
                               borderRadius: BorderRadius.circular(8.r),
                             ),
-                            child: Icon(Icons.message_outlined, size: 16.sp, color: Colors.black),
+                            child: Icon(Icons.message_outlined, size: 16.sp, color: ThemeHelper.of(context).textPrimary),
                           ),
                         ),
                       ],
@@ -401,9 +400,9 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
           Container(
             padding: EdgeInsets.symmetric(vertical: 12.h),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
+              color: ThemeHelper.of(context).containerColor,
               borderRadius: BorderRadius.circular(12.r),
-              border: Border.all(color: Colors.grey[200]!),
+              border: Border.all(color: ThemeHelper.of(context).dividerColor!),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -420,7 +419,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                     ),
                   );
                 }),
-                Container(width: 1.w, height: 35.h, color: Colors.grey[300]),
+                Container(width: 1.w, height: 35.h, color: ThemeHelper.of(context).dividerColor!),
                 _buildFollowerItem('$_followingCount', 'FOLLOWING', onTap: () {
                   Navigator.push(
                     context,
@@ -433,7 +432,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                     ),
                   );
                 }),
-                Container(width: 1.w, height: 35.h, color: Colors.grey[300]),
+                Container(width: 1.w, height: 35.h, color: ThemeHelper.of(context).dividerColor!),
                 _buildFollowerItem('${player.tennisBallStats.matches}', 'MATCHES', onTap: null),
               ],
             ),
@@ -446,9 +445,9 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
             width: double.infinity,
             padding: EdgeInsets.all(12.w),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: ThemeHelper.of(context).cardBg,
               borderRadius: BorderRadius.circular(12.r),
-              border: Border.all(color: Colors.grey[200]!),
+              border: Border.all(color: ThemeHelper.of(context).dividerColor!),
               boxShadow: [
                 BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: Offset(0, 2))
               ]
@@ -458,23 +457,23 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.sports_cricket, size: 14.sp, color: Colors.grey[600]),
+                    Icon(Icons.sports_cricket, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
                     SizedBox(width: 4.w),
                     Text(
                       'PASSIONATE ${player.role.isNotEmpty ? player.role.toUpperCase() : "CRICKETER"} | ',
                       style: TextStyle(
-                        color: Colors.grey[600],
+                        color: ThemeHelper.of(context).textSecondary,
                         fontSize: 10.sp,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
                       ),
                     ),
-                    Icon(Icons.location_on, size: 14.sp, color: Colors.grey[600]),
+                    Icon(Icons.location_on, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
                     SizedBox(width: 2.w),
                     Text(
                       '${player.location.isNotEmpty ? player.location.toUpperCase() : "INDIA"}',
                       style: TextStyle(
-                        color: Colors.grey[600],
+                        color: ThemeHelper.of(context).textSecondary,
                         fontSize: 10.sp,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
@@ -489,7 +488,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                   Text(
                     player.bio,
                     style: TextStyle(
-                      color: Colors.black87,
+                      color: ThemeHelper.of(context).textPrimary,
                       fontSize: 13.sp,
                       height: 1.4,
                     ),
@@ -498,7 +497,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                 
                 SizedBox(height: 12.h),
                 
-                Divider(color: Colors.grey[200], height: 1.h),
+                Divider(color: ThemeHelper.of(context).dividerColor!, height: 1.h),
                 
                 SizedBox(height: 12.h),
                 
@@ -519,7 +518,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                             style: TextStyle(
                               fontSize: 10.sp,
                               fontWeight: FontWeight.w600,
-                              color: Colors.grey[500],
+                              color: ThemeHelper.of(context).textSecondary,
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -531,7 +530,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                             style: TextStyle(
                               fontSize: 12.sp,
                               fontWeight: FontWeight.bold,
-                              color: player.instagramUrl.isNotEmpty ? Colors.pink : Colors.grey[400],
+                              color: player.instagramUrl.isNotEmpty ? Colors.pink : ThemeHelper.of(context).textSecondary,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -539,7 +538,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                       ),
                     ),
                     
-                    Container(width: 1.w, height: 30.h, color: Colors.grey[300]),
+                    Container(width: 1.w, height: 30.h, color: ThemeHelper.of(context).dividerColor!),
                     
                     // SPP ID section
                     Expanded(
@@ -556,7 +555,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                             style: TextStyle(
                               fontSize: 10.sp,
                               fontWeight: FontWeight.w600,
-                              color: Colors.grey[500],
+                              color: ThemeHelper.of(context).textSecondary,
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -594,8 +593,8 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
             height: 60.h,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white,
-              border: Border.all(color: Colors.grey[300]!, width: 1.5.w),
+              color: ThemeHelper.of(context).cardBg,
+              border: Border.all(color: ThemeHelper.of(context).dividerColor!, width: 1.5.w),
             ),
             child: Stack(
               alignment: Alignment.center,
@@ -617,7 +616,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
             title,
             style: TextStyle(
               fontSize: 11.sp,
-              color: Colors.black87,
+              color: ThemeHelper.of(context).textPrimary,
               fontWeight: FontWeight.w500,
             ),
             overflow: TextOverflow.ellipsis,
@@ -641,7 +640,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
               style: TextStyle(
                 fontSize: 18.sp,
                 fontWeight: FontWeight.w900,
-                color: Colors.black87,
+                color: ThemeHelper.of(context).textPrimary,
               ),
             ),
             SizedBox(height: 2.h),
@@ -650,7 +649,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
               style: TextStyle(
                 fontSize: 10.sp,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey[600],
+                color: ThemeHelper.of(context).textSecondary,
                 letterSpacing: 0.5,
               ),
             ),
@@ -668,7 +667,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: TextStyle(fontSize: 9.sp, color: Colors.grey[600])),
+            Text(label, style: TextStyle(fontSize: 9.sp, color: ThemeHelper.of(context).textSecondary)),
             Text(value, style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.bold)),
           ],
         ),
@@ -682,7 +681,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
       margin: EdgeInsets.symmetric(horizontal: 16.w),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
@@ -698,7 +697,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
           Text(
             'CAREER STATS',
             style: TextStyle(
-              color: Colors.black87,
+              color: ThemeHelper.of(context).textPrimary,
               fontSize: 12.sp,
               fontWeight: FontWeight.bold,
               letterSpacing: 1,
@@ -730,12 +729,12 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
           style: TextStyle(
             fontSize: 20.sp,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: ThemeHelper.of(context).textPrimary,
           ),
         ),
         Text(
           label,
-          style: TextStyle(fontSize: 10.sp, color: Colors.grey[600]),
+          style: TextStyle(fontSize: 10.sp, color: ThemeHelper.of(context).textSecondary),
         ),
       ],
     );
@@ -820,7 +819,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
               style: TextStyle(
                 fontSize: 16.sp,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: ThemeHelper.of(context).textPrimary,
               ),
             ),
           ],
@@ -828,7 +827,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
         SizedBox(height: 12.h),
         Container(
           decoration: BoxDecoration(
-            color: Colors.grey[50],
+            color: ThemeHelper.of(context).containerColor,
             borderRadius: BorderRadius.circular(12.r),
           ),
           child: Column(children: stats),
@@ -842,7 +841,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: Colors.grey[200]!, width: 0.5),
+          bottom: BorderSide(color: ThemeHelper.of(context).dividerColor!, width: 0.5),
         ),
       ),
       child: Row(
@@ -851,7 +850,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
           Text(
             label,
             style: TextStyle(
-              color: Colors.grey[700],
+              color: ThemeHelper.of(context).textSecondary,
               fontSize: 14.sp,
             ),
           ),
@@ -860,7 +859,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14.sp,
-              color: highlight ? AppTheme.primaryOrange : Colors.black87,
+              color: highlight ? AppTheme.primaryOrange : ThemeHelper.of(context).textPrimary,
             ),
           ),
         ],
@@ -887,7 +886,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
         margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
         boxShadow: [
@@ -899,7 +898,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('${match.scheduledDate.day}/${match.scheduledDate.month}/${match.scheduledDate.year}', style: TextStyle(color: Colors.grey[500], fontSize: 12.sp)),
+              Text('${match.scheduledDate.day}/${match.scheduledDate.month}/${match.scheduledDate.year}', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                 decoration: BoxDecoration(
@@ -925,7 +924,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                   ],
                 ),
               ),
-              const Text('vs', style: TextStyle(color: Colors.grey)),
+              Text('vs', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -939,7 +938,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
           ),
           if (isCompleted) ...[
             Divider(height: 20.h),
-            Text(resultText, style: TextStyle(color: Colors.grey[600], fontSize: 12.sp)),
+            Text(resultText, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
           ],
         ],
       ),
@@ -953,7 +952,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: isWin ? Colors.green.withValues(alpha: 0.3) : Colors.red.withValues(alpha: 0.3)),
         boxShadow: [
@@ -965,7 +964,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(match['date'], style: TextStyle(color: Colors.grey[500], fontSize: 12.sp)),
+              Text(match['date'], style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                 decoration: BoxDecoration(
@@ -991,7 +990,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                   ],
                 ),
               ),
-              const Text('vs', style: TextStyle(color: Colors.grey)),
+              Text('vs', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -1007,10 +1006,10 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(match['result'], style: TextStyle(color: Colors.grey[600], fontSize: 12.sp)),
+              Text(match['result'], style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
               Row(
                 children: [
-                  Text('Your Score: ', style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+                  Text('Your Score: ', style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary)),
                   Text(match['playerScore'], style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryOrange)),
                 ],
               ),
@@ -1061,7 +1060,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: Offset(0, 2)),
@@ -1080,7 +1079,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                   children: [
                     Text(tournament['name'], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp)),
                     SizedBox(height: 2.h),
-                    Text('${tournament['status']} • ${tournament['date']}', style: TextStyle(color: Colors.grey[600], fontSize: 12.sp)),
+                    Text('${tournament['status']} • ${tournament['date']}', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
                   ],
                 ),
               ),
@@ -1104,7 +1103,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
     return Column(
       children: [
         Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp)),
-        Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 11.sp)),
+        Text(label, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp)),
       ],
     );
   }
@@ -1161,7 +1160,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
     return Container(
       padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: Offset(0, 2)),
@@ -1188,13 +1187,13 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
           SizedBox(height: 2.h),
           Text(
             reward['tournament'],
-            style: TextStyle(color: Colors.grey[600], fontSize: 11.sp),
+            style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           Text(
             reward['date'],
-            style: TextStyle(color: Colors.grey[400], fontSize: 10.sp),
+            style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 10.sp),
           ),
         ],
       ),
@@ -1227,7 +1226,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
             margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 20.h),
             padding: EdgeInsets.all(4.w),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: ThemeHelper.of(context).cardBg,
               borderRadius: BorderRadius.circular(30.r),
               boxShadow: [
                 BoxShadow(
@@ -1245,7 +1244,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                 color: AppTheme.primaryOrange,
               ),
               labelColor: Colors.white,
-              unselectedLabelColor: Colors.grey[600],
+              unselectedLabelColor: ThemeHelper.of(context).textSecondary,
               tabs: const [
                 Tab(icon: Icon(Icons.query_stats), text: 'Stats'),
                 Tab(icon: Icon(Icons.emoji_events), text: 'Achieve'),
@@ -1283,7 +1282,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
         children: [
           TabBar(
             labelColor: AppTheme.primaryOrange,
-            unselectedLabelColor: Colors.grey,
+            unselectedLabelColor: ThemeHelper.of(context).textSecondary,
             indicatorColor: AppTheme.primaryOrange,
             tabs: [
               Tab(
@@ -1329,11 +1328,11 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.emoji_events_outlined, size: 48.sp, color: Colors.grey[300]),
+            Icon(Icons.emoji_events_outlined, size: 48.sp, color: ThemeHelper.of(context).dividerColor!),
             SizedBox(height: 16.h),
-            Text('No achievements yet', style: TextStyle(color: Colors.grey[500])),
+            Text('No achievements yet', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
             SizedBox(height: 4.h),
-            Text('Play matches to earn badges!', style: TextStyle(fontSize: 12.sp, color: Colors.grey[400])),
+            Text('Play matches to earn badges!', style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary)),
           ],
         ),
       );
@@ -1364,12 +1363,12 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                 SizedBox(height: 2.h),
                 Text(
                   '${ach.earnedAt.day}/${ach.earnedAt.month}/${ach.earnedAt.year}',
-                  style: TextStyle(fontSize: 10.sp, color: Colors.grey[400]),
+                  style: TextStyle(fontSize: 10.sp, color: ThemeHelper.of(context).textSecondary),
                 ),
               ],
             ),
             trailing: IconButton(
-              icon: Icon(Icons.share, color: Colors.grey, size: 20.sp),
+              icon: Icon(Icons.share, color: ThemeHelper.of(context).textSecondary, size: 20.sp),
               onPressed: () => _shareAchievement(context, user, ach),
             ),
           ),
@@ -1441,7 +1440,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
     }
 
     return FutureBuilder<List<MatchModel>>(
-      future: FirebaseDataService.instance.getUserPlayedMatches(userId),
+      future: _recentMatchesFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return ListView.builder(
@@ -1494,9 +1493,9 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.workspace_premium, size: 48.sp, color: Colors.grey[300]),
+            Icon(Icons.workspace_premium, size: 48.sp, color: ThemeHelper.of(context).dividerColor!),
             SizedBox(height: 16.h),
-            Text('No tournament history', style: TextStyle(color: Colors.grey[500])),
+            Text('No tournament history', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
           ],
         ),
       );
@@ -1551,9 +1550,9 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.card_giftcard, size: 48.sp, color: Colors.grey[300]),
+            Icon(Icons.card_giftcard, size: 48.sp, color: ThemeHelper.of(context).dividerColor!),
             SizedBox(height: 16.h),
-            Text('No rewards yet', style: TextStyle(color: Colors.grey[500])),
+            Text('No rewards yet', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
           ],
         ),
       );

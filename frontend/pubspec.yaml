@@ -46,7 +46,7 @@ dependencies:
   firebase_auth: ^6.5.7
   cloud_firestore: ^6.8.0
   firebase_storage: ^13.4.6
-  google_sign_in: ^7.2.0
+  google_sign_in: ^6.2.1
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.4.0
   
@@ -68,6 +68,7 @@ dependencies:
   geolocator: ^14.0.2
   geocoding: ^5.0.0
   gal: ^2.3.3
+  sendotp_flutter_sdk: ^0.0.2
 
 dev_dependencies:
   flutter_test:

@@ -36,10 +36,11 @@ class ApiService {
       return ['http://localhost:5000/api'];
     }
 
-    // On mobile devices, try localhost + emulator
+    // On mobile devices, try localhost, LAN IP (physical device), and emulator
     final urls = <String>[_baseUrl];
     if (_baseUrl.contains('localhost')) {
-      urls.add(_baseUrl.replaceAll('localhost', '10.0.2.2'));  // Android emulator
+      urls.add(_baseUrl.replaceAll('localhost', '192.168.1.5')); // Physical device over Wi-Fi
+      urls.add(_baseUrl.replaceAll('localhost', '10.0.2.2'));    // Android emulator
     }
     return urls;
   }

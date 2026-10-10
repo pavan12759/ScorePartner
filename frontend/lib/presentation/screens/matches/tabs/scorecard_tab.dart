@@ -164,11 +164,11 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
     return Column(
       children: [
         Container(
-          color: Colors.white.withOpacity(0.95),
+          color: ThemeHelper.of(context).cardBg.withOpacity(0.95),
           child: TabBar(
             controller: _tabController,
             labelColor: AppTheme.primaryOrange,
-            unselectedLabelColor: Colors.grey[600],
+            unselectedLabelColor: ThemeHelper.of(context).textSecondary,
             indicatorColor: AppTheme.primaryOrange,
             indicatorWeight: 3,
             labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp, letterSpacing: 0.5),
@@ -245,9 +245,9 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
             // Batting Section
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: ThemeHelper.of(context).cardBg,
                 borderRadius: BorderRadius.circular(8.r),
-                border: Border.all(color: const Color(0xFFD6DBE9)),
+                border: Border.all(color: ThemeHelper.of(context).dividerColor),
               ),
               child: Column(
                 children: [
@@ -256,7 +256,7 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
                     width: double.infinity,
                     padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
                     decoration: BoxDecoration(
-                      color: isSuperOverInnings ? const Color(0xFF1976D2) : const Color(0xFFD6E3FF),
+                      color: isSuperOverInnings ? (ThemeHelper.of(context).isDark ? Color(0xFF1565C0) : const Color(0xFF1976D2)) : (ThemeHelper.of(context).isDark ? const Color(0xFF1E2A4F) : const Color(0xFFD6E3FF)),
                       borderRadius: BorderRadius.only(
                         topLeft: Radius.circular(8.r),
                         topRight: Radius.circular(8.r),
@@ -267,11 +267,11 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
                       children: [
                         Text(
                           battingTeamName.toUpperCase(),
-                          style: TextStyle(color: isSuperOverInnings ? Colors.white : const Color(0xFF1A3365), fontWeight: FontWeight.w900, fontSize: 15.sp, letterSpacing: 0.5),
+                          style: TextStyle(color: isSuperOverInnings ? Colors.white : ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w900, fontSize: 15.sp, letterSpacing: 0.5),
                         ),
                         Text(
                           '${battingScore.runs}-${battingScore.wickets} (${battingScore.overs} OV)',
-                          style: TextStyle(color: isSuperOverInnings ? Colors.white : const Color(0xFF1A3365), fontWeight: FontWeight.w900, fontSize: 16.sp),
+                          style: TextStyle(color: isSuperOverInnings ? Colors.white : ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w900, fontSize: 16.sp),
                         ),
                       ],
                     ),
@@ -301,9 +301,9 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
              // Bowling Section
              Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: ThemeHelper.of(context).cardBg,
                 borderRadius: BorderRadius.circular(8.r),
-                border: Border.all(color: const Color(0xFFD6DBE9)),
+                border: Border.all(color: ThemeHelper.of(context).dividerColor),
               ),
               child: Column(
                 children: [
@@ -311,7 +311,7 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
                      width: double.infinity,
                      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
                      decoration: BoxDecoration(
-                        color: isSuperOverInnings ? const Color(0xFF1976D2) : const Color(0xFFD6E3FF),
+                        color: isSuperOverInnings ? (ThemeHelper.of(context).isDark ? Color(0xFF1565C0) : const Color(0xFF1976D2)) : (ThemeHelper.of(context).isDark ? const Color(0xFF1E2A4F) : const Color(0xFFD6E3FF)),
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(8.r),
                           topRight: Radius.circular(8.r),
@@ -319,13 +319,13 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
                      ),
                      child: Text(
                        '${bowlingTeamName.toUpperCase()} BOWLERS',
-                       style: TextStyle(color: isSuperOverInnings ? Colors.white : const Color(0xFF1A3365), fontWeight: FontWeight.w900, fontSize: 14.sp, letterSpacing: 0.5),
+                       style: TextStyle(color: isSuperOverInnings ? Colors.white : ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w900, fontSize: 14.sp, letterSpacing: 0.5),
                      ),
                    ),
                    
                    _buildBowlerHeader(),
                    if(bowlingScore.bowlers.isEmpty) 
-                      Padding(padding: EdgeInsets.all(24.w), child: Text("No bowling data", style: TextStyle(color: Colors.black38)))
+                      Padding(padding: EdgeInsets.all(24.w), child: Text("No bowling data", style: TextStyle(color: ThemeHelper.of(context).textSecondary)))
                    else
                       ...bowlingScore.bowlers.where((b) => b.overs > 0 || b.balls > 0 || b.isBowling).map((b) => _buildBowlerRow(b)).toList(),
                 ],
@@ -388,11 +388,11 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
       width: double.infinity,
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: Offset(0, 4),
           ),
@@ -430,7 +430,7 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
                        child: Text(
                          "${fow['player']}",
                          style: TextStyle(
-                           fontSize: 14.sp, fontWeight: FontWeight.w600, color: Colors.black87,
+                           fontSize: 14.sp, fontWeight: FontWeight.w600, color: ThemeHelper.of(context).textPrimary,
                            decoration: TextDecoration.underline,
                            decorationColor: Color(0x4DFF9800),
                            decorationStyle: TextDecorationStyle.dotted,
@@ -441,7 +441,7 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
 
                    Text(
                      "Over ${fow['over']}",
-                     style: TextStyle(fontSize: 13.sp, color: Colors.grey),
+                     style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textSecondary),
                    ),
                  ],
                ),
@@ -462,11 +462,11 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: Offset(0, 4),
           ),
@@ -495,7 +495,7 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
                     )),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 8.w),
-                      child: Icon(Icons.compare_arrows, size: 16.sp, color: Colors.grey),
+                      child: Icon(Icons.compare_arrows, size: 16.sp, color: ThemeHelper.of(context).textSecondary),
                     ),
                     Expanded(child: GestureDetector(
                       onTap: () => _navigateToPlayerProfile(p.batter2Id),
@@ -508,7 +508,7 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                      Text('${p.runs}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp)),
-                     Text(' (${p.balls})', style: TextStyle(color: Colors.grey, fontSize: 12.sp)),
+                     Text(' (${p.balls})', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
                   ],
                 ),
                 SizedBox(height: 8.h),
@@ -545,11 +545,11 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
       width: double.infinity,
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: Offset(0, 4),
           ),
@@ -569,7 +569,7 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('${pp.name} (${pp.startOver}-${pp.endOver})', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.sp)),
-                Text(pp.description ?? 'Mandatory', style: TextStyle(color: Colors.grey, fontSize: 12.sp)),
+                Text(pp.description ?? 'Mandatory', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
               ],
             ),
           )).toList(),
@@ -734,8 +734,8 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 14.h),
       decoration: BoxDecoration(
-        color: b.isOnStrike ? const Color(0xFFFFF7E6) : Colors.white,
-        border: Border(bottom: BorderSide(color: const Color(0xFFD6DBE9), width: 1.w)),
+        color: b.isOnStrike ? (ThemeHelper.of(context).isDark ? Color(0xFF3E2723) : const Color(0xFFFFF7E6)) : ThemeHelper.of(context).cardBg,
+        border: Border(bottom: BorderSide(color: ThemeHelper.of(context).dividerColor, width: 1.w)),
       ),
       child: Row(
         children: [
@@ -751,7 +751,7 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
                       b.playerName,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: b.isOut ? Colors.grey : AppTheme.primaryOrange,
+                        color: b.isOut ? ThemeHelper.of(context).textSecondary : AppTheme.primaryOrange,
                         fontSize: 13.sp,
                         decoration: TextDecoration.none,
                       ),
@@ -774,7 +774,7 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
               child: Text(
                 (b.isOut || b.isPlaying) ? _getEnhancedDismissalString(b, battingTeamId) : '',
                 style: TextStyle(
-                  color: Colors.grey,
+                  color: ThemeHelper.of(context).textSecondary,
                   fontSize: 11.sp,
                   fontWeight: FontWeight.w500,
                   fontStyle: FontStyle.italic,
@@ -783,11 +783,11 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
               ),
             ),
           ),
-          Expanded(flex: 1, child: Text('${b.runs}', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13.sp, color: Colors.black87))),
-          Expanded(flex: 1, child: Text('${b.balls}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: Colors.black54))),
-          Expanded(flex: 1, child: Text('${b.fours}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: Colors.black54))),
-          Expanded(flex: 1, child: Text('${b.sixes}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: Colors.black54))),
-          Expanded(flex: 2, child: Text(b.strikeRate.toStringAsFixed(2), textAlign: TextAlign.right, style: TextStyle(fontSize: 11.sp, color: Colors.black87, fontWeight: FontWeight.w500))),
+          Expanded(flex: 1, child: Text('${b.runs}', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13.sp, color: ThemeHelper.of(context).textPrimary))),
+          Expanded(flex: 1, child: Text('${b.balls}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textSecondary))),
+          Expanded(flex: 1, child: Text('${b.fours}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textSecondary))),
+          Expanded(flex: 1, child: Text('${b.sixes}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textSecondary))),
+          Expanded(flex: 2, child: Text(b.strikeRate.toStringAsFixed(2), textAlign: TextAlign.right, style: TextStyle(fontSize: 11.sp, color: ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w500))),
         ],
       ),
     );
@@ -818,11 +818,11 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
               ),
             ),
           ),
-          Expanded(flex: 1, child: Text(b.oversDisplay, textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13.sp, color: Colors.black87))),
-          Expanded(flex: 1, child: Text('${b.maidens}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: Colors.black54))),
-          Expanded(flex: 1, child: Text('${b.runs}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: Colors.black54))),
-          Expanded(flex: 1, child: Text('${b.wickets}', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13.sp, color: Colors.black87))),
-          Expanded(flex: 2, child: Text(b.economy.toStringAsFixed(2), textAlign: TextAlign.right, style: TextStyle(fontSize: 11.sp, color: Colors.black87, fontWeight: FontWeight.w500))),
+          Expanded(flex: 1, child: Text(b.oversDisplay, textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13.sp, color: ThemeHelper.of(context).textPrimary))),
+          Expanded(flex: 1, child: Text('${b.maidens}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textSecondary))),
+          Expanded(flex: 1, child: Text('${b.runs}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textSecondary))),
+          Expanded(flex: 1, child: Text('${b.wickets}', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13.sp, color: ThemeHelper.of(context).textPrimary))),
+          Expanded(flex: 2, child: Text(b.economy.toStringAsFixed(2), textAlign: TextAlign.right, style: TextStyle(fontSize: 11.sp, color: ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w500))),
         ],
       ),
     );
@@ -835,13 +835,13 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
         children: [
           Expanded(
             flex: 5,
-            child: Text('EXTRAS', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11.sp, color: Colors.grey)),
+            child: Text('EXTRAS', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary)),
           ),
           Expanded(
             flex: 6,
             child: Text(
               '${score.extras.total} (b ${score.extras.byes}, lb ${score.extras.legByes}, w ${score.extras.wides}, nb ${score.extras.noBalls}, p 0)',
-              style: TextStyle(fontSize: 12.sp, color: Colors.black87, fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w500),
             ),
           ),
         ],
@@ -867,7 +867,7 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
             flex: 6,
             child: Text(
               '${score.runs}-${score.wickets} (${score.overs} OV, RR: ${rr.toStringAsFixed(2)})',
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14.sp, color: Colors.black87),
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14.sp, color: ThemeHelper.of(context).textPrimary),
             ),
           ),
         ],
@@ -941,11 +941,11 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-         color: Colors.white,
+         color: ThemeHelper.of(context).cardBg,
          borderRadius: BorderRadius.circular(12.r),
          boxShadow: [
            BoxShadow(
-             color: Colors.black.withOpacity(0.05),
+             color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
              blurRadius: 8,
              offset: Offset(0, 2),
            ),
@@ -958,7 +958,7 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
             width: 100.w,
             child: Text(
               'DID NOT BAT', 
-              style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1)
+              style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.bold, color: ThemeHelper.of(context).textSecondary, letterSpacing: 1)
             ),
           ),
           Expanded(
@@ -970,7 +970,7 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
                   child: Text(
                     '${p.name}${p == yetToBat.last ? "" : ","}',
                     style: TextStyle(
-                      fontSize: 13.sp, color: Colors.black87, fontWeight: FontWeight.w500,
+                      fontSize: 13.sp, color: ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w500,
                       decoration: TextDecoration.underline,
                       decorationColor: Color(0x4DFF9800),
                       decorationStyle: TextDecorationStyle.dotted,

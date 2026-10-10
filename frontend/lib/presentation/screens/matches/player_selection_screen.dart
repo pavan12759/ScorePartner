@@ -144,11 +144,11 @@ class _PlayerSelectionScreenState extends State<PlayerSelectionScreen> {
                     margin: EdgeInsets.only(bottom: 8.h),
                     child: ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: index < 2 ? AppTheme.primaryOrange : Colors.grey[300],
+                        backgroundColor: index < 2 ? AppTheme.primaryOrange : ThemeHelper.of(context).dividerColor,
                         child: Text(
                           '${index + 1}',
                           style: TextStyle(
-                            color: index < 2 ? Colors.white : Colors.black54,
+                            color: index < 2 ? Colors.white : ThemeHelper.of(context).textSecondary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

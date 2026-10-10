@@ -94,10 +94,10 @@ class _SquadsTabState extends State<SquadsTab> {
       child: Column(
         children: [
            Container(
-             color: Theme.of(context).cardColor,
+             color: ThemeHelper.of(context).cardBg,
              child: TabBar(
                labelColor: AppTheme.primaryOrange,
-               unselectedLabelColor: Colors.grey,
+               unselectedLabelColor: ThemeHelper.of(context).textSecondary,
                indicatorColor: AppTheme.primaryOrange,
                labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp, letterSpacing: 0.5),
                unselectedLabelStyle: TextStyle(fontWeight: FontWeight.normal, fontSize: 12.sp, letterSpacing: 0.5),
@@ -123,10 +123,10 @@ class _SquadsTabState extends State<SquadsTab> {
   
   Widget _buildTeamList(BuildContext context, List<PlayerInfo> players, TeamModel? team) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppTheme.primaryOrange));
+      return Center(child: CircularProgressIndicator(color: AppTheme.primaryOrange));
     }
     if (players.isEmpty) {
-      return const Center(child: Text('Playing XI not announced yet', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)));
+      return Center(child: Text('Playing XI not announced yet', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontStyle: FontStyle.italic)));
     }
 
     ImageProvider? getProfileImageProvider(String? url) {
@@ -168,6 +168,7 @@ class _SquadsTabState extends State<SquadsTab> {
         }
         
         return Card(
+           color: ThemeHelper.of(context).cardBg,
            child: ListTile(
              contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
              leading: CircleAvatar(
@@ -198,7 +199,7 @@ class _SquadsTabState extends State<SquadsTab> {
                displayName, 
                style: TextStyle(
                  fontWeight: FontWeight.bold, 
-                 color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87, 
+                 color: ThemeHelper.of(context).textPrimary, 
                  fontSize: 14.sp, 
                  letterSpacing: 0.5,
                  decoration: TextDecoration.underline,
@@ -206,7 +207,7 @@ class _SquadsTabState extends State<SquadsTab> {
                  decorationStyle: TextDecorationStyle.dotted,
                )
              ),
-             subtitle: Text(role.toUpperCase(), style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Colors.black45, fontSize: 10.sp, fontWeight: FontWeight.bold)),
+             subtitle: Text(role.toUpperCase(), style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 10.sp, fontWeight: FontWeight.bold)),
              onTap: () => _navigateToPlayerProfile(context, player.id),
            ),
         );

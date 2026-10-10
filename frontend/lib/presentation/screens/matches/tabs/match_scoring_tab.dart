@@ -49,13 +49,13 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1C1C22),
+        backgroundColor: Color(0xFF1C1C22),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r), side: BorderSide(color: Colors.grey.withOpacity(0.2))),
         title: Row(
           children: [
             Icon(Icons.sports_cricket, color: Colors.amber, size: 28.sp),
             SizedBox(width: 12.w),
-            Text('Match Tied!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            Text('Match Tied!', style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Text(
@@ -68,7 +68,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
               Navigator.pop(dialogContext);
               provider.resolveTie(match, false);
             },
-            child: const Text('No, End as Tie', style: TextStyle(color: Colors.grey)),
+            child: Text('No, End as Tie', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -451,7 +451,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
                 'Congratulations!',
                 style: TextStyle(
                   fontSize: 16.sp,
-                  color: Colors.grey,
+                  color: ThemeHelper.of(context).textSecondary,
                   letterSpacing: 1.2,
                   fontWeight: FontWeight.w500,
                 ),
@@ -482,14 +482,14 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
               Container(
                 padding: EdgeInsets.all(16.w),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: ThemeHelper.of(context).dividerColor,
                   borderRadius: BorderRadius.circular(16.r),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _buildTeamFinalScore(match.team1Name, match.team1Score),
-                    Container(height: 30.h, width: 1.w, color: Colors.grey[300]),
+                    Container(height: 30.h, width: 1.w, color: ThemeHelper.of(context).dividerColor),
                     _buildTeamFinalScore(match.team2Name, match.team2Score),
                   ],
                 ),
@@ -578,7 +578,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
       children: [
         Text(
           name,
-          style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w500, color: Colors.grey),
+          style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w500, color: ThemeHelper.of(context).textSecondary),
         ),
         SizedBox(height: 4.h),
         Text(
@@ -745,7 +745,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
           Text(
             '${match.team1Name} vs ${match.team2Name}'.toUpperCase(),
             style: TextStyle(
-              color: Colors.white,
+              color: ThemeHelper.of(context).cardBg,
               fontSize: 16.sp,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
@@ -773,7 +773,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
                   Text(
                     '${match.currentPowerplay!.name.toUpperCase()} (${match.currentPowerplay!.startOver}-${match.currentPowerplay!.endOver})',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: ThemeHelper.of(context).cardBg,
                       fontSize: 11.sp,
                       fontWeight: FontWeight.w600,
                     ),
@@ -794,7 +794,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
                 margin: EdgeInsets.only(bottom: 12.h),
                 padding: EdgeInsets.fromLTRB(16, 24, 16, 28),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: ThemeHelper.of(context).cardBg,
                   borderRadius: BorderRadius.circular(16.r),
                   boxShadow: [
                     BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: Offset(0, 4)),
@@ -806,7 +806,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
                     Expanded(
                       child: Column(
                         children: [
-                          Text(battingTeamName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp, color: Colors.black87)),
+                          Text(battingTeamName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp, color: ThemeHelper.of(context).textPrimary)),
                           SizedBox(height: 8.h),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -814,12 +814,12 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
                             textBaseline: TextBaseline.alphabetic,
                             children: [
                               Text('${score.runs}', style: TextStyle(color: Colors.green, fontSize: 44.sp, fontWeight: FontWeight.bold, height: 1.1)),
-                              Text('/${score.wickets}', style: TextStyle(color: Colors.black87, fontSize: 24.sp, fontWeight: FontWeight.bold)),
+                              Text('/${score.wickets}', style: TextStyle(color: ThemeHelper.of(context).textPrimary, fontSize: 24.sp, fontWeight: FontWeight.bold)),
                             ],
                           ),
                           Text('${score.oversDisplay} Overs', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12.sp)),
                           SizedBox(height: 8.h),
-                          Text('CRR ${crr.toStringAsFixed(2)}', style: TextStyle(color: Colors.grey, fontSize: 11.sp, fontWeight: FontWeight.w600)),
+                          Text('CRR ${crr.toStringAsFixed(2)}', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp, fontWeight: FontWeight.w600)),
                         ],
                       ),
                     ),
@@ -829,13 +829,13 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
                       width: 32.w,
                       height: 32.h,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: ThemeHelper.of(context).cardBg,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.grey.shade200, width: 1.w),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)],
+                        border: Border.all(color: ThemeHelper.of(context).dividerColor, width: 1.w),
+                        boxShadow: [BoxShadow(color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05), blurRadius: 4)],
                       ),
                       child: Center(
-                        child: Text('VS', style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w800, color: Colors.grey)),
+                        child: Text('VS', style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w800, color: ThemeHelper.of(context).textSecondary)),
                       ),
                     ),
                     
@@ -843,26 +843,26 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
                     Expanded(
                       child: Column(
                         children: [
-                          Text(bowlingTeamName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp, color: Colors.black87)),
+                          Text(bowlingTeamName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp, color: ThemeHelper.of(context).textPrimary)),
                           SizedBox(height: 8.h),
                           if (match.currentInnings == 1) ...[
-                            Text('--', style: TextStyle(color: Colors.black87, fontSize: 36.sp, fontWeight: FontWeight.bold, height: 1.1, letterSpacing: -1)),
-                            Text('Yet to bat', style: TextStyle(color: Colors.grey, fontSize: 12.sp, fontWeight: FontWeight.w600)),
+                            Text('--', style: TextStyle(color: ThemeHelper.of(context).textPrimary, fontSize: 36.sp, fontWeight: FontWeight.bold, height: 1.1, letterSpacing: -1)),
+                            Text('Yet to bat', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp, fontWeight: FontWeight.w600)),
                             SizedBox(height: 8.h),
-                            Text('RRR -', style: TextStyle(color: Colors.grey, fontSize: 11.sp, fontWeight: FontWeight.w600)),
+                            Text('RRR -', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp, fontWeight: FontWeight.w600)),
                           ] else ...[
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.baseline,
                               textBaseline: TextBaseline.alphabetic,
                               children: [
-                                Text('${match.currentBattingTeam == 'team1' ? match.team2Score.runs : match.team1Score.runs}', style: TextStyle(color: Colors.black87, fontSize: 36.sp, fontWeight: FontWeight.bold, height: 1.1)),
-                                Text('/${match.currentBattingTeam == 'team1' ? match.team2Score.wickets : match.team1Score.wickets}', style: TextStyle(color: Colors.black87, fontSize: 16.sp, fontWeight: FontWeight.bold)),
+                                Text('${match.currentBattingTeam == 'team1' ? match.team2Score.runs : match.team1Score.runs}', style: TextStyle(color: ThemeHelper.of(context).textPrimary, fontSize: 36.sp, fontWeight: FontWeight.bold, height: 1.1)),
+                                Text('/${match.currentBattingTeam == 'team1' ? match.team2Score.wickets : match.team1Score.wickets}', style: TextStyle(color: ThemeHelper.of(context).textPrimary, fontSize: 16.sp, fontWeight: FontWeight.bold)),
                               ],
                             ),
-                            Text('${match.currentBattingTeam == 'team1' ? match.team2Score.oversDisplay : match.team1Score.oversDisplay} Overs', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12.sp)),
+                            Text('${match.currentBattingTeam == 'team1' ? match.team2Score.oversDisplay : match.team1Score.oversDisplay} Overs', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontWeight: FontWeight.bold, fontSize: 12.sp)),
                             SizedBox(height: 8.h),
-                            Text('RRR ${match.requiredRunRate.toStringAsFixed(2)}', style: TextStyle(color: Colors.grey, fontSize: 11.sp, fontWeight: FontWeight.w600)),
+                            Text('RRR ${match.requiredRunRate.toStringAsFixed(2)}', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp, fontWeight: FontWeight.w600)),
                           ],
                         ],
                       ),
@@ -883,7 +883,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
                   ),
                   child: Text(
                     _getInningsLabel(match.currentInnings).toUpperCase(),
-                    style: TextStyle(color: Colors.white, fontSize: 11.sp, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                    style: TextStyle(color: ThemeHelper.of(context).cardBg, fontSize: 11.sp, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                   ),
                 ),
               ),
@@ -931,23 +931,23 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 12.h),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: ThemeHelper.of(context).cardBg,
               borderRadius: BorderRadius.circular(12.r),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: Offset(0, 4)),
+                BoxShadow(color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05), blurRadius: 8, offset: Offset(0, 4)),
               ],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildStatColumnCricbuzz('CRR', crr.toStringAsFixed(2)),
-                Container(height: 36.h, width: 1.w, color: Colors.grey.shade200),
+                Container(height: 36.h, width: 1.w, color: ThemeHelper.of(context).dividerColor),
                 _buildStatColumnCricbuzz(
                   'EXTRAS', 
                   '${score.extras.total}', 
                   subtext: '(B ${score.extras.byes}, LB ${score.extras.legByes}, WD ${score.extras.wides}, NB ${score.extras.noBalls})'
                 ),
-                Container(height: 36.h, width: 1.w, color: Colors.grey.shade200),
+                Container(height: 36.h, width: 1.w, color: ThemeHelper.of(context).dividerColor),
                 _buildStatColumnCricbuzz('OVERS', '${match.oversPerSide}'),
               ],
             ),
@@ -963,12 +963,12 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label, style: TextStyle(color: Colors.grey, fontSize: 10.sp, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+        Text(label, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 10.sp, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
         SizedBox(height: 2.h),
-        Text(value, style: TextStyle(color: Colors.black87, fontSize: 16.sp, fontWeight: FontWeight.bold)),
+        Text(value, style: TextStyle(color: ThemeHelper.of(context).textPrimary, fontSize: 16.sp, fontWeight: FontWeight.bold)),
         if (subtext != null) ...[
           SizedBox(height: 2.h),
-          Text(subtext, style: TextStyle(color: Colors.grey, fontSize: 9.sp, fontWeight: FontWeight.w500)),
+          Text(subtext, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 9.sp, fontWeight: FontWeight.w500)),
         ]
       ],
     );
@@ -1075,10 +1075,10 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
       margin: EdgeInsets.symmetric(horizontal: 12.w),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: Offset(0, 4)),
+          BoxShadow(color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05), blurRadius: 8, offset: Offset(0, 4)),
         ],
       ),
       child: IntrinsicHeight(
@@ -1107,7 +1107,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
                 ],
               ),
             ),
-            Container(width: 1.w, color: Colors.grey.shade200, margin: EdgeInsets.symmetric(horizontal: 12.w)),
+            Container(width: 1.w, color: ThemeHelper.of(context).dividerColor, margin: EdgeInsets.symmetric(horizontal: 12.w)),
             // Bowler Panel
             Expanded(
               child: Column(
@@ -1122,12 +1122,12 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
                   ),
                   SizedBox(height: 12.h),
                   _buildBowlerRowCricbuzz(bowler, onTap: () => _showBowlerSelector(context, match, bowlingScore)),
-                  const Spacer(),
+                  Spacer(),
                   SizedBox(height: 12.h),
                   // This Over inline
                   Row(
                     children: [
-                      Text('This Over:', style: TextStyle(color: Colors.grey, fontSize: 10.sp, fontWeight: FontWeight.w600)),
+                      Text('This Over:', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 10.sp, fontWeight: FontWeight.w600)),
                       SizedBox(width: 4.w),
                       Expanded(
                         child: SingleChildScrollView(
@@ -1167,7 +1167,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
             child: Text(
               batter.playerName,
               style: TextStyle(
-                color: Colors.black87,
+                color: ThemeHelper.of(context).textPrimary,
                 fontSize: 13.sp,
                 fontWeight: isStriker ? FontWeight.bold : FontWeight.w600,
               ),
@@ -1180,11 +1180,11 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
             children: [
               Text(
                 '${batter.runs}',
-                style: TextStyle(color: Colors.black87, fontSize: 14.sp, fontWeight: FontWeight.bold),
+                style: TextStyle(color: ThemeHelper.of(context).textPrimary, fontSize: 14.sp, fontWeight: FontWeight.bold),
               ),
               Text(
                 ' (${batter.balls})',
-                style: TextStyle(color: Colors.grey, fontSize: 10.sp, fontWeight: FontWeight.w600),
+                style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 10.sp, fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -1203,7 +1203,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
           Expanded(
             child: Text(
               bowler.playerName,
-              style: TextStyle(color: Colors.black87, fontSize: 13.sp, fontWeight: FontWeight.bold),
+              style: TextStyle(color: ThemeHelper.of(context).textPrimary, fontSize: 13.sp, fontWeight: FontWeight.bold),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -1217,8 +1217,8 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
   }
 
   Widget _buildMiniBallCircle(BallEvent ball) {
-    Color bgColor = Colors.grey.shade200;
-    Color textColor = Colors.black87;
+    Color bgColor = ThemeHelper.of(context).dividerColor;
+    Color textColor = ThemeHelper.of(context).textPrimary;
     String label = '${ball.runs}';
     
     if (ball.wicket != null) {
@@ -1674,21 +1674,21 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
         children: [
           Column(
             children: [
-              Text('Need', style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+              Text('Need', style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary)),
               Text('${match.runsRequired}', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
             ],
           ),
           Container(width: 1.w, height: 30.h, color: Colors.orange.shade200),
           Column(
             children: [
-              Text('From', style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+              Text('From', style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary)),
               Text('${match.ballsRemaining}', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
             ],
           ),
           Container(width: 1.w, height: 30.h, color: Colors.orange.shade200),
           Column(
             children: [
-              Text('RRR', style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+              Text('RRR', style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary)),
               Text(match.requiredRunRate.toStringAsFixed(2), 
                   style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: Colors.orange)),
             ],
@@ -1842,7 +1842,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: Offset(0, -5))],
       ),
@@ -1853,13 +1853,13 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
             // Row 1: Singles/Dots
             Row(
               children: [
-                Expanded(child: _buildPillBtn('0', () => provider.scoreBall(match, runs: 0), bgColor: Colors.white, textColor: Colors.black87, borderColor: Colors.grey.shade300)),
+                Expanded(child: _buildPillBtn('0', () => provider.scoreBall(match, runs: 0), bgColor: Colors.white, textColor: ThemeHelper.of(context).textPrimary, borderColor: ThemeHelper.of(context).dividerColor)),
                 SizedBox(width: 8.w),
-                Expanded(child: _buildPillBtn('1', () => provider.scoreBall(match, runs: 1), bgColor: Colors.white, textColor: Colors.black87, borderColor: Colors.grey.shade300)),
+                Expanded(child: _buildPillBtn('1', () => provider.scoreBall(match, runs: 1), bgColor: Colors.white, textColor: ThemeHelper.of(context).textPrimary, borderColor: ThemeHelper.of(context).dividerColor)),
                 SizedBox(width: 8.w),
-                Expanded(child: _buildPillBtn('2', () => provider.scoreBall(match, runs: 2), bgColor: Colors.white, textColor: Colors.black87, borderColor: Colors.grey.shade300)),
+                Expanded(child: _buildPillBtn('2', () => provider.scoreBall(match, runs: 2), bgColor: Colors.white, textColor: ThemeHelper.of(context).textPrimary, borderColor: ThemeHelper.of(context).dividerColor)),
                 SizedBox(width: 8.w),
-                Expanded(child: _buildPillBtn('3', () => provider.scoreBall(match, runs: 3), bgColor: Colors.white, textColor: Colors.black87, borderColor: Colors.grey.shade300)),
+                Expanded(child: _buildPillBtn('3', () => provider.scoreBall(match, runs: 3), bgColor: Colors.white, textColor: ThemeHelper.of(context).textPrimary, borderColor: ThemeHelper.of(context).dividerColor)),
               ],
             ),
             SizedBox(height: 12.h),
@@ -1905,8 +1905,8 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
                       }
                     },
                     bgColor: Colors.white,
-                    textColor: provider.canUndo ? Colors.black87 : Colors.grey,
-                    borderColor: Colors.grey.shade300,
+                    textColor: provider.canUndo ? ThemeHelper.of(context).textPrimary : Colors.grey,
+                    borderColor: ThemeHelper.of(context).dividerColor,
                     icon: Icons.undo,
                   ),
                 ),
@@ -2399,7 +2399,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
       onSelected: (_) => onTap(),
       selectedColor: Colors.red.shade100,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.red : Colors.black87,
+        color: isSelected ? Colors.red : ThemeHelper.of(context).textPrimary,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
     );

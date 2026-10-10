@@ -1,5 +1,7 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../../core/utils/app_responsive.dart';
 
 /// A modern floating bottom navigation bar with smooth animations.
 ///
@@ -42,14 +44,14 @@ class FloatingBottomNavBar extends StatelessWidget {
   /// Color of inactive icons
   final Color? inactiveIconColor;
 
-  /// Horizontal margin from screen edges
-  final double horizontalMargin;
+  /// Horizontal margin from screen edges (defaults to responsive)
+  final double? horizontalMargin;
 
   /// Bottom margin from screen edge
   final double bottomMargin;
 
-  /// Height of the navigation bar
-  final double height;
+  /// Height of the navigation bar (defaults to responsive)
+  final double? height;
 
   /// Border radius of the pill shape
   final double borderRadius;
@@ -63,54 +65,83 @@ class FloatingBottomNavBar extends StatelessWidget {
     this.activeBackgroundColor,
     this.activeIconColor,
     this.inactiveIconColor,
-    this.horizontalMargin = 40,
+    this.horizontalMargin,
     this.bottomMargin = 20,
-    this.height = 56,
-    this.borderRadius = 30,
+    this.height,
+    this.borderRadius = 35,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Orange theme colors for attractive look
-    final bgColor = backgroundColor ?? Colors.white;  // White background
-    final activeBgColor = activeBackgroundColor ?? const Color(0xFFFF6B35);  // Vibrant orange
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // iPhone-style liquid frosted glass colors
+    final defaultFrostedColor = isDark 
+        ? const Color(0xFF1E1E28).withOpacity(0.80) 
+        : Colors.white.withOpacity(0.78);
+    final bgColor = backgroundColor ?? defaultFrostedColor;
+    final activeBgColor = activeBackgroundColor ?? const Color(0xFFFF6B35);
     final activeIconCol = activeIconColor ?? Colors.white;
-    final inactiveIconCol = inactiveIconColor ?? const Color(0xFF8B8B9E);
+    final inactiveIconCol = inactiveIconColor ?? (isDark ? const Color(0xFFA0A0B4) : const Color(0xFF7A7A8E));
+
+    // Adapt margins and height to screen size for responsive layout
+    final responsive = AppResponsive.of(context);
+    final adaptiveHMargin = horizontalMargin ?? responsive.navHorizontalMargin;
+    final adaptiveHeight = height ?? responsive.navBarHeight;
 
     return Container(
-      margin: EdgeInsets.fromLTRB(horizontalMargin, 0, horizontalMargin, bottomMargin),
-      height: height,
+      margin: EdgeInsets.fromLTRB(adaptiveHMargin, 0, adaptiveHMargin, bottomMargin),
+      constraints: BoxConstraints(minHeight: adaptiveHeight),
       decoration: BoxDecoration(
-        color: bgColor,
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
-          // Primary soft shadow for floating effect
+          // Soft ambient shadow for floating depth
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: Offset(0, 8),
+            color: Colors.black.withOpacity(isDark ? 0.35 : 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
             spreadRadius: 0,
           ),
-          // Secondary subtle shadow for depth
+          // Subtle warm glow under active orange theme
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: Offset(0, 2),
+            color: activeBgColor.withOpacity(isDark ? 0.12 : 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
             spreadRadius: 0,
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: List.generate(
-          items.length,
-          (index) => _NavItemButton(
-            item: items[index],
-            isActive: currentIndex == index,
-            onTap: () => onTap(index),
-            activeBackgroundColor: activeBgColor,
-            activeIconColor: activeIconCol,
-            inactiveIconColor: inactiveIconCol,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            constraints: BoxConstraints(minHeight: adaptiveHeight),
+            padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 3.h),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(borderRadius),
+              border: Border.all(
+                color: isDark 
+                    ? Colors.white.withOpacity(0.12)
+                    : Colors.white.withOpacity(0.68),
+                width: 1.2,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(
+                items.length,
+                (index) => _NavItemButton(
+                  item: items[index],
+                  isActive: currentIndex == index,
+                  onTap: () => onTap(index),
+                  activeBackgroundColor: activeBgColor,
+                  activeIconColor: activeIconCol,
+                  inactiveIconColor: inactiveIconCol,
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -215,19 +246,30 @@ class _NavItemButtonState extends State<_NavItemButton>
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeOutCubic,
               padding: widget.isActive
-                  ? EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h)
+                  ? EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.h)
                   : EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
               decoration: BoxDecoration(
-                color: widget.isActive
-                    ? widget.activeBackgroundColor
-                    : Colors.transparent,
+                gradient: widget.isActive
+                    ? const LinearGradient(
+                        colors: [Color(0xFFFF7A45), Color(0xFFFF521B)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                color: widget.isActive ? null : Colors.transparent,
                 borderRadius: BorderRadius.circular(25.r),
+                border: widget.isActive
+                    ? Border.all(
+                        color: Colors.white.withOpacity(0.35),
+                        width: 1.0,
+                      )
+                    : null,
                 boxShadow: widget.isActive
                     ? [
                         BoxShadow(
-                          color: widget.activeBackgroundColor.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: Offset(0, 2),
+                          color: const Color(0xFFFF521B).withOpacity(0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
                         ),
                       ]
                     : null,
@@ -239,15 +281,19 @@ class _NavItemButtonState extends State<_NavItemButton>
                         Icon(
                           icon,
                           color: widget.activeIconColor,
-                          size: 20.sp,
+                          size: 21.sp,
                         ),
                         SizedBox(width: 6.w),
-                        Text(
-                          widget.item.label,
-                          style: TextStyle(
-                            color: widget.activeIconColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12.sp,
+                        Flexible(
+                          child: Text(
+                            widget.item.label,
+                            style: TextStyle(
+                              color: widget.activeIconColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12.sp,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],

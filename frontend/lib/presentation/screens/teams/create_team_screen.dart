@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -86,7 +87,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                 width: 40.w,
                 height: 4.h,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: ThemeHelper.of(context).dividerColor!,
                   borderRadius: BorderRadius.circular(2.r),
                 ),
               ),
@@ -155,7 +156,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
       child: Container(
         padding: EdgeInsets.all(16.w),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[200]!),
+          border: Border.all(color: ThemeHelper.of(context).dividerColor!),
           borderRadius: BorderRadius.circular(12.r),
         ),
         child: Row(
@@ -174,11 +175,11 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(label, style: TextStyle(fontWeight: FontWeight.bold, color: color)),
-                  Text(subtitle, style: TextStyle(color: Colors.grey[500], fontSize: 12.sp)),
+                  Text(subtitle, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: Colors.grey[400]),
+            Icon(Icons.chevron_right, color: ThemeHelper.of(context).textSecondary),
           ],
         ),
       ),
@@ -402,7 +403,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                 ),
               ),
               SizedBox(height: 10.h),
-              const Text('Scan to Join Team', style: TextStyle(color: Colors.grey)),
+              Text('Scan to Join Team', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
               SizedBox(height: 20.h),
               SizedBox(
                 width: double.infinity,
@@ -430,7 +431,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: ThemeHelper.of(context).scaffoldBg,
       appBar: AppBar(
         title: const Text('Create Team'),
         backgroundColor: const Color(0xFFFF6B35),
@@ -491,7 +492,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.r),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
+                    borderSide: BorderSide(color: ThemeHelper.of(context).dividerColor!),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.r),
@@ -511,9 +512,9 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
               Container(
                 padding: EdgeInsets.all(16.w),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: ThemeHelper.of(context).cardBg,
                   borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(color: Colors.grey[200]!),
+                  border: Border.all(color: ThemeHelper.of(context).dividerColor!),
                 ),
                 child: Column(
                   children: [
@@ -614,25 +615,25 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
               if (_players.isNotEmpty) ...[
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: ThemeHelper.of(context).cardBg,
                     borderRadius: BorderRadius.circular(12.r),
                   ),
                   child: ListView.separated(
                     shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
+                    physics: NeverScrollableScrollPhysics(),
                     itemCount: _players.length,
-                    separatorBuilder: (_, __) => Divider(height: 1.h, color: Colors.grey[200]),
+                    separatorBuilder: (_, __) => Divider(height: 1.h, color: ThemeHelper.of(context).dividerColor!),
                     itemBuilder: (context, index) {
                       final player = _players[index];
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundColor: player.isCaptain
-                              ? const Color(0xFFFF6B35)
-                              : Colors.grey[200],
+                              ? Color(0xFFFF6B35)
+                              : ThemeHelper.of(context).dividerColor!,
                           child: Text(
                             player.name.isNotEmpty ? player.name[0].toUpperCase() : '?',
                             style: TextStyle(
-                              color: player.isCaptain ? Colors.white : Colors.grey[600],
+                              color: player.isCaptain ? Colors.white : ThemeHelper.of(context).textSecondary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -650,7 +651,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                                 ),
                                 child: Text(
                                   'Captain',
-                                  style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.bold),
+                                  style: TextStyle(color: ThemeHelper.of(context).cardBg, fontSize: 10.sp, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],
@@ -686,7 +687,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                     elevation: 0,
                   ),
                   child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? CircularProgressIndicator(color: ThemeHelper.of(context).cardBg,)
                       : Text(
                           'Create Team',
                           style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
@@ -708,7 +709,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
       style: TextStyle(
         fontSize: 18.sp,
         fontWeight: FontWeight.bold,
-        color: Colors.black87,
+        color: ThemeHelper.of(context).textPrimary,
       ),
     );
   }

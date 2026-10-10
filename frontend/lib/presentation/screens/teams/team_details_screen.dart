@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -84,7 +85,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
             children: [
               Container(
                 width: 40.w, height: 4.h,
-                decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2.r)),
+                decoration: BoxDecoration(color: ThemeHelper.of(context).dividerColor!, borderRadius: BorderRadius.circular(2.r)),
               ),
               SizedBox(height: 16.h),
               Text('Change Team Logo', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
@@ -436,14 +437,14 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Change Captain'),
+        title: Text('Change Captain'),
         content: Text('Make ${player.name} the new Captain?\n\nThe current captain will become a regular player.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Cancel')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryOrange),
-            child: const Text('Confirm', style: TextStyle(color: Colors.white)),
+            child: Text('Confirm', style: TextStyle(color: ThemeHelper.of(context).cardBg,)),
           ),
         ],
       ),
@@ -467,14 +468,14 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Change Vice-Captain'),
+        title: Text('Change Vice-Captain'),
         content: Text('Make ${player.name} the Vice-Captain?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Cancel')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryOrange),
-            child: const Text('Confirm', style: TextStyle(color: Colors.white)),
+            child: Text('Confirm', style: TextStyle(color: ThemeHelper.of(context).cardBg,)),
           ),
         ],
       ),
@@ -515,7 +516,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                 width: 40.w,
                 height: 4.h,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: ThemeHelper.of(context).dividerColor!,
                   borderRadius: BorderRadius.circular(2.r),
                 ),
               ),
@@ -526,7 +527,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
               ),
               Text(
                 player.role,
-                style: TextStyle(color: Colors.grey[600], fontSize: 14.sp),
+                style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 14.sp),
               ),
               SizedBox(height: 20.h),
 
@@ -574,7 +575,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                   padding: EdgeInsets.all(16.w),
                   child: Text(
                     'Captain cannot be removed. Change captain first.',
-                    style: TextStyle(color: Colors.grey[500], fontSize: 13.sp),
+                    style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 13.sp),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -602,7 +603,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
         child: Icon(icon, color: color, size: 24.sp),
       ),
       title: Text(label, style: TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle, style: TextStyle(color: Colors.grey[500], fontSize: 12.sp)),
+      subtitle: Text(subtitle, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
       onTap: onTap,
     );
   }
@@ -631,7 +632,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryOrange),
-            child: const Text('Save', style: TextStyle(color: Colors.white)),
+            child: Text('Save', style: TextStyle(color: ThemeHelper.of(context).cardBg,)),
           ),
         ],
       ),
@@ -672,7 +673,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
         final canManage = _canManage(team);
 
         return Scaffold(
-          backgroundColor: Colors.grey[50],
+          backgroundColor: ThemeHelper.of(context).scaffoldBg,
           appBar: AppBar(
             title: Text(team.name),
             actions: [
@@ -731,7 +732,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                           ElevatedButton(
                             onPressed: () => Navigator.pop(context, true),
                             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+                            child: Text('Delete', style: TextStyle(color: ThemeHelper.of(context).cardBg,)),
                           ),
                         ],
                       ),
@@ -765,7 +766,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
               SliverToBoxAdapter(
                 child: Container(
                   padding: EdgeInsets.all(20.w),
-                  color: Colors.white,
+                  color: ThemeHelper.of(context).cardBg,
                   child: Column(
                     children: [
                       TeamLogoWidget(
@@ -870,10 +871,10 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                   margin: EdgeInsets.all(24.w),
                   padding: EdgeInsets.all(24.w),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: ThemeHelper.of(context).cardBg,
                     borderRadius: BorderRadius.circular(20.r),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+                      BoxShadow(color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05), blurRadius: 10),
                     ],
                   ),
                   child: Column(
@@ -886,7 +887,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                       Text(
                         'Other players can scan this to join your team',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey, fontSize: 13.sp),
+                        style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 13.sp),
                       ),
                       SizedBox(height: 20.h),
                       QrImageView(
@@ -963,13 +964,13 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: ThemeHelper.of(context).dividerColor!,
         borderRadius: BorderRadius.circular(12.r),
       ),
       child: Column(
         children: [
           Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp)),
-          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 10.sp)),
+          Text(label, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 10.sp)),
         ],
       ),
     );
@@ -983,7 +984,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
       margin: EdgeInsets.only(bottom: 8.h),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.r),
-        side: BorderSide(color: Colors.grey[200]!),
+        side: BorderSide(color: ThemeHelper.of(context).dividerColor!),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12.r),
@@ -996,7 +997,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                     ? Colors.blue.withOpacity(0.15)
                     : player.isRegistered
                         ? AppTheme.primaryOrange.withOpacity(0.1)
-                        : Colors.grey[200],
+                        : ThemeHelper.of(context).dividerColor!,
             child: Text(
               player.name[0].toUpperCase(),
               style: TextStyle(
@@ -1006,7 +1007,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                         ? Colors.blue[700]
                         : player.isRegistered
                             ? AppTheme.primaryOrange
-                            : Colors.grey[700],
+                            : ThemeHelper.of(context).textSecondary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -1043,7 +1044,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
           subtitle: Text('${player.role} • ${player.battingStyle}'),
           trailing: canManage
               ? IconButton(
-                  icon: Icon(Icons.more_vert, color: Colors.grey, size: 20.sp),
+                  icon: Icon(Icons.more_vert, color: ThemeHelper.of(context).textSecondary, size: 20.sp),
                   onPressed: () => _showPlayerOptions(team, player),
                 )
               : null,

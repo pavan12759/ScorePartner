@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:scorepatner/data/models/match_model.dart';
 import 'package:scorepatner/core/theme/app_theme.dart';
@@ -38,6 +38,7 @@ class NewsTab extends StatelessWidget {
   
   Widget _buildNewsItem(BuildContext context, String title, String summary, String time) {
     return Card(
+      color: ThemeHelper.of(context).cardBg,
       margin: EdgeInsets.only(bottom: 12.h),
       child: Padding(
         padding: EdgeInsets.all(16.w),
@@ -52,13 +53,13 @@ class NewsTab extends StatelessWidget {
                   child: Icon(Icons.article_outlined, size: 20.sp, color: AppTheme.primaryOrange),
                 ),
                 SizedBox(width: 12.w),
-                Expanded(child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp, color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87, letterSpacing: 0.5))),
+                Expanded(child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp, color: ThemeHelper.of(context).textPrimary, letterSpacing: 0.5))),
               ],
             ),
             SizedBox(height: 12.h),
-            Text(summary, style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black54, height: 1.5, fontSize: 13.sp)),
+            Text(summary, style: TextStyle(color: ThemeHelper.of(context).textSecondary, height: 1.5, fontSize: 13.sp)),
             SizedBox(height: 12.h),
-             Text(time.toUpperCase(), style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.white24 : Colors.black26, fontSize: 10.sp, fontWeight: FontWeight.bold, letterSpacing: 1)),
+             Text(time.toUpperCase(), style: TextStyle(color: ThemeHelper.of(context).textSecondary.withOpacity(0.5), fontSize: 10.sp, fontWeight: FontWeight.bold, letterSpacing: 1)),
           ],
         ),
       ),

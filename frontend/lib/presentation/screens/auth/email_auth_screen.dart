@@ -48,7 +48,11 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
   @override
   void initState() {
     super.initState();
-    Provider.of<AuthProvider>(context, listen: false).clearError();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<AuthProvider>(context, listen: false).clearError();
+      }
+    });
 
     // ── Stagger controller (runs once) ──
     _staggerController = AnimationController(

@@ -236,9 +236,13 @@ class _LoginScreenState extends State<LoginScreen>
 
           // ── Main content ──
           SafeArea(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 32.w),
-              child: Column(
+            child: CustomScrollView(
+              slivers: [
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 32.w),
+                    child: Column(
                 children: [
                   const Spacer(flex: 2),
 
@@ -520,6 +524,9 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                 ],
               ),
+            ),
+                ),
+              ],
             ),
           ),
         ],

@@ -124,10 +124,10 @@ class _OversTabState extends State<OversTab> {
       child: Column(
         children: [
           Container(
-            color: Colors.white,
+            color: ThemeHelper.of(context).cardBg,
             child: TabBar(
               labelColor: AppTheme.primaryOrange,
-              unselectedLabelColor: Colors.grey,
+              unselectedLabelColor: ThemeHelper.of(context).textSecondary,
               indicatorColor: AppTheme.primaryOrange,
               indicatorWeight: 3,
               labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.sp),
@@ -154,7 +154,7 @@ class _OversTabState extends State<OversTab> {
   
   Widget _buildSuperOverTab(List<BallEvent> t1Super, List<BallEvent> t2Super, ScrollController controller) {
     if (t1Super.isEmpty && t2Super.isEmpty) {
-       return const Center(child: Text("No super over bowled yet", style: TextStyle(color: Colors.grey)));
+       return Center(child: Text("No super over bowled yet", style: TextStyle(color: ThemeHelper.of(context).textSecondary)));
     }
     return SingleChildScrollView(
       controller: controller,
@@ -163,14 +163,14 @@ class _OversTabState extends State<OversTab> {
           if (t1Super.isNotEmpty) ...[
             Padding(
               padding: EdgeInsets.only(top: 16.h, left: 16.w, right: 16.w),
-              child: Text("${widget.match.team1Name} Super Over", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700, fontSize: 14.sp)),
+              child: Text("${widget.match.team1Name} Super Over", style: TextStyle(fontWeight: FontWeight.bold, color: ThemeHelper.of(context).textPrimary, fontSize: 14.sp)),
             ),
             _buildOversList(t1Super, widget.match.team1Name, ScrollController(), shrinkWrap: true, isSuperOver: true),
           ],
           if (t2Super.isNotEmpty) ...[
             Padding(
               padding: EdgeInsets.only(top: 16.h, left: 16.w, right: 16.w),
-              child: Text("${widget.match.team2Name} Super Over", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700, fontSize: 14.sp)),
+              child: Text("${widget.match.team2Name} Super Over", style: TextStyle(fontWeight: FontWeight.bold, color: ThemeHelper.of(context).textPrimary, fontSize: 14.sp)),
             ),
             _buildOversList(t2Super, widget.match.team2Name, ScrollController(), shrinkWrap: true, isSuperOver: true),
           ]
@@ -182,7 +182,7 @@ class _OversTabState extends State<OversTab> {
   Widget _buildOversList(List<BallEvent> balls, String teamName, ScrollController controller, {bool shrinkWrap = false, bool isSuperOver = false}) {
     if (balls.isEmpty) {
       return Center(
-        child: Text("No overs bowled yet for $teamName", style: TextStyle(color: Colors.grey)),
+        child: Text("No overs bowled yet for $teamName", style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
       );
     }
 
@@ -239,7 +239,7 @@ class _OversTabState extends State<OversTab> {
         // Determine Summary
         String summaryText = "";
         IconData summaryIcon = Icons.info_outline;
-        Color summaryColor = Colors.grey;
+        Color summaryColor = ThemeHelper.of(context).textSecondary;
 
         final wicketBalls = overBalls.where((b) => b.wicket != null).toList();
         if (wicketBalls.isNotEmpty) {
@@ -257,7 +257,7 @@ class _OversTabState extends State<OversTab> {
         } else {
             summaryText = "Steady over for the batting side.";
             summaryIcon = Icons.analytics_outlined;
-            summaryColor = Colors.grey.shade600;
+            summaryColor = ThemeHelper.of(context).textSecondary;
         }
         
         return GestureDetector(
@@ -266,9 +266,9 @@ class _OversTabState extends State<OversTab> {
             margin: EdgeInsets.only(bottom: 12.h),
             padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
-              color: isSuperOver ? const Color(0xFFD6E3FF) : Colors.white,
+              color: isSuperOver ? (ThemeHelper.of(context).isDark ? Color(0xFF1E2A4F) : const Color(0xFFD6E3FF)) : ThemeHelper.of(context).cardBg,
               borderRadius: BorderRadius.circular(8.r),
-              border: Border.all(color: const Color(0xFFD6DBE9)),
+              border: Border.all(color: ThemeHelper.of(context).dividerColor),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -285,7 +285,7 @@ class _OversTabState extends State<OversTab> {
                             "OVER ${overNum + 1}",
                             style: TextStyle(
                               fontWeight: FontWeight.bold, 
-                              color: Colors.grey.shade600, 
+                              color: ThemeHelper.of(context).textSecondary, 
                               fontSize: 12.sp, 
                               letterSpacing: 0.5
                             ),
@@ -295,7 +295,7 @@ class _OversTabState extends State<OversTab> {
                             bowlerName,
                             style: TextStyle(
                               fontWeight: FontWeight.w900,
-                              color: const Color(0xFF1A3365),
+                              color: ThemeHelper.of(context).textPrimary,
                               fontSize: 18.sp,
                               height: 1.2,
                             ),
@@ -307,7 +307,7 @@ class _OversTabState extends State<OversTab> {
                             bowlerSpell,
                             style: TextStyle(
                               fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade400,
+                              color: ThemeHelper.of(context).textSecondary,
                               fontSize: 12.sp,
                             ),
                           ),
@@ -321,7 +321,7 @@ class _OversTabState extends State<OversTab> {
                           runsInOver.toString().padLeft(2, '0'),
                           style: TextStyle(
                             fontWeight: FontWeight.w900,
-                            color: runsInOver >= 10 ? AppTheme.primaryOrange : const Color(0xFF1A3365),
+                            color: runsInOver >= 10 ? AppTheme.primaryOrange : ThemeHelper.of(context).textPrimary,
                             fontSize: 32.sp,
                             height: 1.0,
                           ),
@@ -330,7 +330,7 @@ class _OversTabState extends State<OversTab> {
                           "RUNS",
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
-                            color: Colors.grey.shade400,
+                            color: ThemeHelper.of(context).textSecondary,
                             fontSize: 11.sp,
                           ),
                         ),
@@ -344,11 +344,11 @@ class _OversTabState extends State<OversTab> {
                   child: Row(
                     children: overBalls.map((b) => Padding(
                       padding: EdgeInsets.only(right: 8.0.w),
-                      child: _buildBallCircle(b),
+                      child: _buildBallCircle(context, b),
                     )).toList(),
                   ),
                 ),
-                Divider(color: Colors.grey.shade200, height: 24.h),
+                Divider(color: ThemeHelper.of(context).dividerColor, height: 24.h),
                 Row(
                   children: [
                     Icon(
@@ -360,7 +360,7 @@ class _OversTabState extends State<OversTab> {
                     Expanded(
                       child: Text(
                         summaryText,
-                        style: TextStyle(color: Colors.grey.shade700, fontSize: 13.sp),
+                        style: TextStyle(color: ThemeHelper.of(context).textPrimary, fontSize: 13.sp),
                       ),
                     ),
                   ],
@@ -373,10 +373,10 @@ class _OversTabState extends State<OversTab> {
     );
   }
   
-  Widget _buildBallCircle(BallEvent ball) {
-     Color bgColor = Colors.white;
-     Color textColor = const Color(0xFF1A3365);
-     Color borderColor = Colors.grey.shade300;
+  Widget _buildBallCircle(BuildContext context, BallEvent ball) {
+     Color bgColor = ThemeHelper.of(context).cardBg;
+     Color textColor = ThemeHelper.of(context).textPrimary;
+     Color borderColor = ThemeHelper.of(context).dividerColor;
      String label = ball.displayString;
      
      if (ball.wicket != null) { 
@@ -432,7 +432,7 @@ class _OversTabState extends State<OversTab> {
          
          return Container(
            decoration: BoxDecoration(
-             color: Colors.white,
+             color: ThemeHelper.of(context).cardBg,
              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
            ),
            constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
@@ -441,14 +441,14 @@ class _OversTabState extends State<OversTab> {
                Container(
                  padding: EdgeInsets.all(16.w),
                  decoration: BoxDecoration(
-                   border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                   border: Border(bottom: BorderSide(color: ThemeHelper.of(context).dividerColor)),
                  ),
                  child: Row(
                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                    children: [
                      Text(
                        'OVER ${overNum + 1} COMMENTARY',
-                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp),
+                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp, color: ThemeHelper.of(context).textPrimary),
                      ),
                      IconButton(
                        icon: Icon(Icons.close),
@@ -473,7 +473,7 @@ class _OversTabState extends State<OversTab> {
                        crossAxisAlignment: CrossAxisAlignment.start,
                        children: [
                          // Ball bubble
-                         _buildBallCircle(event),
+                         _buildBallCircle(context, event),
                          SizedBox(width: 12.w),
                          // Commentary text
                          Expanded(
@@ -495,7 +495,7 @@ class _OversTabState extends State<OversTab> {
                                      Container(
                                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
                                        decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(4.r)),
-                                       child: Text('WICKET', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 9.sp)),
+                                       child: Text('WICKET', style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.bold, fontSize: 9.sp)),
                                      )
                                    else if (isBoundary)
                                      Container(
@@ -506,20 +506,20 @@ class _OversTabState extends State<OversTab> {
                                        ),
                                        child: Text(
                                          event.runs == 4 ? 'FOUR' : 'SIX', 
-                                         style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 9.sp)
+                                         style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.bold, fontSize: 9.sp)
                                        ),
                                      )
                                    else
                                      Text(
                                        '${event.runs} RUN(S)', 
-                                       style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700, fontSize: 11.sp)
+                                       style: TextStyle(fontWeight: FontWeight.bold, color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp)
                                      ),
                                  ],
                                ),
                                SizedBox(height: 4.h),
                                Text(
                                  event.commentary.isNotEmpty ? event.commentary : _generateCommentaryFallback(event),
-                                 style: TextStyle(color: Colors.black87, height: 1.4, fontSize: 13.sp),
+                                 style: TextStyle(color: ThemeHelper.of(context).textPrimary, height: 1.4, fontSize: 13.sp),
                                ),
                              ],
                            ),

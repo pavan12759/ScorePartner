@@ -11,14 +11,14 @@ import '../../widgets/dls_calculator_widget.dart';
 class MatchSummaryScreen extends StatelessWidget {
   final String matchId;
 
-  const MatchSummaryScreen({super.key, required this.matchId});
+  MatchSummaryScreen({super.key, required this.matchId});
 
   @override
   Widget build(BuildContext context) {
     final dataService = FirebaseDataService.instance;
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: ThemeHelper.of(context).dividerColor,
       appBar: AppBar(
         title: const Text('Match Summary'),
         backgroundColor: AppTheme.primaryOrange,
@@ -161,7 +161,7 @@ class MatchSummaryScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 24.sp,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: Colors.black,
               ),
             ),
           SizedBox(height: 12.h),
@@ -173,11 +173,11 @@ class MatchSummaryScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.location_on, size: 14.sp, color: Colors.grey[400]),
+              Icon(Icons.location_on, size: 14.sp, color: Colors.grey[600]),
               SizedBox(width: 4.w),
               Text(
                 match.ground,
-                style: TextStyle(fontSize: 12.sp, color: Colors.grey[500]),
+                style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
               ),
             ],
           ),
@@ -262,7 +262,7 @@ class MatchSummaryScreen extends StatelessWidget {
               gradient: LinearGradient(
                 colors: isWinner
                     ? [AppTheme.primaryOrange, const Color(0xFFE65100)]
-                    : [Colors.grey[700]!, Colors.grey[900]!],
+                    : [Colors.grey[600]!, Colors.grey[600]!],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -315,7 +315,7 @@ class MatchSummaryScreen extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 15.sp,
-                      color: Colors.black87,
+                      color: Colors.black,
                       letterSpacing: 0.3,
                     ),
                   ),
@@ -399,7 +399,7 @@ class MatchSummaryScreen extends StatelessWidget {
             color: AppTheme.primaryOrange,
           ),
         ),
-        Text('Run Rate', style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+        Text('Run Rate', style: TextStyle(fontSize: 12.sp, color: Colors.grey[600])),
       ],
     );
   }
@@ -495,7 +495,7 @@ class MatchSummaryScreen extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Man of the Match', style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+                Text('Man of the Match', style: TextStyle(fontSize: 12.sp, color: Colors.grey[600])),
                 Text(
                   name,
                   style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
@@ -536,7 +536,7 @@ class ManhattanChart extends StatelessWidget {
           child: Center(
             child: Text(
               'No ball data available',
-              style: TextStyle(color: Colors.grey[500]),
+              style: TextStyle(color: ThemeHelper.of(context).textSecondary),
             ),
           ),
         ),
@@ -579,7 +579,7 @@ class ManhattanChart extends StatelessWidget {
                       SizedBox(height: 4.h),
                       Text(
                         '${index + 1}',
-                        style: TextStyle(fontSize: 10.sp, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 10.sp, color: ThemeHelper.of(context).textSecondary),
                       ),
                     ],
                   ),

@@ -1,15 +1,14 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../../data/models/team_model.dart';
 import '../../../data/services/firebase_data_service.dart';
 import '../../providers/auth_provider.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../widgets/team_logo_widget.dart';
 import 'create_team_screen.dart';
 import 'team_details_screen.dart';
-
 
 /// Screen to display user's teams
 class MyTeamsScreen extends StatefulWidget {
@@ -20,14 +19,24 @@ class MyTeamsScreen extends StatefulWidget {
 }
 
 class _MyTeamsScreenState extends State<MyTeamsScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
   List<TeamModel> _teams = [];
   bool _isLoading = true;
   String? _errorMessage;
+  String? _currentUserId;
+  String? _currentUserSpPId;
 
   @override
   void initState() {
     super.initState();
     _loadTeams();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadTeams() async {
@@ -71,6 +80,8 @@ class _MyTeamsScreenState extends State<MyTeamsScreen> {
 
       setState(() {
         _teams = allTeams;
+        _currentUserId = userId;
+        _currentUserSpPId = spPId;
         _isLoading = false;
       });
 
@@ -111,8 +122,23 @@ class _MyTeamsScreenState extends State<MyTeamsScreen> {
     allTeams.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     if (mounted) {
-      setState(() => _teams = allTeams);
+      setState(() {
+        _teams = allTeams;
+        _currentUserId = userId;
+        _currentUserSpPId = spPId;
+      });
     }
+  }
+
+  List<TeamModel> get _filteredTeams {
+    if (_searchQuery.isEmpty) return _teams;
+    final query = _searchQuery.toLowerCase();
+    return _teams.where((t) =>
+      t.name.toLowerCase().contains(query) ||
+      t.captainName.toLowerCase().contains(query) ||
+      t.viceCaptainName.toLowerCase().contains(query) ||
+      t.spTId.toLowerCase().contains(query)
+    ).toList();
   }
 
   void _navigateToCreateTeam() async {
@@ -121,17 +147,17 @@ class _MyTeamsScreenState extends State<MyTeamsScreen> {
       MaterialPageRoute(builder: (_) => const CreateTeamScreen()),
     );
 
-    if (result != null && result is TeamModel) {
-      setState(() => _teams.add(result));
+    if (result != null) {
+      _loadTeams();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: ThemeHelper.of(context).scaffoldBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: ThemeHelper.of(context).scaffoldBg,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: AppTheme.primaryOrange),
@@ -141,7 +167,7 @@ class _MyTeamsScreenState extends State<MyTeamsScreen> {
           'My Teams',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: AppTheme.primaryOrange,
+            color: ThemeHelper.of(context).textPrimary,
             fontSize: 20.sp,
           ),
         ),
@@ -156,22 +182,106 @@ class _MyTeamsScreenState extends State<MyTeamsScreen> {
           ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryOrange))
           : _errorMessage != null
               ? _buildErrorState()
-              : _teams.isEmpty
-                  ? _buildEmptyState()
-                  : RefreshIndicator(
-                      onRefresh: _loadTeams,
-                      color: AppTheme.primaryOrange,
-                      child: ListView.builder(
-                        padding: EdgeInsets.all(16.w),
-                        itemCount: _teams.length,
-                        itemBuilder: (context, index) => _buildTeamCard(_teams[index]),
+              : Column(
+                  children: [
+                    // Search Bar
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
+                      child: Container(
+                        height: 44.h,
+                        decoration: BoxDecoration(
+                          color: ThemeHelper.of(context).dividerColor!,
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (value) => setState(() => _searchQuery = value),
+                          decoration: InputDecoration(
+                            hintText: 'Search my teams...',
+                            hintStyle: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 14.sp),
+                            prefixIcon: Icon(Icons.search, color: ThemeHelper.of(context).textSecondary, size: 20.sp),
+                            suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(Icons.clear, color: ThemeHelper.of(context).textSecondary, size: 18.sp),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() => _searchQuery = '');
+                                  },
+                                )
+                              : null,
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(vertical: 12.h),
+                          ),
+                        ),
                       ),
                     ),
+                    Expanded(
+                      child: _filteredTeams.isEmpty
+                          ? _buildEmptyState()
+                          : RefreshIndicator(
+                              onRefresh: _loadTeams,
+                              color: AppTheme.primaryOrange,
+                              child: ListView.builder(
+                                padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 100.h),
+                                itemCount: _filteredTeams.length + 1,
+                                itemBuilder: (context, index) {
+                                  if (index == 0) {
+                                    return Padding(
+                                      padding: EdgeInsets.only(bottom: 12.h, top: 4.h),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            '${_filteredTeams.length} ${_filteredTeams.length == 1 ? "Team" : "Teams"}',
+                                            style: TextStyle(
+                                              fontSize: 14.sp,
+                                              fontWeight: FontWeight.w600,
+                                              color: ThemeHelper.of(context).textSecondary,
+                                            ),
+                                          ),
+                                          InkWell(
+                                            onTap: _navigateToCreateTeam,
+                                            borderRadius: BorderRadius.circular(20.r),
+                                            child: Container(
+                                              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                                              decoration: BoxDecoration(
+                                                color: AppTheme.primaryOrange.withOpacity(0.12),
+                                                borderRadius: BorderRadius.circular(20.r),
+                                                border: Border.all(color: AppTheme.primaryOrange.withOpacity(0.3)),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(Icons.add, size: 16.sp, color: AppTheme.primaryOrange),
+                                                  SizedBox(width: 4.w),
+                                                  Text(
+                                                    'Create Team',
+                                                    style: TextStyle(
+                                                      fontSize: 12.sp,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: AppTheme.primaryOrange,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }
+                                  return _buildTeamCard(_filteredTeams[index - 1]);
+                                },
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _navigateToCreateTeam,
         backgroundColor: AppTheme.primaryOrange,
-        icon: Icon(Icons.add, color: Colors.white),
-        label: const Text('Create Team', style: TextStyle(color: Colors.white)),
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text('Create Team', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -183,10 +293,14 @@ class _MyTeamsScreenState extends State<MyTeamsScreen> {
         children: [
           Icon(Icons.error_outline, size: 64.sp, color: Colors.red),
           SizedBox(height: 16.h),
-          Text(_errorMessage!, textAlign: TextAlign.center),
+          Text(_errorMessage!, textAlign: TextAlign.center, style: TextStyle(color: ThemeHelper.of(context).textPrimary)),
           SizedBox(height: 16.h),
           ElevatedButton(
             onPressed: _loadTeams,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryOrange,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Retry'),
           ),
         ],
@@ -196,201 +310,306 @@ class _MyTeamsScreenState extends State<MyTeamsScreen> {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: EdgeInsets.all(24.w),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryOrange.withOpacity(0.1),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primaryOrange.withOpacity(0.2),
-                  blurRadius: 30,
-                  spreadRadius: 5,
-                ),
-              ],
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 24.w),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(24.w),
+              decoration: BoxDecoration(
+                color: ThemeHelper.of(context).dividerColor!,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.groups_outlined,
+                size: 48.sp,
+                color: ThemeHelper.of(context).textSecondary,
+              ),
             ),
-            child: Icon(
-              Icons.groups,
-              size: 64.sp,
-              color: AppTheme.primaryOrange,
+            SizedBox(height: 20.h),
+            Text(
+              'No teams found',
+              style: TextStyle(
+                fontSize: 18.sp, 
+                fontWeight: FontWeight.w600, 
+                color: ThemeHelper.of(context).textPrimary,
+              ),
             ),
-          ),
-          SizedBox(height: 24.h),
-          Text(
-            'NO TEAMS YET',
-            style: TextStyle(
-              fontSize: 24.sp, 
-              fontWeight: FontWeight.w900, 
-              color: Colors.white,
-              letterSpacing: 1.0,
+            SizedBox(height: 8.h),
+            Text(
+              'Teams you created or joined as a player will appear here',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14.sp, color: ThemeHelper.of(context).textSecondary),
             ),
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            'Create your first team to join tournaments',
-            style: TextStyle(fontSize: 14.sp, color: Colors.white60),
-          ),
-          SizedBox(height: 32.h),
-          ElevatedButton.icon(
-            onPressed: _navigateToCreateTeam,
-            icon: Icon(Icons.add),
-            label: const Text('CREATE TEAM'),
-          ),
-        ],
+            SizedBox(height: 20.h),
+            ElevatedButton.icon(
+              onPressed: _navigateToCreateTeam,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryOrange,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+              ),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text(
+                'Create Team',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTeamCard(TeamModel team) {
+    final userId = _currentUserId;
+    final isCaptain = team.captainId == userId;
+    TeamPlayer? playerMembership;
+    for (final p in team.players) {
+      if (p.userId == userId || (_currentUserSpPId != null && _currentUserSpPId!.isNotEmpty && p.spPId == _currentUserSpPId)) {
+        playerMembership = p;
+        break;
+      }
+    }
+    final isPlayer = playerMembership != null;
+
     return Container(
-      margin: EdgeInsets.only(bottom: 16.h),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
-        color: AppTheme.cardDark,
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        color: ThemeHelper.of(context).cardBg,
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 15,
-            offset: Offset(0, 8),
+            color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
-        children: [
-          // Card Header
-          Container(
-            padding: EdgeInsets.all(20.w),
-            child: Row(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => TeamDetailsScreen(team: team),
+              ),
+            ).then((_) => _loadTeams());
+          },
+          borderRadius: BorderRadius.circular(16.r),
+          child: Padding(
+            padding: EdgeInsets.all(16.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TeamLogoWidget(
-                  teamName: team.name,
-                  logoUrl: team.logoUrl,
-                  size: 56.sp,
-                ),
-                SizedBox(width: 16.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        team.name.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      SizedBox(height: 4.h),
-                      Text(
-                        'Captain: ${team.captainName}',
-                        style: TextStyle(color: Colors.white54, fontSize: 13.sp),
-                      ),
-                      if (team.viceCaptainName.isNotEmpty)
-                        Text(
-                          'Vice-Captain: ${team.viceCaptainName}',
-                          style: TextStyle(color: Colors.white38, fontSize: 12.sp),
-                        ),
-                      if (team.matchesPlayed > 0)
-                        Padding(
-                          padding: EdgeInsets.only(top: 4.h),
-                          child: Text(
-                            'P: ${team.matchesPlayed}  W: ${team.matchesWon}  L: ${team.matchesLost}',
-                            style: TextStyle(color: Colors.white60, fontSize: 12.sp, fontWeight: FontWeight.w600),
+                // Line 1: Logo + Name + SPT ID + Captain + Quick QR
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TeamLogoWidget(
+                      teamName: team.name,
+                      logoUrl: team.logoUrl,
+                      size: 48.sp,
+                    ),
+                    SizedBox(width: 14.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  team.name,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16.sp,
+                                    color: ThemeHelper.of(context).textPrimary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (team.spTId.isNotEmpty) ...[
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryOrange.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(6.r),
+                                    border: Border.all(color: AppTheme.primaryOrange.withOpacity(0.25)),
+                                  ),
+                                  child: Text(
+                                    team.spTId,
+                                    style: TextStyle(
+                                      fontSize: 10.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.primaryOrange,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 6.w),
+                              ],
+                              InkWell(
+                                onTap: () => _showTeamQR(team),
+                                borderRadius: BorderRadius.circular(20.r),
+                                child: Padding(
+                                  padding: EdgeInsets.all(4.w),
+                                  child: Icon(
+                                    Icons.qr_code_2_rounded,
+                                    size: 18.sp,
+                                    color: AppTheme.primaryOrange,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
+                          SizedBox(height: 4.h),
+                          Row(
+                            children: [
+                              Icon(Icons.person_outline, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
+                              SizedBox(width: 4.w),
+                              Expanded(
+                                child: Text(
+                                  'Captain: ${team.captainName.isNotEmpty ? team.captainName : "Not assigned"}',
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    color: ThemeHelper.of(context).textSecondary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12.h),
+
+                // Line 2: Role badge (Captain / Player) + Squad count
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        if (isCaptain)
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryOrange.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.star, size: 12.sp, color: AppTheme.primaryOrange),
+                                SizedBox(width: 4.w),
+                                Text(
+                                  'Captain',
+                                  style: TextStyle(
+                                    fontSize: 11.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.primaryOrange,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else if (isPlayer)
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.sports_cricket, size: 12.sp, color: Colors.blue),
+                                SizedBox(width: 4.w),
+                                Text(
+                                  playerMembership.role.isNotEmpty
+                                      ? 'Player • ${playerMembership.role}'
+                                      : 'Player',
+                                  style: TextStyle(
+                                    fontSize: 11.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                    Text(
+                      '${team.players.length} Players',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                        color: ThemeHelper.of(context).textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 10.h),
+
+                // Line 3: Stats Pill (Played | Won | Lost | Win %)
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                  decoration: BoxDecoration(
+                    color: ThemeHelper.of(context).dividerColor!.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildTeamStatItem('Played', '${team.matchesPlayed}'),
+                      Container(width: 1.w, height: 20.h, color: ThemeHelper.of(context).textSecondary.withOpacity(0.2)),
+                      _buildTeamStatItem('Won', '${team.matchesWon}', color: Colors.green),
+                      Container(width: 1.w, height: 20.h, color: ThemeHelper.of(context).textSecondary.withOpacity(0.2)),
+                      _buildTeamStatItem('Lost', '${team.matchesLost}', color: Colors.redAccent),
+                      if (team.matchesPlayed > 0) ...[
+                        Container(width: 1.w, height: 20.h, color: ThemeHelper.of(context).textSecondary.withOpacity(0.2)),
+                        _buildTeamStatItem('Win %', '${team.winPercentage.toStringAsFixed(0)}%'),
+                      ],
                     ],
                   ),
                 ),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryOrange.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(100.r),
-                    border: Border.all(color: AppTheme.primaryOrange.withOpacity(0.5)),
-                  ),
-                  child: Text(
-                    '${team.players.length} Players',
-                    style: TextStyle(
-                      color: AppTheme.primaryOrange,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11.sp,
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
-          
-          // Divider
-          Container(
-            height: 1.h,
-            margin: EdgeInsets.symmetric(horizontal: 20.w),
-            color: Colors.white.withOpacity(0.05),
-          ),
-          
-          // Stats Row
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 20.w),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatItem('Played', '${team.matchesPlayed}', Icons.sports_cricket),
-                Container(width: 1.w, height: 40.h, color: Colors.white.withOpacity(0.1)),
-                _buildStatItem('Won', '${team.matchesWon}', Icons.emoji_events),
-                Container(width: 1.w, height: 40.h, color: Colors.white.withOpacity(0.1)),
-                _buildStatItem('Lost', '${team.matchesLost}', Icons.trending_down),
-              ],
-            ),
-          ),
-          
-          // Action Buttons
-          Padding(
-            padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => TeamDetailsScreen(team: team),
-                        ),
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: BorderSide(color: Colors.white.withOpacity(0.3)),
-                      padding: EdgeInsets.symmetric(vertical: 14.h),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100.r)),
-                    ),
-                    child: Text('VIEW DETAILS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp)),
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => TournamentListScreen(team: team),
-                        ),
-                      );
-                    },
-                    child: Text('JOIN', style: TextStyle(fontSize: 12.sp)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildTeamStatItem(String label, String value, {Color? color}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.bold,
+            color: color ?? ThemeHelper.of(context).textPrimary,
+          ),
+        ),
+        SizedBox(height: 2.h),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.sp,
+            color: ThemeHelper.of(context).textSecondary,
+          ),
+        ),
+      ],
     );
   }
 
@@ -413,16 +632,16 @@ class _MyTeamsScreenState extends State<MyTeamsScreen> {
               SizedBox(height: 8.h),
               Text(
                 'ID: ${team.spTId}',
-                style: TextStyle(color: Color(0xFFFF6B35), fontWeight: FontWeight.bold, fontSize: 16.sp),
+                style: const TextStyle(color: Color(0xFFFF6B35), fontWeight: FontWeight.bold, fontSize: 16),
               ),
               SizedBox(height: 24.h),
               Container(
                 padding: EdgeInsets.all(12.w),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: ThemeHelper.of(context).cardBg,
                   borderRadius: BorderRadius.circular(12.r),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+                    BoxShadow(color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05), blurRadius: 10),
                   ],
                 ),
                 child: QrImageView(
@@ -435,7 +654,7 @@ class _MyTeamsScreenState extends State<MyTeamsScreen> {
               SizedBox(height: 16.h),
               Text(
                 'Scan to Join Team',
-                style: TextStyle(color: Colors.grey, fontSize: 14.sp),
+                style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 14.sp),
               ),
               SizedBox(height: 24.h),
               SizedBox(
@@ -454,24 +673,6 @@ class _MyTeamsScreenState extends State<MyTeamsScreen> {
           ),
         ),
       ),
-    );
-  }
-
-
-  Widget _buildStatItem(String label, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, size: 20.sp, color: AppTheme.primaryOrange),
-        SizedBox(height: 6.h),
-        Text(
-          value,
-          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w900, color: Colors.white),
-        ),
-        Text(
-          label,
-          style: TextStyle(fontSize: 11.sp, color: Colors.white54),
-        ),
-      ],
     );
   }
 }
@@ -517,7 +718,7 @@ class TournamentListScreen extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: ThemeHelper.of(context).scaffoldBg,
       appBar: AppBar(
         title: const Text('Join Tournament'),
         backgroundColor: const Color(0xFFFF6B35),
@@ -553,7 +754,7 @@ class TournamentListScreen extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(Icons.emoji_events, color: Colors.white, size: 32.sp),
+                Icon(Icons.emoji_events, color: ThemeHelper.of(context).cardBg, size: 32.sp),
                 SizedBox(width: 12.w),
                 Expanded(
                   child: Column(
@@ -562,14 +763,14 @@ class TournamentListScreen extends StatelessWidget {
                       Text(
                         tournament.name,
                         style: TextStyle(
-                          color: Colors.white,
+                          color: ThemeHelper.of(context).cardBg,
                           fontSize: 18.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
                         tournament.location,
-                        style: TextStyle(color: Colors.white70),
+                        style: TextStyle(color: ThemeHelper.of(context).textSecondary),
                       ),
                     ],
                   ),
@@ -577,12 +778,12 @@ class TournamentListScreen extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: ThemeHelper.of(context).cardBg.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12.r),
                   ),
                   child: Text(
                     '${tournament.overs} Overs',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -594,7 +795,7 @@ class TournamentListScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(tournament.description, style: TextStyle(color: Colors.grey[600])),
+                Text(tournament.description, style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
                 SizedBox(height: 16.h),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -644,7 +845,7 @@ class TournamentListScreen extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: Colors.grey[200],
         borderRadius: BorderRadius.circular(8.r),
       ),
       child: Row(
@@ -652,7 +853,7 @@ class TournamentListScreen extends StatelessWidget {
         children: [
           Icon(icon, size: 16.sp, color: Colors.grey[600]),
           SizedBox(width: 4.w),
-          Text(text, style: TextStyle(color: Colors.grey[700], fontSize: 12.sp)),
+          Text(text, style: TextStyle(color: Colors.grey[600], fontSize: 12.sp)),
         ],
       ),
     );

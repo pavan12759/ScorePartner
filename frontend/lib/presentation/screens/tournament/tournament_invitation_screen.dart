@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
@@ -145,7 +146,7 @@ class _TournamentInvitationScreenState extends State<TournamentInvitationScreen>
             SizedBox(height: 8.h),
             Text(
               _errorMessage!,
-              style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 14.sp, color: ThemeHelper.of(context).textSecondary),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 24.h),
@@ -181,7 +182,7 @@ class _TournamentInvitationScreenState extends State<TournamentInvitationScreen>
               borderRadius: BorderRadius.circular(20.r),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
                   blurRadius: 20,
                   offset: const Offset(0, 4),
                 ),
@@ -226,12 +227,12 @@ class _TournamentInvitationScreenState extends State<TournamentInvitationScreen>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.location_on, size: 16.sp, color: Colors.grey[600]),
+                          Icon(Icons.location_on, size: 16.sp, color: ThemeHelper.of(context).textSecondary),
                           SizedBox(width: 4.w),
                           Expanded(
                             child: Text(
                               t.location,
-                              style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+                              style: TextStyle(fontSize: 14.sp, color: ThemeHelper.of(context).textSecondary),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -239,7 +240,7 @@ class _TournamentInvitationScreenState extends State<TournamentInvitationScreen>
                       ),
                       
                       SizedBox(height: 20.h),
-                      Divider(color: Colors.grey[300]),
+                      Divider(color: ThemeHelper.of(context).dividerColor!),
                       SizedBox(height: 16.h),
 
                       // Info rows
@@ -298,7 +299,7 @@ class _TournamentInvitationScreenState extends State<TournamentInvitationScreen>
             SizedBox(height: 8.h),
             Text(
               'You need to be logged in to register a team',
-              style: TextStyle(fontSize: 12.sp, color: Colors.grey[500]),
+              style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary),
               textAlign: TextAlign.center,
             ),
           ],
@@ -314,7 +315,7 @@ class _TournamentInvitationScreenState extends State<TournamentInvitationScreen>
         SizedBox(width: 10.w),
         Text(
           '$label: ',
-          style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+          style: TextStyle(fontSize: 14.sp, color: ThemeHelper.of(context).textSecondary),
         ),
         Expanded(
           child: Text(

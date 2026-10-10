@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
@@ -205,7 +206,7 @@ class _TeamInvitationScreenState extends State<TeamInvitationScreen> {
             SizedBox(height: 8.h),
             Text(
               _errorMessage!,
-              style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 14.sp, color: ThemeHelper.of(context).textSecondary),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 24.h),
@@ -242,7 +243,7 @@ class _TeamInvitationScreenState extends State<TeamInvitationScreen> {
               borderRadius: BorderRadius.circular(20.r),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
                   blurRadius: 20,
                   offset: const Offset(0, 4),
                 ),
@@ -284,7 +285,7 @@ class _TeamInvitationScreenState extends State<TeamInvitationScreen> {
                 ),
 
                 SizedBox(height: 20.h),
-                Divider(color: Colors.grey[300]),
+                Divider(color: ThemeHelper.of(context).dividerColor!),
                 SizedBox(height: 16.h),
 
                 // Info rows
@@ -433,7 +434,7 @@ class _TeamInvitationScreenState extends State<TeamInvitationScreen> {
                     ? SizedBox(
                         width: 20.w,
                         height: 20.h,
-                        child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: ThemeHelper.of(context).cardBg,),
                       )
                     : Icon(Icons.group_add, size: 22.sp),
                 label: Text(
@@ -458,7 +459,7 @@ class _TeamInvitationScreenState extends State<TeamInvitationScreen> {
               SizedBox(height: 8.h),
               Text(
                 'You need to be logged in to request joining this team',
-                style: TextStyle(fontSize: 12.sp, color: Colors.grey[500]),
+                style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -475,7 +476,7 @@ class _TeamInvitationScreenState extends State<TeamInvitationScreen> {
         SizedBox(width: 10.w),
         Text(
           '$label: ',
-          style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+          style: TextStyle(fontSize: 14.sp, color: ThemeHelper.of(context).textSecondary),
         ),
         Expanded(
           child: Text(
@@ -507,7 +508,7 @@ class _TeamInvitationScreenState extends State<TeamInvitationScreen> {
           ),
           Text(
             label,
-            style: TextStyle(fontSize: 10.sp, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 10.sp, color: ThemeHelper.of(context).textSecondary),
           ),
         ],
       ),

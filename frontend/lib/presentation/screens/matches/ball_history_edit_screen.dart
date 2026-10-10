@@ -45,7 +45,7 @@ class BallHistoryEditScreen extends StatelessWidget {
           if (balls.isEmpty) {
             return Center(
               child: Text('No balls recorded yet', 
-                style: TextStyle(color: Colors.grey, fontSize: 16.sp)),
+                style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 16.sp)),
             );
           }
 
@@ -126,11 +126,11 @@ class BallHistoryEditScreen extends StatelessWidget {
                               ball.commentary,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: Colors.grey[700], fontSize: 13.sp),
+                              style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 13.sp),
                             ),
                             Text(
                               DateFormat('HH:mm:ss').format(ball.timestamp),
-                              style: TextStyle(color: Colors.grey[400], fontSize: 11.sp),
+                              style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp),
                             ),
                           ],
                         ),

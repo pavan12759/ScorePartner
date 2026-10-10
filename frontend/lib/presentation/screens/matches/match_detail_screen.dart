@@ -126,25 +126,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
           // Trigger TTS for new ball events
           _handleTtsForNewBalls(match);
 
-          final bool isTournament =
-              match.tournamentId != null &&
-              match.tournamentName != null &&
-              match.tournamentName!.isNotEmpty;
           final bool isLiveMatch = match.status == 'live';
-
-          // Calculate precise header height using ScreenUtil's .h and .sp scaling 
-          // to perfectly match the internal widgets and text scale.
-          double headerHeight = kToolbarHeight + 6 + 95 + 5.0; // Fixed outer padding and dividers
-          // Increased base height to properly account for padding and text line-heights
-          headerHeight += 75.h + 130.sp; 
-          
-          if (isTournament) headerHeight += 10.h + 20.sp; // Tournament row
-          // The equation row can wrap or take up more space due to text, so we allocate a generous height for it
-          if (isLiveMatch && match.currentInnings == 2) headerHeight += 35.h + 30.sp; // Equation row
-          if (match.tossWinnerId != null) headerHeight += 25.h + 20.sp; // Toss info
-          
-          // Negative buffer to pull the tabs flush against the card
-          headerHeight -= 50.0;
 
           return Stack(
             children: [
@@ -153,12 +135,11 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                 headerSliverBuilder: (context, innerBoxIsScrolled) {
                   return [
                     SliverAppBar(
-                      expandedHeight: headerHeight,
                       floating: false,
                       pinned: true,
-                      backgroundColor: Colors.white,
+                      backgroundColor: ThemeHelper.of(context).appBarBg,
                       leading: IconButton(
-                        icon: Icon(Icons.arrow_back, color: Colors.black87),
+                        icon: Icon(Icons.arrow_back, color: ThemeHelper.of(context).textPrimary),
                         onPressed: () => Navigator.pop(context),
                       ),
                       actions: [
@@ -204,7 +185,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                             _ttsEnabled
                                 ? Icons.volume_up_rounded
                                 : Icons.volume_off_rounded,
-                            color: _ttsEnabled ? AppTheme.primaryOrange : Colors.black87,
+                            color: _ttsEnabled ? AppTheme.primaryOrange : ThemeHelper.of(context).textPrimary,
                             size: 22,
                           ),
                           tooltip: _ttsEnabled
@@ -224,9 +205,8 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                             }
                           },
                         ),
-                        // Share
                         IconButton(
-                          icon: Icon(Icons.share, color: Colors.black87, size: 22),
+                          icon: Icon(Icons.share, color: ThemeHelper.of(context).textPrimary, size: 22),
                           onPressed: () {
                             final String shareText =
                                 'Check out this match on ScorePartner: ${match.team1Name} vs ${match.team2Name}!\n\nLive Score: https://scorepartner.in/match/${match.id}';
@@ -236,7 +216,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                         // Admin overflow menu
                         if (isAdmin)
                           PopupMenuButton<String>(
-                            icon: Icon(Icons.more_vert, color: Colors.black87, size: 22),
+                            icon: Icon(Icons.more_vert, color: ThemeHelper.of(context).textPrimary, size: 22),
                             onSelected: (value) {
                               switch (value) {
                                 case 'manage_access':
@@ -295,12 +275,19 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                             ],
                           ),
                       ],
-                      flexibleSpace: FlexibleSpaceBar(
-                        background: _buildDynamicMatchHeader(match),
-                      ),
-                      bottom: PreferredSize(
-                        preferredSize: const Size.fromHeight(60),
-                        child: _buildNavigationPills(),
+                    ),
+                    SliverToBoxAdapter(
+                      child: _buildDynamicMatchHeader(match),
+                    ),
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _NavPillsHeaderDelegate(
+                        height: 60.0,
+                        child: Container(
+                          color: ThemeHelper.of(context).scaffoldBg,
+                          alignment: Alignment.centerLeft,
+                          child: _buildNavigationPills(context),
+                        ),
                       ),
                     ),
                   ];
@@ -386,7 +373,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
     {'icon': Icons.flash_on_rounded, 'label': 'Key Moments', 'tabIndex': 7},
   ];
 
-  Widget _buildNavigationPills() {
+  Widget _buildNavigationPills(BuildContext context) {
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -396,13 +383,13 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
         itemCount: _navItems.length,
         itemBuilder: (context, index) {
           final item = _navItems[index];
-          return _buildNavPill(item);
+          return _buildNavPill(context, item);
         },
       ),
     );
   }
 
-  Widget _buildNavPill(Map<String, dynamic> item) {
+  Widget _buildNavPill(BuildContext context, Map<String, dynamic> item) {
     final isSelected = _tabController.index == item['tabIndex'];
 
     return Padding(
@@ -415,11 +402,11 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
             _tabController.animateTo(item['tabIndex']);
           },
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
+            duration: Duration(milliseconds: 250),
             curve: Curves.easeInOut,
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
             decoration: BoxDecoration(
-              color: isSelected ? AppTheme.primaryOrange : Colors.grey.shade100,
+              color: isSelected ? AppTheme.primaryOrange : ThemeHelper.of(context).cardBg,
               borderRadius: BorderRadius.circular(25.r),
               boxShadow: isSelected
                   ? [
@@ -433,7 +420,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
               border: isSelected
                   ? null
                   : Border.all(
-                      color: Colors.grey.shade300,
+                      color: ThemeHelper.of(context).dividerColor,
                       width: 1.w,
                     ),
             ),
@@ -448,7 +435,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                     children: [
                       Icon(
                         item['icon'],
-                        color: isSelected ? Colors.white : Colors.black54,
+                        color: isSelected ? Colors.white : ThemeHelper.of(context).textSecondary,
                         size: 18,
                       ),
                     ],
@@ -458,7 +445,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                 Text(
                   item['label'],
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.black87,
+                    color: isSelected ? Colors.white : ThemeHelper.of(context).textPrimary,
                     fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
                     fontSize: 13.sp,
                     letterSpacing: isSelected ? 0.3 : 0,
@@ -474,7 +461,8 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
 
   /// Dynamic match header – compact, clean card-based design
   Widget _buildDynamicMatchHeader(MatchModel match) {
-    final bool isLive = match.status == 'live';
+    final th = ThemeHelper.of(context);
+    final isLive = match.status == 'live';
 
     // Determine batting/bowling teams
     final bool isTeam1Batting = match.currentBattingTeam == 'team1';
@@ -513,19 +501,11 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
     }
 
     return Container(
-      color: Color(0xFFF4F6F9), // Light background to replace the orange gradient
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(16, kToolbarHeight + 6, 16, 20),
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: SingleChildScrollView(
-              physics: const NeverScrollableScrollPhysics(),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
+      color: th.scaffoldBg,
+      padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 8.h),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
                   // Tournament name (if tournament match)
                   if (match.tournamentId != null &&
                       match.tournamentName != null &&
@@ -543,7 +523,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                               child: Text(
                                 match.tournamentName!,
                                 style: TextStyle(
-                                  color: Colors.black87,
+                                  color: th.textPrimary,
                                   fontSize: 12.sp,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -558,12 +538,12 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                   // Main score card
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: th.cardBg,
                       borderRadius: BorderRadius.circular(12.r),
-                      border: Border.all(color: Colors.grey.shade200),
+                      border: Border.all(color: th.dividerColor),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
+                          color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.04),
                           blurRadius: 10,
                           offset: Offset(0, 4),
                         ),
@@ -586,7 +566,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                       style: TextStyle(
                                         fontSize: 12.sp,
                                         fontWeight: FontWeight.w900,
-                                        color: Colors.black87,
+                                        color: th.textPrimary,
                                         letterSpacing: 0.5,
                                       ),
                                       overflow: TextOverflow.ellipsis,
@@ -595,19 +575,19 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                     // Match type & location integrated here
                                     Row(
                                       children: [
-                                        Icon(Icons.sports_cricket_rounded, size: 10.sp, color: Colors.grey.shade600),
+                                        Icon(Icons.sports_cricket_rounded, size: 10.sp, color: th.textSecondary),
                                         SizedBox(width: 4.w),
                                         Text(
                                           match.matchType,
-                                          style: TextStyle(fontSize: 10.sp, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+                                          style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w600),
                                         ),
                                         SizedBox(width: 10.w),
-                                        Icon(Icons.location_on_rounded, size: 10.sp, color: Colors.grey.shade600),
+                                        Icon(Icons.location_on_rounded, size: 10.sp, color: th.textSecondary),
                                         SizedBox(width: 4.w),
                                         Expanded(
                                           child: Text(
                                             match.ground,
-                                            style: TextStyle(fontSize: 10.sp, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+                                            style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w600),
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
@@ -634,19 +614,19 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         if (isLive) ...[
-                                          Icon(Icons.remove_red_eye_rounded, size: 12.sp, color: Colors.grey.shade600),
+                                          Icon(Icons.remove_red_eye_rounded, size: 12.sp, color: th.textSecondary),
                                           SizedBox(width: 2.w),
                                           Text(
                                             formatCount(liveViewers),
-                                            style: TextStyle(fontSize: 10.sp, color: Colors.grey.shade600, fontWeight: FontWeight.w700),
+                                            style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w700),
                                           ),
                                           SizedBox(width: 8.w),
                                         ],
-                                        Icon(Icons.play_circle_outline_rounded, size: 12.sp, color: Colors.grey.shade600),
+                                        Icon(Icons.play_circle_outline_rounded, size: 12.sp, color: th.textSecondary),
                                         SizedBox(width: 2.w),
                                         Text(
                                           formatCount(totalViews),
-                                          style: TextStyle(fontSize: 10.sp, color: Colors.grey.shade600, fontWeight: FontWeight.w700),
+                                          style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w700),
                                         ),
                                         SizedBox(width: 8.w),
                                         if (isLive)
@@ -664,14 +644,14 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                                   height: 6.h,
                                                   decoration: BoxDecoration(
                                                     shape: BoxShape.circle,
-                                                    color: Colors.white,
+                                                    color: ThemeHelper.of(context).cardBg,
                                                   ),
                                                 ),
                                                 SizedBox(width: 4.w),
                                                 Text(
                                                   'LIVE',
                                                   style: TextStyle(
-                                                    color: Colors.white,
+                                                    color: ThemeHelper.of(context).cardBg,
                                                     fontSize: 10.sp,
                                                     fontWeight: FontWeight.w900,
                                                   ),
@@ -683,13 +663,13 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                           Container(
                                             padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                                             decoration: BoxDecoration(
-                                              color: Colors.grey.shade600,
+                                              color: th.isDark ? AppTheme.darkContainer : ThemeHelper.of(context).textSecondary,
                                               borderRadius: BorderRadius.circular(10.r),
                                             ),
                                             child: Text(
                                               'COMPLETED',
                                               style: TextStyle(
-                                                color: Colors.white,
+                                                color: ThemeHelper.of(context).cardBg,
                                                 fontSize: 9.sp,
                                                 fontWeight: FontWeight.w800,
                                               ),
@@ -703,7 +683,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                           ),
                         ),
                         
-                        Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
+                        Divider(height: 1, thickness: 1, color: th.dividerColor),
 
                         // Score section
                         Padding(
@@ -724,7 +704,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                             style: TextStyle(
                                               fontSize: 12.sp,
                                               fontWeight: FontWeight.w500,
-                                              color: Colors.black87,
+                                              color: th.textPrimary,
                                             ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -743,7 +723,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                           style: TextStyle(
                                             fontSize: 32.sp,
                                             fontWeight: FontWeight.w900,
-                                            color: Colors.black87,
+                                            color: th.textPrimary,
                                             height: 1.1,
                                           ),
                                         ),
@@ -753,7 +733,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                           style: TextStyle(
                                             fontSize: 16.sp,
                                             fontWeight: FontWeight.w600,
-                                            color: Colors.grey.shade600,
+                                            color: th.textSecondary,
                                           ),
                                         ),
                                       ],
@@ -789,7 +769,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                           style: TextStyle(
                                             fontSize: 12.sp,
                                             fontWeight: FontWeight.w500,
-                                            color: Colors.black87,
+                                            color: th.textPrimary,
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -803,7 +783,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                       style: TextStyle(
                                         fontSize: 16.sp,
                                         fontWeight: FontWeight.w800,
-                                        color: Colors.black87,
+                                        color: th.textPrimary,
                                       ),
                                     )
                                   else
@@ -812,7 +792,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                       style: TextStyle(
                                         fontSize: 16.sp,
                                         fontWeight: FontWeight.w800,
-                                        color: Colors.black87,
+                                        color: th.textPrimary,
                                       ),
                                     ),
                                 ],
@@ -839,7 +819,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                              
                              return Column(
                                children: [
-                                 Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
+                                 Divider(height: 1, thickness: 1, color: th.dividerColor),
                                  Padding(
                                    padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
                                    child: Row(
@@ -847,7 +827,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                        Container(
                                          padding: EdgeInsets.all(6.w),
                                          decoration: BoxDecoration(
-                                           color: Colors.amber.shade50,
+                                           color: th.isDark ? Colors.amber.withOpacity(0.1) : Colors.amber.shade50,
                                            shape: BoxShape.circle,
                                          ),
                                          child: Icon(Icons.workspace_premium_rounded, size: 16.sp, color: Colors.amber.shade700),
@@ -856,15 +836,15 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                        Column(
                                          crossAxisAlignment: CrossAxisAlignment.start,
                                          children: [
-                                           Text('PLAYER OF THE MATCH', style: TextStyle(fontSize: 9.sp, color: Colors.grey.shade600, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+                                           Text('PLAYER OF THE MATCH', style: TextStyle(fontSize: 9.sp, color: th.textSecondary, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
                                            SizedBox(height: 2.h),
-                                           Text(mvp.playerName, style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: Colors.black87)),
+                                           Text(mvp.playerName, style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: th.textPrimary)),
                                          ],
                                        ),
                                        Spacer(),
                                        Text(
                                          parts.join(' • '),
-                                         style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800, color: Colors.grey.shade700),
+                                         style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800, color: th.textSecondary),
                                        ),
                                      ],
                                    ),
@@ -873,7 +853,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                              );
                            }),
                         ] else if (isLive) ...[
-                          Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
+                          Divider(height: 1, thickness: 1, color: th.dividerColor),
                           Padding(
                             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
                             child: Row(
@@ -882,9 +862,9 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('CRR', style: TextStyle(fontSize: 10.sp, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                                    Text('CRR', style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w600)),
                                     SizedBox(height: 2.h),
-                                    Text(crr.toStringAsFixed(2), style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: Colors.black87)),
+                                    Text(crr.toStringAsFixed(2), style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: th.textPrimary)),
                                   ],
                                 ),
                                 SizedBox(width: 24.w),
@@ -893,27 +873,27 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('RRR', style: TextStyle(fontSize: 10.sp, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                                      Text('RRR', style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w600)),
                                       SizedBox(height: 2.h),
-                                      Text(match.requiredRunRate.toStringAsFixed(2), style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: Colors.black87)),
+                                      Text(match.requiredRunRate.toStringAsFixed(2), style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: th.textPrimary)),
                                     ],
                                   ),
                                   SizedBox(width: 24.w),
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('TARGET', style: TextStyle(fontSize: 10.sp, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                                      Text('TARGET', style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w600)),
                                       SizedBox(height: 2.h),
-                                      Text('${match.target}', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: Colors.black87)),
+                                      Text('${match.target}', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: th.textPrimary)),
                                     ],
                                   ),
                                 ] else if (isLive) ...[
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('PROJ. SCORE', style: TextStyle(fontSize: 10.sp, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                                      Text('PROJ. SCORE', style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w600)),
                                       SizedBox(height: 2.h),
-                                      Text('${projectedScore.round()}', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: Colors.black87)),
+                                      Text('${projectedScore.round()}', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: th.textPrimary)),
                                     ],
                                   ),
                                 ],
@@ -944,7 +924,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                         
                         // Equation Row (Integrated into the card)
                         if (isLive && match.currentInnings == 2) ...[
-                          Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
+                          Divider(height: 1, thickness: 1, color: ThemeHelper.of(context).dividerColor),
                           Container(
                             width: double.infinity,
                             padding: EdgeInsets.symmetric(vertical: 10.h),
@@ -982,10 +962,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
 
                 ],
               ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -1084,7 +1060,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                     height: 80.h,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white,
+                      color: ThemeHelper.of(context).cardBg,
                     ),
                   ),
                 );
@@ -1128,7 +1104,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                     height: 60.h,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white,
+                      color: ThemeHelper.of(context).cardBg,
                     ),
                   ),
                 );
@@ -1145,7 +1121,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
               child: Icon(
                 Icons.sports_cricket,
                 size: 160.sp,
-                color: Colors.white,
+                color: ThemeHelper.of(context).cardBg,
               ),
             ),
           ),
@@ -1244,7 +1220,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
               Text(
                 match.matchType,
                 style: TextStyle(
-                  color: Colors.white,
+                  color: ThemeHelper.of(context).cardBg,
                   fontSize: 11.sp,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.3,
@@ -1285,7 +1261,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                 Text(
                   match.ground,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: ThemeHelper.of(context).cardBg,
                     fontSize: 11.sp,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.3,
@@ -1466,7 +1442,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                 child: Text(
                                   'VS',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: ThemeHelper.of(context).cardBg,
                                     fontSize: 13.sp,
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: 1,
@@ -1561,10 +1537,10 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: isBatting
-                      ? [const Color(0xFFFF9E80), AppTheme.primaryOrange]
+                      ? [Color(0xFFFF9E80), AppTheme.primaryOrange]
                       : isDark
-                      ? [Colors.grey.shade700, Colors.grey.shade800]
-                      : [Colors.grey.shade200, Colors.grey.shade300],
+                      ? [ThemeHelper.of(context).textSecondary, ThemeHelper.of(context).textSecondary]
+                      : [ThemeHelper.of(context).dividerColor, ThemeHelper.of(context).dividerColor],
                 ),
                 shape: BoxShape.circle,
                 border: Border.all(
@@ -1589,7 +1565,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                   style: TextStyle(
                     color: isBatting
                         ? Colors.white
-                        : (isDark ? Colors.white70 : Colors.black54),
+                        : (isDark ? Colors.white70 : ThemeHelper.of(context).textSecondary),
                     fontSize: 16.sp,
                     fontWeight: FontWeight.w900,
                   ),
@@ -1605,7 +1581,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
         Text(
           teamName.toUpperCase(),
           style: TextStyle(
-            color: isDark ? Colors.white : Colors.black87,
+            color: isDark ? Colors.white : ThemeHelper.of(context).textPrimary,
             fontSize: 13.sp,
             fontWeight: FontWeight.w900,
             letterSpacing: 0.8,
@@ -1622,7 +1598,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
           style: TextStyle(
             color: isBatting
                 ? AppTheme.primaryOrange
-                : (isDark ? Colors.white70 : Colors.black54),
+                : (isDark ? Colors.white70 : ThemeHelper.of(context).textSecondary),
             fontSize: isBatting ? 36 : 26,
             fontWeight: FontWeight.w900,
             height: 1.1,
@@ -1646,7 +1622,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                 ? AppTheme.primaryOrange.withOpacity(0.12)
                 : (isDark
                       ? Colors.white.withOpacity(0.08)
-                      : Colors.grey.shade100),
+                      : ThemeHelper.of(context).dividerColor),
             borderRadius: BorderRadius.circular(12.r),
             border: Border.all(
               color: isBatting
@@ -1659,7 +1635,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
             style: TextStyle(
               color: isBatting
                   ? AppTheme.primaryOrange
-                  : (isDark ? Colors.grey : Colors.grey.shade600),
+                  : (isDark ? Colors.grey : ThemeHelper.of(context).textSecondary),
               fontSize: 11.sp,
               fontWeight: FontWeight.w700,
             ),
@@ -1764,7 +1740,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                 child: Text(
                   statusText.toUpperCase(),
                   style: TextStyle(
-                    color: Colors.white,
+                    color: ThemeHelper.of(context).cardBg,
                     fontSize: 12.sp,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.8,
@@ -1855,3 +1831,31 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
     );
   }
 }
+
+class _NavPillsHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final double height;
+
+  _NavPillsHeaderDelegate({
+    required this.child,
+    this.height = 60.0,
+  });
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return child;
+  }
+
+  @override
+  bool shouldRebuild(covariant _NavPillsHeaderDelegate oldDelegate) {
+    return oldDelegate.child != child || oldDelegate.height != height;
+  }
+}
+

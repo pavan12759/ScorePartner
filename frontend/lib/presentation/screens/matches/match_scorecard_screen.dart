@@ -71,18 +71,18 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // Light background
+      backgroundColor: ThemeHelper.of(context).scaffoldBg, // Light background
       appBar: AppBar(
-        title: const Text('SCORECARD', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
+        title: Text('SCORECARD', style: TextStyle(color: ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.bold)),
+        backgroundColor: ThemeHelper.of(context).scaffoldBg,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: IconThemeData(color: Colors.black),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppTheme.primaryOrange,
           indicatorWeight: 3,
           labelColor: AppTheme.primaryOrange,
-          unselectedLabelColor: Colors.grey[600],
+          unselectedLabelColor: ThemeHelper.of(context).textSecondary,
           labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.sp),
           unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.sp),
           tabs: const [
@@ -165,11 +165,11 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
            // Batting Section
              Container(
                decoration: BoxDecoration(
-                 color: Colors.white,
+                 color: ThemeHelper.of(context).cardBg,
                  borderRadius: BorderRadius.circular(16.r),
                  boxShadow: [
                    BoxShadow(
-                     color: Colors.black.withOpacity(0.05),
+                     color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
                      blurRadius: 10,
                      offset: Offset(0, 4),
                    ),
@@ -197,11 +197,11 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
                        children: [
                          Text(
                            battingTeamName.toUpperCase(),
-                           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15.sp),
+                           style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.w900, fontSize: 15.sp),
                          ),
                          Text(
                            '${battingScore.runs}-${battingScore.wickets} (${battingScore.overs} OV)',
-                           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16.sp),
+                           style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.w900, fontSize: 16.sp),
                          ),
                        ],
                      ),
@@ -229,11 +229,11 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
              // Bowling Section
              Container(
                decoration: BoxDecoration(
-                 color: Colors.white,
+                 color: ThemeHelper.of(context).cardBg,
                  borderRadius: BorderRadius.circular(16.r),
                  boxShadow: [
                    BoxShadow(
-                     color: Colors.black.withOpacity(0.05),
+                     color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
                      blurRadius: 10,
                      offset: Offset(0, 4),
                    ),
@@ -257,13 +257,13 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
                      ),
                      child: Text(
                        '${battingTeamName} Bowlers'.toUpperCase(),
-                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14.sp),
+                       style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.bold, fontSize: 14.sp),
                       ),
                    ),
                    
                    _buildBowlerHeader(),
                    if(bowlingScore.bowlers.isEmpty) 
-                      Padding(padding: EdgeInsets.all(24.w), child: Text("No bowling data", style: TextStyle(color: Colors.black38)))
+                      Padding(padding: EdgeInsets.all(24.w), child: Text("No bowling data", style: TextStyle(color: ThemeHelper.of(context).textSecondary)))
                    else
                       ...bowlingScore.bowlers.where((b) => b.overs > 0 || b.balls > 0 || b.isBowling).map((b) => _buildBowlerRow(b)).toList(),
                  ],
@@ -360,7 +360,7 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
                           b.playerName,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: b.isOut ? Colors.black87 : Colors.black,
+                            color: b.isOut ? ThemeHelper.of(context).textPrimary : Colors.black,
                             fontSize: 13.sp,
                             decoration: TextDecoration.underline,
                             decorationColor: Colors.orange.withOpacity(0.4),
@@ -379,7 +379,7 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
                   Text(
                     b.dismissalString,
                     style: TextStyle(
-                      color: Colors.grey,
+                      color: ThemeHelper.of(context).textSecondary,
                       fontSize: 11.sp,
                       fontWeight: FontWeight.w500,
                       fontStyle: FontStyle.italic,
@@ -390,10 +390,10 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
               ],
             ),
           ),
-          Expanded(flex: 1, child: Text('${b.runs}', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.sp, color: Colors.black87))),
-          Expanded(flex: 1, child: Text('${b.balls}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: Colors.black54))),
-          Expanded(flex: 1, child: Text('${b.fours}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: Colors.black54))),
-          Expanded(flex: 1, child: Text('${b.sixes}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: Colors.black54))),
+          Expanded(flex: 1, child: Text('${b.runs}', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.sp, color: ThemeHelper.of(context).textPrimary))),
+          Expanded(flex: 1, child: Text('${b.balls}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textSecondary))),
+          Expanded(flex: 1, child: Text('${b.fours}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textSecondary))),
+          Expanded(flex: 1, child: Text('${b.sixes}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textSecondary))),
           Expanded(flex: 2, child: Text(b.strikeRate.toStringAsFixed(2), textAlign: TextAlign.right, style: TextStyle(fontSize: 11.sp, color: AppTheme.primaryOrange, fontWeight: FontWeight.bold))),
         ],
       ),
@@ -413,17 +413,17 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
             child: GestureDetector(
               onTap: () => _navigateToPlayerProfile(b.playerId, context),
               child: Text(b.playerName, style: TextStyle(
-                fontWeight: FontWeight.bold, fontSize: 13.sp, color: Colors.black87,
+                fontWeight: FontWeight.bold, fontSize: 13.sp, color: ThemeHelper.of(context).textPrimary,
                 decoration: TextDecoration.underline,
                 decorationColor: Color(0x66FF9800),
                 decorationStyle: TextDecorationStyle.dotted,
               )),
             ),
           ),
-          Expanded(flex: 1, child: Text(b.oversDisplay, textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: Colors.black54))),
-          Expanded(flex: 1, child: Text('${b.maidens}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: Colors.black54))),
-          Expanded(flex: 1, child: Text('${b.runs}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: Colors.black54))),
-          Expanded(flex: 1, child: Text('${b.wickets}', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.sp, color: Colors.black87))),
+          Expanded(flex: 1, child: Text(b.oversDisplay, textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textSecondary))),
+          Expanded(flex: 1, child: Text('${b.maidens}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textSecondary))),
+          Expanded(flex: 1, child: Text('${b.runs}', textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textSecondary))),
+          Expanded(flex: 1, child: Text('${b.wickets}', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.sp, color: ThemeHelper.of(context).textPrimary))),
           Expanded(flex: 2, child: Text(b.economy.toStringAsFixed(2), textAlign: TextAlign.right, style: TextStyle(fontSize: 11.sp, color: AppTheme.primaryOrange, fontWeight: FontWeight.bold))),
         ],
       ),
@@ -437,13 +437,13 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
         children: [
           Expanded(
             flex: 5,
-            child: Text('EXTRAS', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11.sp, color: Colors.grey)),
+            child: Text('EXTRAS', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary)),
           ),
           Expanded(
             flex: 6,
             child: Text(
               '${score.extras.total} (b ${score.extras.byes}, lb ${score.extras.legByes}, w ${score.extras.wides}, nb ${score.extras.noBalls})',
-              style: TextStyle(fontSize: 12.sp, color: Colors.black87, fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w500),
             ),
           ),
         ],
@@ -469,7 +469,7 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
             flex: 6,
             child: Text(
               '${score.runs}-${score.wickets} (${score.overs} OV, RR: ${rr.toStringAsFixed(2)})',
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14.sp, color: Colors.black87),
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14.sp, color: ThemeHelper.of(context).textPrimary),
             ),
           ),
         ],
@@ -501,7 +501,7 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
     return Card(
       elevation: 4,
       shadowColor: Colors.black.withOpacity(0.1),
-      color: Colors.white,
+      color: ThemeHelper.of(context).cardBg,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.r),
       ),
@@ -522,7 +522,7 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
             ),
             child: Text(
               '${batter.runs}-${idx} (${batter.playerName})',
-              style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.bold, color: Colors.black87),
+              style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.bold, color: ThemeHelper.of(context).textPrimary),
             ),
           );
         }).toList(),
@@ -534,7 +534,7 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
   Widget _buildEmptyCard(String message) {
     return Card(
       elevation: 2,
-      color: Colors.white,
+      color: ThemeHelper.of(context).cardBg,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.r),
       ),
@@ -543,7 +543,7 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
         child: Center(
           child: Text(
             message,
-            style: TextStyle(color: Colors.black38, fontStyle: FontStyle.italic),
+            style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontStyle: FontStyle.italic),
           ),
         ),
       ),
@@ -568,7 +568,7 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
                 width: 100.w,
                 child: Text(
                   'DID NOT BAT', 
-                  style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1)
+                  style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.bold, color: ThemeHelper.of(context).textSecondary, letterSpacing: 1)
                 ),
               ),
               Expanded(
@@ -577,7 +577,7 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
                     padding: EdgeInsets.only(right: 8.w),
                     child: Text(
                       '${p.name}${p == yetToBat.last ? "" : ","}',
-                      style: TextStyle(fontSize: 13.sp, color: Colors.black87, fontWeight: FontWeight.w500),
+                      style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w500),
                     ),
                   )).toList(),
                 ),

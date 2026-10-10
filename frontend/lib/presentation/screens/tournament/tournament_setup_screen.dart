@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -69,7 +70,7 @@ class _TournamentSetupScreenState extends State<TournamentSetupScreen>
                       Container(
                         padding: EdgeInsets.all(12.w),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
+                          color: ThemeHelper.of(context).cardBg.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12.r),
                         ),
                         child: Icon(
@@ -85,11 +86,11 @@ class _TournamentSetupScreenState extends State<TournamentSetupScreen>
                         children: [
                           Text(
                             'T20 • Tennis Ball',
-                            style: TextStyle(color: Colors.white70, fontSize: 12.sp),
+                            style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp),
                           ),
                           Text(
                             '8 Teams • 15 Matches',
-                            style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11.sp),
+                            style: TextStyle(color: ThemeHelper.of(context).cardBg.withOpacity(0.6), fontSize: 11.sp),
                           ),
                         ],
                       ),
@@ -292,7 +293,7 @@ class _ScheduleTab extends StatelessWidget {
                 ),
                 Text(
                   'Match ${match['id']}',
-                  style: TextStyle(color: Colors.grey[500], fontSize: 11.sp),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 11.sp),
                 ),
               ],
             ),
@@ -393,7 +394,7 @@ class _ScheduleTab extends StatelessWidget {
             style: TextStyle(
               fontSize: 15.sp,
               fontWeight: isWinner ? FontWeight.bold : FontWeight.w500,
-              color: isWinner ? Colors.black : Colors.black87,
+              color: isWinner ? Colors.black : Colors.black,
             ),
           ),
         ),
@@ -407,7 +408,7 @@ class _ScheduleTab extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16.sp,
                   fontWeight: FontWeight.bold,
-                  color: isWinner ? const Color(0xFF2E7D32) : Colors.black87,
+                  color: isWinner ? Color(0xFF2E7D32) : Colors.black,
                 ),
               ),
               Text(
@@ -419,7 +420,7 @@ class _ScheduleTab extends StatelessWidget {
         else
           Text(
             '-',
-            style: TextStyle(fontSize: 16.sp, color: Colors.grey[400]),
+            style: TextStyle(fontSize: 16.sp, color: Colors.grey[600]),
           ),
       ],
     );
@@ -452,7 +453,7 @@ class _PointsTableTab extends StatelessWidget {
             padding: EdgeInsets.all(12.w),
             margin: EdgeInsets.only(bottom: 12.h),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: ThemeHelper.of(context).cardBg,
               borderRadius: BorderRadius.circular(12.r),
             ),
             child: Row(
@@ -470,11 +471,11 @@ class _PointsTableTab extends StatelessWidget {
           // Points Table
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: ThemeHelper.of(context).cardBg,
               borderRadius: BorderRadius.circular(16.r),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
                   blurRadius: 10,
                 ),
               ],
@@ -491,9 +492,9 @@ class _PointsTableTab extends StatelessWidget {
                   child: Row(
                     children: [
                       SizedBox(width: 8.w),
-                      Text('#', style: TextStyle(color: Colors.white70, fontSize: 12.sp, fontWeight: FontWeight.bold)),
+                      Text('#', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp, fontWeight: FontWeight.bold)),
                       SizedBox(width: 12.w),
-                      Expanded(flex: 3, child: Text('TEAM', style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.bold))),
+                      Expanded(flex: 3, child: Text('TEAM', style: TextStyle(color: ThemeHelper.of(context).cardBg, fontSize: 12.sp, fontWeight: FontWeight.bold))),
                       _headerCell('P'),
                       _headerCell('W'),
                       _headerCell('L'),
@@ -537,7 +538,7 @@ class _PointsTableTab extends StatelessWidget {
                             '${team['rank']}',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: isQualified ? const Color(0xFF4CAF50) : Colors.grey[800],
+                              color: isQualified ? Color(0xFF4CAF50) : ThemeHelper.of(context).textSecondary,
                             ),
                           ),
                         ),
@@ -552,7 +553,7 @@ class _PointsTableTab extends StatelessWidget {
                                 team['team'],
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.grey[800],
+                                  color: ThemeHelper.of(context).textSecondary,
                                 ),
                               ),
                             ],
@@ -584,7 +585,7 @@ class _PointsTableTab extends StatelessWidget {
           decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3.r)),
         ),
         SizedBox(width: 6.w),
-        Text(label, style: TextStyle(fontSize: 11.sp, color: Colors.grey[700])),
+        Text(label, style: TextStyle(fontSize: 11.sp, color: Colors.grey[600])),
       ],
     );
   }
@@ -608,7 +609,7 @@ class _PointsTableTab extends StatelessWidget {
         style: TextStyle(
           fontSize: 12.sp,
           fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-          color: color ?? Colors.grey[700],
+          color: color ?? Colors.grey[600],
         ),
         textAlign: TextAlign.center,
       ),
@@ -663,7 +664,7 @@ class _StatsTabState extends State<_StatsTab> with SingleTickerProviderStateMixi
         Container(
           margin: EdgeInsets.all(12.w),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: ThemeHelper.of(context).cardBg,
             borderRadius: BorderRadius.circular(12.r),
           ),
           child: TabBar(
@@ -674,7 +675,7 @@ class _StatsTabState extends State<_StatsTab> with SingleTickerProviderStateMixi
             ),
             indicatorSize: TabBarIndicatorSize.tab,
             labelColor: Colors.white,
-            unselectedLabelColor: Colors.grey[600],
+            unselectedLabelColor: ThemeHelper.of(context).textSecondary,
             labelStyle: TextStyle(fontWeight: FontWeight.w600),
             dividerColor: Colors.transparent,
             tabs: const [
@@ -759,11 +760,11 @@ class _StatsTabState extends State<_StatsTab> with SingleTickerProviderStateMixi
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
             blurRadius: 10,
           ),
         ],
@@ -776,13 +777,13 @@ class _StatsTabState extends State<_StatsTab> with SingleTickerProviderStateMixi
             height: 32.h,
             decoration: BoxDecoration(
               gradient: rank == 1
-                  ? const LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFFA500)])
+                  ? LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFFA500)])
                   : rank == 2
-                      ? const LinearGradient(colors: [Color(0xFFC0C0C0), Color(0xFF808080)])
+                      ? LinearGradient(colors: [Color(0xFFC0C0C0), Color(0xFF808080)])
                       : rank == 3
-                          ? const LinearGradient(colors: [Color(0xFFCD7F32), Color(0xFF8B4513)])
+                          ? LinearGradient(colors: [Color(0xFFCD7F32), Color(0xFF8B4513)])
                           : null,
-              color: rank > 3 ? Colors.grey[200] : null,
+              color: rank > 3 ? ThemeHelper.of(context).dividerColor! : null,
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -790,7 +791,7 @@ class _StatsTabState extends State<_StatsTab> with SingleTickerProviderStateMixi
                 '$rank',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: rank <= 3 ? Colors.white : Colors.grey[700],
+                  color: rank <= 3 ? Colors.white : ThemeHelper.of(context).textSecondary,
                   fontSize: 14.sp,
                 ),
               ),
@@ -807,7 +808,7 @@ class _StatsTabState extends State<_StatsTab> with SingleTickerProviderStateMixi
               borderRadius: BorderRadius.circular(12.r),
               border: Border.all(color: Colors.grey.withOpacity(0.2)),
             ),
-            child: Icon(Icons.person, color: Colors.grey, size: 28.sp),
+            child: Icon(Icons.person, color: ThemeHelper.of(context).textSecondary, size: 28.sp),
           ),
           SizedBox(width: 12.w),
 
@@ -825,7 +826,7 @@ class _StatsTabState extends State<_StatsTab> with SingleTickerProviderStateMixi
                   children: [
                     Text(logo, style: TextStyle(fontSize: 12.sp)),
                     SizedBox(width: 4.w),
-                    Text(team, style: TextStyle(color: Colors.grey[600], fontSize: 12.sp)),
+                    Text(team, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
                   ],
                 ),
                 SizedBox(height: 8.h),
@@ -834,7 +835,7 @@ class _StatsTabState extends State<_StatsTab> with SingleTickerProviderStateMixi
                     child: Column(
                       children: [
                         Text(stat['value']!, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.sp)),
-                        Text(stat['label']!, style: TextStyle(color: Colors.grey[500], fontSize: 9.sp)),
+                        Text(stat['label']!, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 9.sp)),
                       ],
                     ),
                   )).toList(),
@@ -857,14 +858,14 @@ class _StatsTabState extends State<_StatsTab> with SingleTickerProviderStateMixi
                 Text(
                   mainStat,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: ThemeHelper.of(context).cardBg,
                     fontWeight: FontWeight.bold,
                     fontSize: 22.sp,
                   ),
                 ),
                 Text(
                   mainStatLabel,
-                  style: TextStyle(color: Colors.white70, fontSize: 9.sp),
+                  style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 9.sp),
                 ),
               ],
             ),
@@ -913,7 +914,7 @@ class _MVPPointsTab extends StatelessWidget {
                   children: [
                     Icon(Icons.star, color: Color(0xFFFFD700), size: 20.sp),
                     SizedBox(width: 8.w),
-                    Text('MVP Scoring System', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14.sp)),
+                    Text('MVP Scoring System', style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.bold, fontSize: 14.sp)),
                   ],
                 ),
                 SizedBox(height: 12.h),
@@ -1025,7 +1026,7 @@ class _MVPPointsTab extends StatelessWidget {
               gradient: LinearGradient(
                 colors: isTop3 
                     ? [_getRankColor(index), _getRankColor(index).withOpacity(0.7)]
-                    : [Colors.grey[200]!, Colors.grey[100]!],
+                    : [Colors.grey[200]!, Colors.grey[200]!],
               ),
               borderRadius: BorderRadius.circular(12.r),
             ),
@@ -1036,7 +1037,7 @@ class _MVPPointsTab extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18.sp,
-                    color: isTop3 ? Colors.white : Colors.grey[800],
+                    color: isTop3 ? Colors.white : Colors.grey[600],
                   ),
                 ),
                 Text(
@@ -1061,7 +1062,7 @@ class _MVPPointsTab extends StatelessWidget {
         children: [
           Text(emoji, style: TextStyle(fontSize: 12.sp)),
           SizedBox(width: 2.w),
-          Text(value, style: TextStyle(fontSize: 11.sp, color: Colors.grey[700])),
+          Text(value, style: TextStyle(fontSize: 11.sp, color: Colors.grey[600])),
         ],
       ),
     );
@@ -1072,7 +1073,7 @@ class _MVPPointsTab extends StatelessWidget {
       case 0: return const Color(0xFFFFD700);
       case 1: return const Color(0xFFC0C0C0);
       case 2: return const Color(0xFFCD7F32);
-      default: return Colors.grey[400]!;
+      default: return Colors.grey[600]!;
     }
   }
 
@@ -1169,11 +1170,11 @@ class _TeamsTab extends StatelessWidget {
       onTap: () => _showSquadBottomSheet(context, team),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: ThemeHelper.of(context).cardBg,
           borderRadius: BorderRadius.circular(16.r),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
               blurRadius: 10,
             ),
           ],
@@ -1227,11 +1228,11 @@ class _TeamsTab extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.person, size: 14.sp, color: Colors.grey),
+                        Icon(Icons.person, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
                         SizedBox(width: 4.w),
                         Text(
                           'Captain: ${team['captain']}',
-                          style: TextStyle(fontSize: 11.sp, color: Colors.grey[700]),
+                          style: TextStyle(fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary),
                         ),
                       ],
                     ),
@@ -1239,11 +1240,11 @@ class _TeamsTab extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.groups, size: 14.sp, color: Colors.grey[600]),
+                        Icon(Icons.groups, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
                         SizedBox(width: 4.w),
                         Text(
                           '${(team['players'] as List).length} Players',
-                          style: TextStyle(fontSize: 11.sp, color: Colors.grey[600]),
+                          style: TextStyle(fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary),
                         ),
                       ],
                     ),
@@ -1256,7 +1257,7 @@ class _TeamsTab extends StatelessWidget {
                       ),
                       child: Text(
                         'View Squad',
-                        style: TextStyle(color: Colors.white, fontSize: 11.sp, fontWeight: FontWeight.w600),
+                        style: TextStyle(color: ThemeHelper.of(context).cardBg, fontSize: 11.sp, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
@@ -1277,7 +1278,7 @@ class _TeamsTab extends StatelessWidget {
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.6,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: ThemeHelper.of(context).cardBg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -1288,7 +1289,7 @@ class _TeamsTab extends StatelessWidget {
               width: 40.w,
               height: 4.h,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: ThemeHelper.of(context).dividerColor!,
                 borderRadius: BorderRadius.circular(2.r),
               ),
             ),
@@ -1311,7 +1312,7 @@ class _TeamsTab extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(team['name'], style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold)),
-                      Text('Squad • ${(team['players'] as List).length} Players', style: TextStyle(color: Colors.grey[600])),
+                      Text('Squad • ${(team['players'] as List).length} Players', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
                     ],
                   ),
                 ],
@@ -1329,8 +1330,8 @@ class _TeamsTab extends StatelessWidget {
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: CircleAvatar(
-                      backgroundColor: Colors.grey[200],
-                      child: Text('${index + 1}', style: TextStyle(color: Colors.grey[700], fontSize: 12.sp)),
+                      backgroundColor: ThemeHelper.of(context).dividerColor!,
+                      child: Text('${index + 1}', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
                     ),
                     title: Text(
                       player.toString().replaceAll(' (C)', ''),
@@ -1343,7 +1344,7 @@ class _TeamsTab extends StatelessWidget {
                               color: team['color'],
                               borderRadius: BorderRadius.circular(4.r),
                             ),
-                            child: Text('CAPTAIN', style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.bold)),
+                            child: Text('CAPTAIN', style: TextStyle(color: ThemeHelper.of(context).cardBg, fontSize: 10.sp, fontWeight: FontWeight.bold)),
                           )
                         : null,
                   );

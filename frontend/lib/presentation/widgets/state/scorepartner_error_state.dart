@@ -19,6 +19,42 @@ class ScorePartnerErrorState extends StatelessWidget {
     this.icon = Icons.error_outline_rounded,
   });
 
+  /// Sanitizes raw error messages to prevent exposing technical details to users.
+  /// Logs the original error to debug console.
+  static String sanitizeMessage(String rawError) {
+    debugPrint('ScorePartnerError: $rawError');
+
+    final raw = rawError.toLowerCase();
+    if (raw.contains('socketexception') ||
+        raw.contains('clientexception') ||
+        raw.contains('connection refused') ||
+        raw.contains('network is unreachable') ||
+        raw.contains('no internet') ||
+        raw.contains('failed host lookup')) {
+      return 'Unable to connect. Please check your internet connection and try again.';
+    }
+    if (raw.contains('firebaseexception') ||
+        raw.contains('firebase') ||
+        raw.contains('permission-denied') ||
+        raw.contains('unavailable')) {
+      return 'Our servers are temporarily unavailable. Please try again in a moment.';
+    }
+    if (raw.contains('timeout') || raw.contains('timed out')) {
+      return 'The request took too long. Please try again.';
+    }
+    if (raw.contains('http') && (raw.contains('500') || raw.contains('502') || raw.contains('503'))) {
+      return 'Server error. Please try again later.';
+    }
+    if (raw.contains('formatexception') || raw.contains('type ')) {
+      return 'Something went wrong while loading data. Please try again.';
+    }
+    // If the message looks clean enough (no exception class names), show it
+    if (!raw.contains('exception') && !raw.contains('error:') && rawError.length < 120) {
+      return rawError;
+    }
+    return 'Something went wrong. Please try again.';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -52,7 +88,7 @@ class ScorePartnerErrorState extends StatelessWidget {
             ),
             SizedBox(height: 12.h),
             Text(
-              message,
+              sanitizeMessage(message),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14.sp,

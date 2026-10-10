@@ -17,6 +17,7 @@ import '../../widgets/state/scorepartner_skeleton.dart';
 import '../../widgets/state/scorepartner_empty_state.dart';
 import '../../widgets/state/scorepartner_error_state.dart';
 import '../ai/ai_chat_screen.dart';
+import '../../../core/utils/app_responsive.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -24,11 +25,15 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dataService = FirebaseDataService.instance;
+    final responsive = AppResponsive.of(context);
+
+    final th = ThemeHelper.of(context);
+    final isDark = th.isDark;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: th.scaffoldBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: th.appBarBg,
         elevation: 0,
         leading: Builder(
           builder: (context) => IconButton(
@@ -54,7 +59,7 @@ class HomeScreen extends StatelessWidget {
                 'ScorePartner',
                 style: GoogleFonts.fredoka(
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: th.textPrimary,
                   fontSize: 20.sp,
                 ),
               ),
@@ -168,7 +173,7 @@ class HomeScreen extends StatelessWidget {
       ),
       drawer: _buildDrawer(context),
       body: SingleChildScrollView(
-        padding: EdgeInsets.only(bottom: 100.h),
+        padding: EdgeInsets.only(bottom: responsive.navBarHeight + 40),
         physics: const BouncingScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,7 +189,7 @@ class HomeScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 26.sp,
                       fontWeight: FontWeight.w500,
-                      color: Colors.black87,
+                      color: th.textPrimary,
                       fontStyle: FontStyle.italic,
                     ),
                   ),
@@ -209,12 +214,12 @@ class HomeScreen extends StatelessWidget {
             // Live Matches Section
             _buildSectionHeader(context, 'Live Matches', showViewAll: false),
               SizedBox(
-                height: 230.h,
+                height: responsive.matchListHeight,
                 child: FutureBuilder<List<MatchModel>>(
                   future: dataService.getLiveMatches(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return _buildLoadingList();
+                      return _buildLoadingList(context);
                     }
                     if (snapshot.hasError) {
                       return Padding(
@@ -246,12 +251,12 @@ class HomeScreen extends StatelessWidget {
               // Past Matches Section  
               _buildSectionHeader(context, 'Past Matches', showViewAll: false),
               SizedBox(
-                height: 230.h,
+                height: responsive.matchListHeight,
                 child: FutureBuilder<List<MatchModel>>(
                   future: dataService.getPastMatches(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return _buildLoadingList();
+                      return _buildLoadingList(context);
                     }
                     if (snapshot.hasError) {
                       return Padding(
@@ -318,8 +323,9 @@ class HomeScreen extends StatelessWidget {
 
   /// Build the navigation drawer with menu options
   Widget _buildDrawer(BuildContext context) {
+    final th = ThemeHelper.of(context);
     return Drawer(
-      backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF121212) : Colors.white,
+      backgroundColor: th.scaffoldBg,
       child: Column(
         children: [
           // Drawer Header
@@ -470,12 +476,12 @@ class HomeScreen extends StatelessWidget {
         style: TextStyle(
           fontWeight: FontWeight.bold, 
           fontSize: 13.sp, 
-          color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87, 
+          color: Theme.of(context).colorScheme.onSurface, 
           letterSpacing: 0.5
         ),
       ),
       subtitle: subtitle != null
-          ? Text(subtitle.toUpperCase(), style: TextStyle(color: Colors.white24, fontSize: 9.sp, fontWeight: FontWeight.bold))
+          ? Text(subtitle.toUpperCase(), style: TextStyle(color: Colors.grey[500], fontSize: 9.sp, fontWeight: FontWeight.bold))
           : null,
       onTap: onTap,
     );
@@ -547,7 +553,7 @@ class HomeScreen extends StatelessWidget {
       builder: (context) => Container(
         padding: EdgeInsets.all(24.w),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).bottomSheetTheme.backgroundColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -584,7 +590,7 @@ class HomeScreen extends StatelessWidget {
       builder: (context) => Container(
         padding: EdgeInsets.all(24.w),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).bottomSheetTheme.backgroundColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -622,7 +628,7 @@ class HomeScreen extends StatelessWidget {
       builder: (context) => Container(
         padding: EdgeInsets.all(24.w),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).bottomSheetTheme.backgroundColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -676,7 +682,7 @@ class HomeScreen extends StatelessWidget {
         builder: (context, setSheetState) => Container(
           height: MediaQuery.of(context).size.height * 0.9,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).bottomSheetTheme.backgroundColor,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -834,15 +840,15 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBallTypeOption(String label, IconData icon, Color color, bool isSelected, VoidCallback onTap) {
-    return GestureDetector(
+  _buildBallTypeOption(String label, IconData icon, Color color, bool isSelected, VoidCallback onTap) {
+    return Builder(builder: (context) => GestureDetector(
       onTap: onTap,
       child: Container(
         padding: EdgeInsets.all(16.w),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.grey[100],
+          color: isSelected ? color.withOpacity(0.1) : Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(color: isSelected ? color : Colors.grey[300]!, width: isSelected ? 2 : 1),
+          border: Border.all(color: isSelected ? color : Theme.of(context).colorScheme.outline, width: isSelected ? 2 : 1),
         ),
         child: Column(
           children: [
@@ -852,31 +858,33 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildFormatChip(String label, bool isSelected, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: Builder(
+        builder: (context) => Container(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryOrange : Colors.grey[100],
+          color: isSelected ? AppTheme.primaryOrange : Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(20.r),
         ),
-        child: Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontWeight: FontWeight.w500)),
+        child: Text(label, style: TextStyle(color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w500)),
+      ),
       ),
     );
   }
 
   Widget _buildTextField(String label, String hint, IconData icon) {
-    return Column(
+    return Builder(builder: (context) => Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14.sp)),
         SizedBox(height: 8.h),
         Container(
-          decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(12.r)),
+          decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(12.r)),
           child: TextField(
             decoration: InputDecoration(
               hintText: hint,
@@ -888,7 +896,7 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ],
-    );
+    ));
   }
 
   Widget _buildSectionHeader(BuildContext context, String title, {bool showViewAll = false}) {
@@ -920,8 +928,8 @@ class HomeScreen extends StatelessWidget {
     return Center(
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 16.w),
-        child: SizedBox(
-          width: 300.w,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: 300),
           child: ScorePartnerEmptyState(
             title: message,
             description: 'Start a new match or join an ongoing one.',
@@ -932,7 +940,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLoadingList() {
+  Widget _buildLoadingList(BuildContext context) {
+    final responsive = AppResponsive.of(context);
     return ListView.builder(
       padding: EdgeInsets.zero,
       scrollDirection: Axis.horizontal,
@@ -940,8 +949,8 @@ class HomeScreen extends StatelessWidget {
       itemBuilder: (_, __) => Padding(
         padding: EdgeInsets.symmetric(horizontal: 16.w),
         child: ScorePartnerSkeleton(
-          width: 280.w,
-          height: 200.h,
+          width: responsive.matchCardWidth,
+          height: responsive.matchListHeight - 30,
           borderRadius: 16.r,
         ),
       ),
@@ -987,7 +996,13 @@ class HomeScreen extends StatelessWidget {
                       Row(children: [
                         Icon(Icons.access_time, size: 14.sp, color: AppTheme.primaryOrange),
                         SizedBox(width: 4.w),
-                        Text(time, style: TextStyle(color: AppTheme.primaryOrange, fontSize: 11.sp, fontWeight: FontWeight.bold)),
+                        Flexible(
+                          child: Text(
+                            time,
+                            style: TextStyle(color: AppTheme.primaryOrange, fontSize: 11.sp, fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ]),
                     ],
                   ),
@@ -1077,13 +1092,16 @@ class HomeScreen extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Text(
-                                'ScorePartner AI',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 17.sp,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  letterSpacing: 0.3,
+                              Flexible(
+                                child: Text(
+                                  'ScorePartner AI',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 17.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 0.3,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               SizedBox(width: 8.w),
@@ -1235,7 +1253,7 @@ class HomeScreen extends StatelessWidget {
         builder: (context, setSheetState) => Container(
           height: MediaQuery.of(context).size.height * 0.92,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).bottomSheetTheme.backgroundColor,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -1293,9 +1311,9 @@ class HomeScreen extends StatelessWidget {
                       Container(
                         padding: EdgeInsets.all(20.w),
                         decoration: BoxDecoration(
-                          color: Colors.grey[50],
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(16.r),
-                          border: Border.all(color: Colors.grey[200]!),
+                          border: Border.all(color: Theme.of(context).colorScheme.outline),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1309,9 +1327,9 @@ class HomeScreen extends StatelessWidget {
                                   flex: 2,
                                   child: Container(
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.surface,
                                       borderRadius: BorderRadius.circular(12.r),
-                                      border: Border.all(color: Colors.grey[300]!),
+                                      border: Border.all(color: Theme.of(context).colorScheme.outline),
                                     ),
                                     child: TextField(
                                       decoration: InputDecoration(
@@ -1381,9 +1399,9 @@ class HomeScreen extends StatelessWidget {
                                   flex: 2,
                                   child: Container(
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.surface,
                                       borderRadius: BorderRadius.circular(12.r),
-                                      border: Border.all(color: Colors.grey[300]!),
+                                      border: Border.all(color: Theme.of(context).colorScheme.outline),
                                     ),
                                     child: TextField(
                                       decoration: InputDecoration(
@@ -1469,16 +1487,16 @@ class HomeScreen extends StatelessWidget {
                             child: Container(
                               padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
                               decoration: BoxDecoration(
-                                color: isSelected ? AppTheme.primaryOrange : Colors.grey[100],
+                                color: isSelected ? AppTheme.primaryOrange : Theme.of(context).colorScheme.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(12.r),
                                 border: Border.all(
-                                  color: isSelected ? AppTheme.primaryOrange : Colors.grey[300]!,
+                                  color: isSelected ? AppTheme.primaryOrange : Theme.of(context).colorScheme.outline,
                                 ),
                               ),
                               child: Text(
                                 overs == 'Test' ? 'Test' : '$overs Overs',
                                 style: TextStyle(
-                                  color: isSelected ? Colors.white : Colors.black87,
+                                  color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -1500,7 +1518,7 @@ class HomeScreen extends StatelessWidget {
                       Container(
                         padding: EdgeInsets.all(16.w),
                         decoration: BoxDecoration(
-                          color: Colors.grey[50],
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(12.r),
                         ),
                         child: Column(
@@ -1598,48 +1616,52 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildMatchTeamInput(String label, IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: label,
-          hintStyle: TextStyle(color: Colors.grey[500]),
-          prefixIcon: Container(
-            margin: EdgeInsets.all(8.w),
-            padding: EdgeInsets.all(8.w),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8.r),
+    return Builder(
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(color: Theme.of(context).colorScheme.outline),
+        ),
+        child: TextField(
+          decoration: InputDecoration(
+            hintText: label,
+            hintStyle: TextStyle(color: Colors.grey[500]),
+            prefixIcon: Container(
+              margin: EdgeInsets.all(8.w),
+              padding: EdgeInsets.all(8.w),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Icon(icon, color: color, size: 20.sp),
             ),
-            child: Icon(icon, color: color, size: 20.sp),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
           ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
         ),
       ),
     );
   }
 
   Widget _buildTossOption(String team, bool isSelected, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 12.h),
-        decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryOrange : Colors.white,
-          borderRadius: BorderRadius.circular(10.r),
-          border: Border.all(color: isSelected ? AppTheme.primaryOrange : Colors.grey[300]!),
-        ),
-        child: Center(
-          child: Text(
-            team,
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.black87,
-              fontWeight: FontWeight.w600,
+    return Builder(
+      builder: (context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: 12.h),
+          decoration: BoxDecoration(
+            color: isSelected ? AppTheme.primaryOrange : Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(10.r),
+            border: Border.all(color: isSelected ? AppTheme.primaryOrange : Theme.of(context).colorScheme.outline),
+          ),
+          child: Center(
+            child: Text(
+              team,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),
@@ -1648,70 +1670,77 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildTossDecision(String label, IconData icon, bool isSelected, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 10.h),
-        decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryOrange.withOpacity(0.1) : Colors.white,
-          borderRadius: BorderRadius.circular(10.r),
-          border: Border.all(color: isSelected ? AppTheme.primaryOrange : Colors.grey[300]!),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 18.sp, color: isSelected ? AppTheme.primaryOrange : Colors.grey[600]),
-            SizedBox(width: 6.w),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? AppTheme.primaryOrange : Colors.grey[700],
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                fontSize: 13.sp,
+    return Builder(
+      builder: (context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: 10.h),
+          decoration: BoxDecoration(
+            color: isSelected ? AppTheme.primaryOrange.withOpacity(0.1) : Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(10.r),
+            border: Border.all(color: isSelected ? AppTheme.primaryOrange : Theme.of(context).colorScheme.outline),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 18.sp, color: isSelected ? AppTheme.primaryOrange : Colors.grey[600]),
+              SizedBox(width: 6.w),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? AppTheme.primaryOrange : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  fontSize: 13.sp,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildMatchFeatureToggle(String title, String subtitle, IconData icon, bool value, ValueChanged<bool> onChanged) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 8.h),
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-      decoration: BoxDecoration(
-        color: value ? AppTheme.primaryOrange.withOpacity(0.05) : Colors.grey[50],
-        borderRadius: BorderRadius.circular(12.r),
-        border: value ? Border.all(color: AppTheme.primaryOrange.withOpacity(0.2)) : null,
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(8.w),
-            decoration: BoxDecoration(
-              color: value ? AppTheme.primaryOrange.withOpacity(0.1) : Colors.grey[200],
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-            child: Icon(icon, size: 18.sp, color: value ? AppTheme.primaryOrange : Colors.grey[600]),
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          margin: EdgeInsets.only(bottom: 8.h),
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+          decoration: BoxDecoration(
+            color: value ? AppTheme.primaryOrange.withOpacity(0.05) : Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(12.r),
+            border: value ? Border.all(color: AppTheme.primaryOrange.withOpacity(0.2)) : null,
           ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14.sp, color: value ? Colors.black87 : Colors.grey[700])),
-                Text(subtitle, style: TextStyle(fontSize: 11.sp, color: Colors.grey[500])),
-              ],
-            ),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8.w),
+                decoration: BoxDecoration(
+                  color: value ? AppTheme.primaryOrange.withOpacity(0.1) : (isDark ? AppTheme.darkContainer : Colors.grey[200]),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Icon(icon, size: 18.sp, color: value ? AppTheme.primaryOrange : (isDark ? AppTheme.darkSubtitle : Colors.grey[600])),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14.sp, color: value ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurface.withOpacity(0.7))),
+                    Text(subtitle, style: TextStyle(fontSize: 11.sp, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5))),
+                  ],
+                ),
+              ),
+              Switch(
+                value: value,
+                onChanged: onChanged,
+                activeColor: AppTheme.primaryOrange,
+              ),
+            ],
           ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: AppTheme.primaryOrange,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -1723,6 +1752,8 @@ class _MatchesNearYouSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final responsive = AppResponsive.of(context);
+
     return FutureBuilder<Position?>(
       future: LocationUtils.getCurrentLocation(),
       builder: (context, locationSnapshot) {
@@ -1748,14 +1779,14 @@ class _MatchesNearYouSection extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 18.sp,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ],
               ),
             ),
             SizedBox(
-              height: 230.h,
+              height: responsive.matchListHeight,
               child: FutureBuilder<List<MatchModel>>(
                 future: dataService.getMatchesNearMe(position.latitude, position.longitude),
                 builder: (context, matchSnapshot) {
@@ -1767,8 +1798,8 @@ class _MatchesNearYouSection extends StatelessWidget {
                       itemBuilder: (_, __) => Padding(
                         padding: EdgeInsets.symmetric(horizontal: 16.w),
                         child: ScorePartnerSkeleton(
-                          width: 280.w,
-                          height: 200.h,
+                          width: responsive.matchCardWidth,
+                          height: responsive.matchListHeight - 30,
                           borderRadius: 16.r,
                         ),
                       ),
@@ -1787,8 +1818,8 @@ class _MatchesNearYouSection extends StatelessWidget {
                     return Center(
                       child: Padding(
                         padding: EdgeInsets.symmetric(horizontal: 16.w),
-                        child: SizedBox(
-                          width: 300.w,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: 300),
                           child: ScorePartnerEmptyState(
                             title: 'NO MATCHES NEAR YOU',
                             description: 'Be the first to start a match in your area!',

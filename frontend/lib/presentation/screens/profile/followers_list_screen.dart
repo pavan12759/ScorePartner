@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/services/firebase_data_service.dart';
@@ -112,7 +113,7 @@ class _FollowersListScreenState extends State<FollowersListScreen> {
           widget.isFollowing 
               ? '${widget.userName} is not following anyone yet.' 
               : '${widget.userName} has no followers yet.',
-          style: TextStyle(fontSize: 16.sp, color: Colors.grey),
+          style: TextStyle(fontSize: 16.sp, color: ThemeHelper.of(context).textSecondary),
         ),
       );
     }
@@ -136,17 +137,25 @@ class _FollowersListScreenState extends State<FollowersListScreen> {
         final user = _users[index];
         return ListTile(
           leading: CircleAvatar(
-            backgroundColor: Colors.grey[200],
+            backgroundColor: ThemeHelper.of(context).dividerColor!,
             backgroundImage: getProfileImageProvider(user.profileImageUrl),
             child: user.profileImageUrl.isEmpty
-                ? Icon(Icons.person, color: Colors.grey)
+                ? Icon(Icons.person, color: ThemeHelper.of(context).textSecondary)
                 : null,
           ),
           title: Text(
             user.name,
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: ThemeHelper.of(context).textPrimary,
+            ),
           ),
-          subtitle: Text(user.role.isNotEmpty ? user.role : 'Player'),
+          subtitle: Text(
+            user.role.isNotEmpty ? user.role : 'Player',
+            style: TextStyle(
+              color: ThemeHelper.of(context).textSecondary,
+            ),
+          ),
           onTap: () {
             Navigator.push(
               context,

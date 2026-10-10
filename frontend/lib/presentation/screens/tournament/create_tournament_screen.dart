@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
@@ -472,15 +473,15 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
           height: 32.h,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isActive ? AppTheme.primaryOrange : Colors.grey[300],
+            color: isActive ? AppTheme.primaryOrange : ThemeHelper.of(context).dividerColor!,
           ),
           child: Center(
             child: isActive && _currentStep > step
-                ? Icon(Icons.check, color: Colors.white, size: 18.sp)
+                ? Icon(Icons.check, color: ThemeHelper.of(context).cardBg, size: 18.sp)
                 : Text(
                     '${step + 1}',
                     style: TextStyle(
-                      color: isActive ? Colors.white : Colors.grey[600],
+                      color: isActive ? Colors.white : ThemeHelper.of(context).textSecondary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -505,7 +506,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
       width: 50.w,
       height: 3.h,
       margin: EdgeInsets.only(bottom: 20.h),
-      color: isActive ? AppTheme.primaryOrange : Colors.grey[300],
+      color: isActive ? AppTheme.primaryOrange : ThemeHelper.of(context).dividerColor!,
     );
   }
 
@@ -712,8 +713,8 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
                 ),
                 child: _isSearching
-                    ? SizedBox(width: 20.w, height: 20.h, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text('Add', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ? SizedBox(width: 20.w, height: 20.h, child: CircularProgressIndicator(strokeWidth: 2, color: ThemeHelper.of(context).cardBg,))
+                    : Text('Add', style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -731,7 +732,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
               ),
               Text(
                 'Max: ${_maxTeamsController.text}',
-                style: TextStyle(color: Colors.grey[600]),
+                style: TextStyle(color: ThemeHelper.of(context).textSecondary),
               ),
             ],
           ),
@@ -745,11 +746,11 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.groups_outlined, size: 64.sp, color: Colors.grey[300]),
+                      Icon(Icons.groups_outlined, size: 64.sp, color: ThemeHelper.of(context).dividerColor!),
                       SizedBox(height: 16.h),
-                      Text('No teams added yet', style: TextStyle(color: Colors.grey[500], fontSize: 16.sp)),
+                      Text('No teams added yet', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 16.sp)),
                       SizedBox(height: 8.h),
-                      Text('Enter SPT ID to add teams', style: TextStyle(color: Colors.grey[400])),
+                      Text('Enter SPT ID to add teams', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
                     ],
                   ),
                 )
@@ -802,7 +803,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
                   ),
                   Text(
                     '${_format.toUpperCase()} format • ${_generatedFixtures.isEmpty ? "No matches yet" : "${_generatedFixtures.length} matches"}',
-                    style: TextStyle(color: Colors.grey[600]),
+                    style: TextStyle(color: ThemeHelper.of(context).textSecondary),
                   ),
                 ],
               ),
@@ -846,7 +847,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
                     Text(
                       'You can create the tournament now effectively skipping fixture generation. Matches can be added manually later.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey[600]),
+                      style: TextStyle(color: ThemeHelper.of(context).textSecondary),
                     ),
                     SizedBox(height: 32.h),
                      OutlinedButton.icon(
@@ -869,7 +870,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Text(
               'Drag to reorder matches',
-              style: TextStyle(color: Colors.grey[500], fontSize: 12.sp),
+              style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp),
             ),
           ),
           SizedBox(height: 8.h),
@@ -911,9 +912,9 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
                     ),
                     subtitle: Text(
                       fixture.round,
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12.sp),
+                      style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp),
                     ),
-                    trailing: Icon(Icons.drag_handle, color: Colors.grey),
+                    trailing: Icon(Icons.drag_handle, color: ThemeHelper.of(context).textSecondary),
                   ),
                 );
               },
@@ -928,10 +929,10 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.of(context).cardBg,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: Offset(0, -5),
           ),
@@ -962,10 +963,10 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
               ),
               child: _isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
+                  ? CircularProgressIndicator(color: ThemeHelper.of(context).cardBg,)
                   : Text(
                       _getNextButtonText(),
-                      style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: ThemeHelper.of(context).cardBg,),
                     ),
             ),
           ),
@@ -1119,7 +1120,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
           SizedBox(height: 8.h),
           Text(
             'Only 2 fielders allowed outside 30-yard circle during power play',
-            style: TextStyle(color: Colors.grey[600], fontSize: 12.sp),
+            style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp),
           ),
         ],
       ),

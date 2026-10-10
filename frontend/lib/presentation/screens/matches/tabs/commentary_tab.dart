@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:scorepatner/data/models/match_model.dart';
 import 'package:scorepatner/core/theme/app_theme.dart';
@@ -6,12 +6,12 @@ import 'package:scorepatner/core/theme/app_theme.dart';
 class CommentaryTab extends StatelessWidget {
   final MatchModel match;
   
-  const CommentaryTab({super.key, required this.match});
+  CommentaryTab({super.key, required this.match});
   
   @override
   Widget build(BuildContext context) {
     if (match.ballByBall.isEmpty) {
-      return const Center(child: Text("No commentary available", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)));
+      return Center(child: Text("No commentary available", style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontStyle: FontStyle.italic)));
     }
     
     // Sort balls by latest first
@@ -51,6 +51,7 @@ class CommentaryTab extends StatelessWidget {
             // Event Bubble
             Expanded(
               child: Card(
+                color: ThemeHelper.of(context).cardBg,
                 child: Padding(
                   padding: EdgeInsets.all(16.w),
                   child: Column(
@@ -62,7 +63,7 @@ class CommentaryTab extends StatelessWidget {
                             Container(
                               padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                               decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(4.r)),
-                              child: Text('WICKET', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10.sp, letterSpacing: 1)),
+                              child: Text('WICKET', style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.bold, fontSize: 10.sp, letterSpacing: 1)),
                             )
                           else if (isBoundary)
                             Container(
@@ -73,13 +74,13 @@ class CommentaryTab extends StatelessWidget {
                               ),
                               child: Text(
                                 event.runs == 4 ? 'FOUR' : 'SIX', 
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10.sp, letterSpacing: 1)
+                                style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.bold, fontSize: 10.sp, letterSpacing: 1)
                               ),
                             )
                           else
                             Text(
                               '${event.runs} RUN(S)', 
-                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12.sp, letterSpacing: 0.5)
+                              style: TextStyle(fontWeight: FontWeight.bold, color: ThemeHelper.of(context).textPrimary, fontSize: 12.sp, letterSpacing: 0.5)
                             ),
                             
                           const Spacer(),
@@ -88,7 +89,7 @@ class CommentaryTab extends StatelessWidget {
                       SizedBox(height: 10.h),
                       Text(
                         event.commentary.isNotEmpty ? event.commentary : _generateCommentary(event),
-                        style: TextStyle(color: Colors.white70, height: 1.5, fontSize: 13.sp),
+                        style: TextStyle(color: ThemeHelper.of(context).textSecondary, height: 1.5, fontSize: 13.sp),
                       ),
                     ],
                   ),

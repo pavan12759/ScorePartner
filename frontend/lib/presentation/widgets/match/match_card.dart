@@ -6,6 +6,7 @@ import 'package:scorepatner/data/models/match_model.dart';
 import 'package:scorepatner/data/models/team_model.dart';
 import 'package:scorepatner/data/services/firebase_data_service.dart';
 import 'package:scorepatner/presentation/widgets/match/pin_live_score_button.dart';
+import '../../../../core/utils/app_responsive.dart';
 
 class MatchCard extends StatelessWidget {
   final MatchModel? match; // Nullable for skeleton/loading state
@@ -20,12 +21,14 @@ class MatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (match == null) {
+      final responsive = AppResponsive.of(context);
+      final th = ThemeHelper.of(context);
       return Container(
-        width: 300.w,
+        width: responsive.matchCardWidth,
         height: 180.h,
         margin: EdgeInsets.only(right: 16.w),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: th.cardBg,
           borderRadius: BorderRadius.circular(20.r),
           boxShadow: [
             BoxShadow(
@@ -43,13 +46,16 @@ class MatchCard extends StatelessWidget {
 
     final isLive = match!.status == 'live';
 
+    final responsive = AppResponsive.of(context);
+    final th = ThemeHelper.of(context);
+
     return Container(
-      width: 320.w,
+      width: responsive.matchCardWidth,
       margin: EdgeInsets.only(right: 16.w, bottom: 8.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: th.cardBg,
         borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: th.dividerColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -64,49 +70,54 @@ class MatchCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(16.r),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.w),
+            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
-                      child: Wrap(
-                        spacing: 8.w,
-                        runSpacing: 4.h,
-                        crossAxisAlignment: WrapCrossAlignment.center,
+                      child: Row(
                         children: [
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(100.r),
-                            ),
-                            child: Text(
-                              (match!.matchName.isNotEmpty ? match!.matchName : 'Match').toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 10.sp,
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
+                          Flexible(
+                            child: Container(
+                              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                              decoration: BoxDecoration(
+                                color: th.isDark ? AppTheme.darkContainer : Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(100.r),
+                              ),
+                              child: Text(
+                                (match!.matchName.isNotEmpty ? match!.matchName : 'Match').toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 10.sp,
+                                  color: th.isDark ? AppTheme.darkSubtitle : Colors.grey[600],
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ),
-                          if (match!.tournamentName != null && match!.tournamentName!.isNotEmpty)
-                            Padding(
-                              padding: EdgeInsets.only(left: 4.w),
+                          if (match!.tournamentName != null && match!.tournamentName!.isNotEmpty) ...[
+                            SizedBox(width: 6.w),
+                            Flexible(
                               child: Text(
                                 match!.tournamentName!.toUpperCase(),
                                 style: TextStyle(
                                   fontSize: 10.sp,
-                                  color: Colors.grey[600],
+                                  color: th.isDark ? AppTheme.darkSubtitle : Colors.grey[600],
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 0.5,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                          ],
                         ],
                       ),
                     ),
@@ -145,7 +156,7 @@ class MatchCard extends StatelessWidget {
                       Container(
                         padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
+                          color: th.isDark ? AppTheme.darkContainer : Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(100.r),
                         ),
                         child: Text(
@@ -153,13 +164,13 @@ class MatchCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 10.sp,
                             fontWeight: FontWeight.bold,
-                            color: Colors.grey[500],
+                            color: th.isDark ? AppTheme.darkSubtitle : Colors.grey[500],
                           ),
                         ),
                       ),
                   ],
                 ),
-                SizedBox(height: 12.h),
+                SizedBox(height: 8.h),
                 
                 // Teams
                 _buildTeamRow(
@@ -169,9 +180,9 @@ class MatchCard extends StatelessWidget {
                   match!.team1Score.runs, 
                   match!.team1Score.wickets, 
                   match!.team1Score.overs,
-                  isBatting: match!.currentBattingTeam == 'team1' && isLive
+                  isBatting: match!.currentBattingTeam == 'team1' && isLive,
                 ),
-                SizedBox(height: 12.h),
+                SizedBox(height: 6.h),
                 _buildTeamRow(
                   context,
                   match!.team2Id,
@@ -179,12 +190,12 @@ class MatchCard extends StatelessWidget {
                   match!.team2Score.runs, 
                   match!.team2Score.wickets, 
                   match!.team2Score.overs,
-                  isBatting: match!.currentBattingTeam == 'team2' && isLive
+                  isBatting: match!.currentBattingTeam == 'team2' && isLive,
                 ),
                 
                 SizedBox(height: 8.h),
-                Divider(height: 1.h, color: Colors.grey.shade200),
-                SizedBox(height: 6.h),
+                Divider(height: 1.h, color: th.dividerColor),
+                SizedBox(height: 4.h),
                 
                 // Footer
                 Row(
@@ -197,6 +208,7 @@ class MatchCard extends StatelessWidget {
                           fontSize: 10.sp,
                           fontWeight: FontWeight.bold,
                         ),
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -219,6 +231,7 @@ class MatchCard extends StatelessWidget {
   }
 
   Widget _buildTeamRow(BuildContext context, String teamId, String name, int runs, int wickets, double overs, {bool isBatting = false}) {
+    final th = ThemeHelper.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -273,7 +286,7 @@ class MatchCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14.sp,
                     fontWeight: isBatting ? FontWeight.bold : FontWeight.w500,
-                    color: isBatting ? Colors.black87 : Colors.grey[700],
+                    color: isBatting ? th.textPrimary : th.textSecondary,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -295,7 +308,7 @@ class MatchCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15.sp,
                 fontWeight: isBatting ? FontWeight.bold : FontWeight.w500,
-                color: Colors.black87,
+                color: th.textPrimary,
               ),
             ),
             SizedBox(width: 6.w),
@@ -303,7 +316,7 @@ class MatchCard extends StatelessWidget {
               '($overs)',
               style: TextStyle(
                 fontSize: 11.sp,
-                color: Colors.grey[500],
+                color: th.textSecondary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -320,7 +333,7 @@ class MatchCard extends StatelessWidget {
             ? match.team1Name 
             : (match.tossWinnerId == match.team2Id ? match.team2Name : '');
         if (tossWinnerName.isNotEmpty) {
-          return '$tossWinnerName won the toss and chose to ${match.tossDecision}';
+          return '$tossWinnerName won toss • chose to ${match.tossDecision}';
         }
       }
       return 'Ongoing • ${match.oversPerSide} Overs';

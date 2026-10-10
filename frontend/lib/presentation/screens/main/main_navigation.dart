@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../../data/services/firebase_data_service.dart';
@@ -71,7 +72,7 @@ class _MainNavigationState extends State<MainNavigation> with WidgetsBindingObse
 
     return Scaffold(
       extendBody: true,
-      backgroundColor: Colors.white,
+      backgroundColor: ThemeHelper.of(context).scaffoldBg,
       
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
