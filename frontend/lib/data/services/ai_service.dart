@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/ai_models.dart';
@@ -19,14 +19,23 @@ class ScorePartnerAIService {
     defaultValue: 'http://localhost:5000/api',
   );
 
+  static String? _workingBaseUrl;
+
   List<String> get _candidateBaseUrls {
-    final urls = <String>[];
+    // If we already found a working URL, try it first
+    if (_workingBaseUrl != null) {
+      return [_workingBaseUrl!];
+    }
+
+    // On web (Chrome), only localhost works (same machine, no CORS issues)
+    if (kIsWeb) {
+      return ['http://localhost:5000/api'];
+    }
+
+    // On mobile devices, try multiple network addresses
+    final urls = <String>[_baseUrl];
     if (_baseUrl.contains('localhost')) {
-      urls.add(_baseUrl.replaceAll('localhost', '192.168.1.28'));
-      urls.add(_baseUrl);
-      urls.add(_baseUrl.replaceAll('localhost', '10.0.2.2'));
-    } else {
-      urls.add(_baseUrl);
+      urls.add(_baseUrl.replaceAll('localhost', '10.0.2.2'));  // Android emulator
     }
     return urls;
   }
@@ -69,7 +78,6 @@ class ScorePartnerAIService {
     };
 
     // Try candidate URLs
-    Object? lastError;
     for (final baseUrl in _candidateBaseUrls) {
       try {
         final response = await http
@@ -78,9 +86,10 @@ class ScorePartnerAIService {
               headers: headers,
               body: body,
             )
-            .timeout(const Duration(seconds: 60));
+            .timeout(const Duration(seconds: 25));
 
         if (response.statusCode == 200) {
+          _workingBaseUrl = baseUrl;
           final data = jsonDecode(response.body) as Map<String, dynamic>;
           return AIResponse.fromJson(data);
         } else if (response.statusCode == 401) {
@@ -98,7 +107,7 @@ class ScorePartnerAIService {
         }
       } catch (e) {
         if (e is AIServiceException) rethrow;
-        lastError = e;
+        _workingBaseUrl = null;
         debugPrint('⚠️ AI request to $baseUrl failed: $e');
       }
     }
@@ -121,7 +130,6 @@ class ScorePartnerAIService {
     if (query != null) queryParams['q'] = query;
     queryParams['limit'] = limit.toString();
 
-    Object? lastError;
     for (final baseUrl in _candidateBaseUrls) {
       try {
         final uri = Uri.parse('$baseUrl/ai/news')
@@ -131,6 +139,7 @@ class ScorePartnerAIService {
             .timeout(const Duration(seconds: 15));
 
         if (response.statusCode == 200) {
+          _workingBaseUrl = baseUrl;
           final data = jsonDecode(response.body) as Map<String, dynamic>;
           final articles = (data['articles'] as List<dynamic>?)
                   ?.map(
@@ -140,7 +149,6 @@ class ScorePartnerAIService {
           return articles;
         }
       } catch (e) {
-        lastError = e;
         debugPrint('⚠️ News request to $baseUrl failed: $e');
       }
     }

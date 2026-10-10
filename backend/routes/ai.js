@@ -141,9 +141,10 @@ router.post('/chat', auth, aiChatLimiter, async (req, res) => {
         }
       }
 
-      // Continue conversation with tool results
+      // Continue conversation with tool results, passing raw model parts for thought_signature
+      const rawModelParts = result._rawModelParts;
       result = await aiService.continueWithToolResults(
-        messages, toolDefinitions, SYSTEM_PROMPT, toolResults
+        messages, toolDefinitions, SYSTEM_PROMPT, toolResults, rawModelParts
       );
     }
 

@@ -95,7 +95,8 @@ class GeminiAIService extends AIService {
         }
       }
 
-      return { text, toolCalls };
+      // Return raw parts so they can be replayed in continuation (preserves thought_signature)
+      return { text, toolCalls, _rawModelParts: parts };
     } catch (error) {
       console.error('❌ Gemini AI error:', error.message);
       throw new Error('AI service temporarily unavailable');
@@ -104,8 +105,9 @@ class GeminiAIService extends AIService {
 
   /**
    * Continue a conversation after tool results are provided.
+   * Uses the raw model parts from the original response to preserve thought_signature.
    */
-  async continueWithToolResults(messages, tools, systemPrompt, toolCallResults) {
+  async continueWithToolResults(messages, tools, systemPrompt, toolCallResults, rawModelParts) {
     if (!process.env.GEMINI_API_KEY) {
       throw new Error('AI service not configured');
     }
@@ -116,13 +118,18 @@ class GeminiAIService extends AIService {
         parts: [{ text: msg.content }],
       }));
 
-      // Add model's function call as a model turn
-      // Then add function responses as a user turn
-      const functionCallParts = toolCallResults.map(r => ({
-        functionCall: { name: r.name, args: r.args || {} },
-      }));
-      contents.push({ role: 'model', parts: functionCallParts });
+      // Use the original raw model parts (with thought_signature) instead of reconstructing them
+      if (rawModelParts && rawModelParts.length > 0) {
+        contents.push({ role: 'model', parts: rawModelParts });
+      } else {
+        // Fallback: manually build function call parts (may fail with newer models)
+        const functionCallParts = toolCallResults.map(r => ({
+          functionCall: { name: r.name, args: r.args || {} },
+        }));
+        contents.push({ role: 'model', parts: functionCallParts });
+      }
 
+      // Add function responses as a user turn
       const functionResponseParts = toolCallResults.map(r => ({
         functionResponse: {
           name: r.name,
@@ -166,7 +173,8 @@ class GeminiAIService extends AIService {
         }
       }
 
-      return { text, toolCalls: newToolCalls };
+      // Return raw parts for potential further continuations
+      return { text, toolCalls: newToolCalls, _rawModelParts: parts };
     } catch (error) {
       console.error('❌ Gemini continuation error:', error.message);
       throw new Error('AI service temporarily unavailable');

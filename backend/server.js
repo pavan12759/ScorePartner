@@ -19,7 +19,13 @@ const io = new Server(server, {
   cors: {
     origin: process.env.SOCKET_CORS_ORIGINS
       ? process.env.SOCKET_CORS_ORIGINS.split(',').map(s => s.trim())
-      : ['http://localhost:5000', 'http://127.0.0.1:5000'],
+      : function (origin, callback) {
+          if (!origin) return callback(null, true);
+          if (origin.match(/^https?:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+)(:\d+)?$/)) {
+            return callback(null, true);
+          }
+          return callback(new Error('Not allowed by CORS'));
+        },
     methods: ['GET', 'POST', 'PUT', 'DELETE']
   }
 });
@@ -27,14 +33,34 @@ const io = new Server(server, {
 // Middleware
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  crossOriginOpenerPolicy: false,
+}));
 
-// CORS - restrict to frontend domains
-const allowedOrigins = process.env.FRONTEND_URL
-  ? process.env.FRONTEND_URL.split(',').map(s => s.trim())
-  : ['http://localhost:3000', 'http://localhost:5000', 'http://127.0.0.1:5000'];
+// CORS - allow frontend origins (Flutter web runs on various ports)
 app.use(cors({
-  origin: allowedOrigins,
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+
+    // In production, use FRONTEND_URL env var
+    if (process.env.FRONTEND_URL) {
+      const allowed = process.env.FRONTEND_URL.split(',').map(s => s.trim());
+      if (allowed.includes(origin)) return callback(null, true);
+      return callback(new Error('Not allowed by CORS'));
+    }
+
+    // In development, allow any localhost/127.0.0.1 origin (any port)
+    if (origin.match(/^https?:\/\/(localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?$/)) {
+      return callback(null, true);
+    }
+    // Allow local network IPs (192.168.x.x, 10.x.x.x)
+    if (origin.match(/^https?:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 

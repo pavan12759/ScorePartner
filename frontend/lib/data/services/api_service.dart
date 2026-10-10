@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -23,14 +23,23 @@ class ApiService {
   // For iOS simulator use: 'http://localhost:5000/api'
   // For real device use your computer's IP: 'http://192.168.x.x:5000/api'
 
+  static String? _workingBaseUrl;
+
   List<String> get _candidateBaseUrls {
-    final urls = <String>[];
+    // If we already found a working URL, use it
+    if (_workingBaseUrl != null) {
+      return [_workingBaseUrl!];
+    }
+
+    // On web (Chrome), only localhost works
+    if (kIsWeb) {
+      return ['http://localhost:5000/api'];
+    }
+
+    // On mobile devices, try localhost + emulator
+    final urls = <String>[_baseUrl];
     if (_baseUrl.contains('localhost')) {
-      urls.add(_baseUrl.replaceAll('localhost', '192.168.1.28'));
-      urls.add(_baseUrl);
-      urls.add(_baseUrl.replaceAll('localhost', '10.0.2.2'));
-    } else {
-      urls.add(_baseUrl);
+      urls.add(_baseUrl.replaceAll('localhost', '10.0.2.2'));  // Android emulator
     }
     return urls;
   }
@@ -89,31 +98,45 @@ class ApiService {
 
   /// GET request
   Future<Map<String, dynamic>> get(String endpoint) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$_baseUrl$endpoint'),
-        headers: _headers,
-      );
-      return _handleResponse(response);
-    } catch (e) {
-      debugPrint('❌ GET $endpoint error: $e');
-      throw ApiException('Network error: $e');
+    final headers = await _headersAsync;
+    Object? lastError;
+    for (final baseUrl in _candidateBaseUrls) {
+      try {
+        final response = await http.get(
+          Uri.parse('$baseUrl$endpoint'),
+          headers: headers,
+        ).timeout(const Duration(seconds: 8));
+        _workingBaseUrl = baseUrl;
+        return _handleResponse(response);
+      } catch (e) {
+        lastError = e;
+        debugPrint('⚠️ GET $baseUrl$endpoint error: $e');
+      }
     }
+    debugPrint('❌ GET $endpoint error: $lastError');
+    throw ApiException('Network error: $lastError');
   }
 
   /// POST request
   Future<Map<String, dynamic>> post(String endpoint, Map<String, dynamic> data) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl$endpoint'),
-        headers: _headers,
-        body: jsonEncode(data),
-      );
-      return _handleResponse(response);
-    } catch (e) {
-      debugPrint('❌ POST $endpoint error: $e');
-      throw ApiException('Network error: $e');
+    final headers = await _headersAsync;
+    Object? lastError;
+    for (final baseUrl in _candidateBaseUrls) {
+      try {
+        final response = await http.post(
+          Uri.parse('$baseUrl$endpoint'),
+          headers: headers,
+          body: jsonEncode(data),
+        ).timeout(const Duration(seconds: 8));
+        _workingBaseUrl = baseUrl;
+        return _handleResponse(response);
+      } catch (e) {
+        lastError = e;
+        debugPrint('⚠️ POST $baseUrl$endpoint error: $e');
+      }
     }
+    debugPrint('❌ POST $endpoint error: $lastError');
+    throw ApiException('Network error: $lastError');
   }
 
   /// PUT request
@@ -127,7 +150,8 @@ class ApiService {
           Uri.parse('$baseUrl$endpoint'),
           headers: headers,
           body: jsonEncode(data),
-        ).timeout(const Duration(seconds: 4));
+        ).timeout(const Duration(seconds: 8));
+        _workingBaseUrl = baseUrl;
         return _handleResponse(response);
       } catch (e) {
         lastError = e;
@@ -140,16 +164,23 @@ class ApiService {
 
   /// DELETE request
   Future<Map<String, dynamic>> delete(String endpoint) async {
-    try {
-      final response = await http.delete(
-        Uri.parse('$_baseUrl$endpoint'),
-        headers: _headers,
-      );
-      return _handleResponse(response);
-    } catch (e) {
-      debugPrint('❌ DELETE $endpoint error: $e');
-      throw ApiException('Network error: $e');
+    final headers = await _headersAsync;
+    Object? lastError;
+    for (final baseUrl in _candidateBaseUrls) {
+      try {
+        final response = await http.delete(
+          Uri.parse('$baseUrl$endpoint'),
+          headers: headers,
+        ).timeout(const Duration(seconds: 8));
+        _workingBaseUrl = baseUrl;
+        return _handleResponse(response);
+      } catch (e) {
+        lastError = e;
+        debugPrint('⚠️ DELETE $baseUrl$endpoint error: $e');
+      }
     }
+    debugPrint('❌ DELETE $endpoint error: $lastError');
+    throw ApiException('Network error: $lastError');
   }
 
   /// Handle HTTP response

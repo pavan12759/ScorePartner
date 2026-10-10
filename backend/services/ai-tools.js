@@ -114,6 +114,16 @@ const toolDefinitions = [
     },
   },
   {
+    name: 'getUserPlayedMatches',
+    description: 'Get matches where the authenticated user played. Use when user asks about "my played matches".',
+    parameters: {
+      type: 'object',
+      properties: {
+        limit: { type: 'number', description: 'Max results (default 10)' },
+      },
+    },
+  },
+  {
     name: 'getUserTeams',
     description: 'Get teams where the authenticated user is a member. Use when user asks about "my teams".',
     parameters: {
@@ -426,6 +436,26 @@ async function executeTool(toolName, args, userId) {
         .get();
 
       const matches = snapshot.docs.map(doc => sanitizeMatch({ id: doc.id, ...doc.data() }));
+      return { found: matches.length, matches };
+    }
+
+    case 'getUserPlayedMatches': {
+      if (!userId) return { error: 'Authentication required to view your played matches' };
+
+      const [snap1, snap2] = await Promise.all([
+        db.collection('matches').where('player1Id', '==', userId).orderBy('matchDate', 'desc').limit(limit).get(),
+        db.collection('matches').where('player2Id', '==', userId).orderBy('matchDate', 'desc').limit(limit).get(),
+      ]);
+
+      const allMatches = [... snap1.docs, ... snap2.docs];
+      const seen = new Set();
+      const matches = allMatches.filter(doc => {
+        const id = doc.id;
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      }).map(doc => sanitizeMatch({ id: doc.id, ...doc.data() }));
+
       return { found: matches.length, matches };
     }
 
