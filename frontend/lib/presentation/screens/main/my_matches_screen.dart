@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import '../../../../data/models/match_model.dart';
 import '../../../../data/models/team_model.dart';
 import '../../../../data/services/firebase_data_service.dart';
@@ -27,6 +28,25 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
   List<TeamModel> _teams = [];
   String? _currentUserId;
   String? _currentUserSpPId;
+  final Map<String, TeamModel?> _teamCache = {};
+
+  Future<TeamModel?> _getTeam(String teamId) async {
+    if (teamId.isEmpty) return null;
+    if (_teamCache.containsKey(teamId)) return _teamCache[teamId];
+    for (final t in _teams) {
+      if (t.id == teamId) {
+        _teamCache[teamId] = t;
+        return t;
+      }
+    }
+    try {
+      final team = await FirebaseDataService.instance.getTeamById(teamId);
+      _teamCache[teamId] = team;
+      return team;
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   void initState() {
@@ -713,38 +733,54 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
   }
 
   Widget _buildMatchCard(MatchModel match) {
-    Color statusColor;
-    String statusText;
-
-    switch (match.status) {
-      case 'live':
-      case 'ongoing':
-        statusColor = AppTheme.primaryOrange;
-        statusText = 'LIVE';
-        break;
-      case 'scheduled':
-      case 'upcoming':
-        statusColor = Colors.blue;
-        statusText = 'UPCOMING';
-        break;
-      default:
-        statusColor = Colors.grey;
-        statusText = 'COMPLETED';
-    }
+    final th = ThemeHelper.of(context);
+    final userId = _currentUserId;
+    final bool isCreator = match.createdBy == userId || match.adminIds.contains(userId);
     
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    bool isCreator = match.createdBy == userId;
+    final statusLower = match.status.toLowerCase();
+    final bool isLive = statusLower == 'live' || statusLower == 'ongoing';
+    final bool isUpcoming = statusLower == 'scheduled' || statusLower == 'upcoming';
+    final bool isCompleted = !isLive && !isUpcoming;
+
+    Color statusColor;
+    Color statusBgColor;
+    String statusText;
+    IconData statusIcon;
+
+    if (isLive) {
+      statusColor = const Color(0xFFE53935);
+      statusBgColor = const Color(0xFFE53935).withOpacity(0.12);
+      statusText = 'LIVE';
+      statusIcon = Icons.fiber_manual_record;
+    } else if (isUpcoming) {
+      statusColor = const Color(0xFF1E88E5);
+      statusBgColor = const Color(0xFF1E88E5).withOpacity(0.12);
+      statusText = 'UPCOMING';
+      statusIcon = Icons.schedule_rounded;
+    } else {
+      statusColor = const Color(0xFF2E7D32);
+      statusBgColor = const Color(0xFF2E7D32).withOpacity(0.12);
+      statusText = 'COMPLETED';
+      statusIcon = Icons.check_circle_outline_rounded;
+    }
+
+    final isTeam1Batting = isLive && (match.currentBattingTeam == 'team1' || match.currentBattingTeam == match.team1Id || match.currentBattingTeam == match.team1Name);
+    final isTeam2Batting = isLive && (match.currentBattingTeam == 'team2' || match.currentBattingTeam == match.team2Id || match.currentBattingTeam == match.team2Name);
 
     return Container(
-      margin: EdgeInsets.only(bottom: 12.h),
+      margin: EdgeInsets.only(bottom: 14.h),
       decoration: BoxDecoration(
-        color: ThemeHelper.of(context).cardBg,
-        borderRadius: BorderRadius.circular(16.r),
+        color: th.cardBg,
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(
+          color: th.isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, 4),
+            color: th.isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -752,50 +788,96 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-             Navigator.push(context, MaterialPageRoute(builder: (_) => MatchDetailScreen(matchId: match.id)));
+            Navigator.push(
+              context, 
+              MaterialPageRoute(builder: (_) => MatchDetailScreen(matchId: match.id)),
+            ).then((_) => _fetchData());
           },
-          borderRadius: BorderRadius.circular(16.r),
+          borderRadius: BorderRadius.circular(18.r),
           child: Padding(
             padding: EdgeInsets.all(16.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // 1. Header: Status badge, Format, Admin badge
                 Row(
                   children: [
+                    // Status Pill
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                       decoration: BoxDecoration(
-                        color: statusColor,
-                        borderRadius: BorderRadius.circular(12.r),
+                        color: statusBgColor,
+                        borderRadius: BorderRadius.circular(100.r),
+                        border: Border.all(color: statusColor.withOpacity(0.3), width: 1),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isLive) ...[
+                            Container(
+                              width: 7.w,
+                              height: 7.h,
+                              decoration: BoxDecoration(
+                                color: statusColor,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            SizedBox(width: 5.w),
+                          ] else ...[
+                            Icon(statusIcon, size: 12.sp, color: statusColor),
+                            SizedBox(width: 4.w),
+                          ],
+                          Text(
+                            statusText,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                    // Format badge (T20 / 20 Ov)
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                      decoration: BoxDecoration(
+                        color: th.dividerColor.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(100.r),
                       ),
                       child: Text(
-                        statusText,
+                        match.oversPerSide > 0 
+                            ? '${match.matchFormat.isNotEmpty ? match.matchFormat : "Match"} • ${match.oversPerSide} Ov'
+                            : (match.matchFormat.isNotEmpty ? match.matchFormat : 'Match'),
                         style: TextStyle(
-                          color: ThemeHelper.of(context).cardBg,
                           fontSize: 10.sp,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
+                          color: th.textSecondary,
                         ),
                       ),
                     ),
                     const Spacer(),
-                    // Creator badge
+                    // Admin badge
                     if (isCreator)
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryOrange.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12.r),
+                          color: AppTheme.primaryOrange.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8.r),
+                          border: Border.all(color: AppTheme.primaryOrange.withOpacity(0.25)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.admin_panel_settings, size: 12.sp, color: AppTheme.primaryOrange),
-                            SizedBox(width: 4.w),
+                            SizedBox(width: 3.w),
                             Text(
                               'Admin',
                               style: TextStyle(
                                 fontSize: 10.sp,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                                 color: AppTheme.primaryOrange,
                               ),
                             ),
@@ -805,166 +887,134 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
                   ],
                 ),
                 SizedBox(height: 12.h),
-                Text(
-                  match.matchName,
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w500,
-                    color: ThemeHelper.of(context).textSecondary,
+
+                // 2. Teams & Scores Card Container
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+                  decoration: BoxDecoration(
+                    color: th.dividerColor.withOpacity(0.35),
+                    borderRadius: BorderRadius.circular(14.r),
+                  ),
+                  child: Column(
+                    children: [
+                      // Team 1 Row
+                      _buildMatchTeamScoreRow(
+                        teamId: match.team1Id,
+                        teamName: match.team1Name,
+                        score: match.team1Score,
+                        isBatting: isTeam1Batting,
+                        isUpcoming: isUpcoming,
+                        isWinner: isCompleted && (match.winnerTeam == match.team1Name || match.winnerTeamId == match.team1Id),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8.h),
+                        child: Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: th.dividerColor.withOpacity(0.6),
+                        ),
+                      ),
+                      // Team 2 Row
+                      _buildMatchTeamScoreRow(
+                        teamId: match.team2Id,
+                        teamName: match.team2Name,
+                        score: match.team2Score,
+                        isBatting: isTeam2Batting,
+                        isUpcoming: isUpcoming,
+                        isWinner: isCompleted && (match.winnerTeam == match.team2Name || match.winnerTeamId == match.team2Id),
+                      ),
+                    ],
                   ),
                 ),
                 SizedBox(height: 8.h),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                     Expanded(child: Text(match.team1Name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp))),
-                     Text('vs', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontWeight: FontWeight.bold)),
-                     Expanded(child: Text(match.team2Name, textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp))),
-                  ],
-                ),
-                 SizedBox(height: 8.h),
-                 if (match.status != 'scheduled' && match.status != 'upcoming')
-                   Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                         Text('${match.team1Score.runs}/${match.team1Score.wickets} (${match.team1Score.overs})', style: TextStyle(fontWeight: FontWeight.w600)),
-                         Text('${match.team2Score.runs}/${match.team2Score.wickets} (${match.team2Score.overs})', style: TextStyle(fontWeight: FontWeight.w600)),
-                      ],
-                   ),
-                 
-                 SizedBox(height: 12.h),
-                 Row(
-                   children: [
-                     _buildInfoChip(Icons.location_on_outlined, match.location),
-                     SizedBox(width: 16.w),
-                     _buildInfoChip(Icons.calendar_today_outlined, '${match.scheduledDate.day}/${match.scheduledDate.month}'),
-                   ],
-                 ),
-               ],
-             ),
-           ),
-         ),
-       ),
-     );
-  }
 
-  Widget _buildTournamentCard(TournamentModel tournament) {
-    Color statusColor;
-    String statusText;
+                // 3. Equation / Result Banner Strip
+                _buildMatchEquationStrip(match, isLive, isUpcoming, isCompleted),
+                SizedBox(height: 8.h),
 
-    switch (tournament.effectiveStatus) {
-      case 'ongoing':
-        statusColor = const Color(0xFF4CAF50);
-        statusText = 'ONGOING';
-        break;
-      case 'upcoming':
-        statusColor = const Color(0xFF00BFFF);
-        statusText = 'UPCOMING';
-        break;
-      default:
-        statusColor = Colors.grey;
-        statusText = 'COMPLETED';
-    }
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 12.h),
-      decoration: BoxDecoration(
-        color: ThemeHelper.of(context).cardBg,
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => TournamentDetailsScreen(tournament: tournament)));
-          },
-          borderRadius: BorderRadius.circular(16.r),
-          child: Padding(
-            padding: EdgeInsets.all(16.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 50.w,
-                      height: 50.h,
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.primaryGradient,
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                      child: Icon(Icons.emoji_events, color: ThemeHelper.of(context).cardBg, size: 24.sp),
-                    ),
-                    SizedBox(width: 16.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  tournament.name,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold, 
-                                    fontSize: 16.sp,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                                decoration: BoxDecoration(
-                                  color: statusColor,
-                                  borderRadius: BorderRadius.circular(12.r),
-                                ),
-                                child: Text(
-                                  statusText,
-                                  style: TextStyle(
-                                    color: ThemeHelper.of(context).cardBg,
-                                    fontSize: 10.sp,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
+                // 4. Downside: Tournament Name (prominent and fully visible)
+                if (match.tournamentName != null && match.tournamentName!.trim().isNotEmpty) ...[
+                  Row(
+                    children: [
+                      Icon(Icons.emoji_events, size: 13.sp, color: Colors.amber[700]),
+                      SizedBox(width: 4.w),
+                      Expanded(
+                        child: Text(
+                          (match.matchName.isNotEmpty && match.matchName != '${match.team1Name} vs ${match.team2Name}')
+                              ? '${match.tournamentName!.trim()} • ${match.matchName}'
+                              : match.tournamentName!.trim(),
+                          style: TextStyle(
+                            fontSize: 11.5.sp,
+                            fontWeight: FontWeight.w700,
+                            color: th.isDark ? Colors.amber[300] : const Color(0xFFD97706),
                           ),
-                          SizedBox(height: 8.h),
-                          Row(
-                            children: [
-                              Icon(Icons.location_on_outlined, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
-                              SizedBox(width: 4.w),
-                              Expanded(
-                                child: Text(
-                                  tournament.location,
-                                  style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 5.h),
+                ] else if (match.matchName.isNotEmpty && match.matchName != '${match.team1Name} vs ${match.team2Name}') ...[
+                  Row(
+                    children: [
+                      Icon(Icons.sports_cricket, size: 12.sp, color: th.textSecondary),
+                      SizedBox(width: 4.w),
+                      Expanded(
+                        child: Text(
+                          match.matchName,
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w600,
+                            color: th.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 5.h),
+                ],
+
+                // 5. Footer: Venue & Date & Arrow
+                Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Icon(Icons.location_on_outlined, size: 14.sp, color: th.textSecondary),
+                          SizedBox(width: 4.w),
+                          Expanded(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                match.ground.isNotEmpty 
+                                    ? (match.location.isNotEmpty ? '${match.ground}, ${match.location}' : match.ground)
+                                    : (match.location.isNotEmpty ? match.location : 'Cricket Ground'),
+                                style: TextStyle(fontSize: 12.sp, color: th.textSecondary),
+                                maxLines: 1,
                               ),
-                            ],
+                            ),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-                SizedBox(height: 12.h),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildInfoChip(Icons.calendar_today_outlined, '${tournament.startDate.day}/${tournament.startDate.month}'),
-                    _buildInfoChip(Icons.groups_outlined, '${tournament.registeredTeamsCount}/${tournament.maxTeams} Teams'),
-                    _buildInfoChip(Icons.sports_cricket_outlined, '${tournament.overs} Overs'),
+                    SizedBox(width: 8.w),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.calendar_today_outlined, size: 13.sp, color: th.textSecondary),
+                        SizedBox(width: 4.w),
+                        Text(
+                          DateFormat('d MMM').format(match.scheduledDate),
+                          style: TextStyle(fontSize: 12.sp, color: th.textSecondary, fontWeight: FontWeight.w500),
+                        ),
+                        SizedBox(width: 8.w),
+                        Icon(Icons.arrow_forward_ios_rounded, size: 12.sp, color: th.textSecondary.withOpacity(0.7)),
+                      ],
+                    ),
                   ],
                 ),
               ],
@@ -975,17 +1025,694 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
     );
   }
 
-  Widget _buildInfoChip(IconData icon, String text) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
-        SizedBox(width: 4.w),
-        Text(
-          text,
-          style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp),
+  Widget _buildMatchTeamScoreRow({
+    required String teamId,
+    required String teamName,
+    required TeamScore score,
+    required bool isBatting,
+    required bool isUpcoming,
+    required bool isWinner,
+  }) {
+    final th = ThemeHelper.of(context);
+    return FutureBuilder<TeamModel?>(
+      future: _getTeam(teamId),
+      builder: (context, snapshot) {
+        final team = snapshot.data;
+        final hasProfile = team != null;
+        final logoUrl = team?.logoUrl;
+
+        void navigateToTeamProfile() {
+          if (team != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => TeamDetailsScreen(team: team)),
+            ).then((_) => _fetchData());
+          }
+        }
+
+        return Row(
+          children: [
+            // Team Logo / Profile Picture
+            GestureDetector(
+              onTap: hasProfile ? navigateToTeamProfile : null,
+              child: TeamLogoWidget(
+                teamName: teamName,
+                logoUrl: logoUrl,
+                size: 34.sp,
+              ),
+            ),
+            SizedBox(width: 10.w),
+            // Team Name & Badges
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: hasProfile ? navigateToTeamProfile : null,
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          teamName,
+                          style: TextStyle(
+                            fontSize: 15.sp,
+                            fontWeight: isWinner || isBatting ? FontWeight.w800 : FontWeight.w600,
+                            color: isWinner ? (th.isDark ? Colors.amberAccent : AppTheme.primaryOrange) : th.textPrimary,
+                          ),
+                          maxLines: 1,
+                        ),
+                      ),
+                    ),
+                    if (isWinner) ...[
+                      SizedBox(width: 4.w),
+                      Icon(Icons.emoji_events, size: 14.sp, color: Colors.amber),
+                    ],
+                    if (isBatting) ...[
+                      SizedBox(width: 6.w),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryOrange.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(6.r),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.sports_cricket, size: 11.sp, color: AppTheme.primaryOrange),
+                            SizedBox(width: 3.w),
+                            Text(
+                              'Batting',
+                              style: TextStyle(
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.primaryOrange,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(width: 8.w),
+            // Score Display
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: isUpcoming
+                  ? Text(
+                      '-',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                        color: th.textSecondary,
+                      ),
+                    )
+                  : (!isBatting && score.runs == 0 && score.wickets == 0 && score.overs == 0.0)
+                      ? Text(
+                          'Yet to bat',
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w600,
+                            fontStyle: FontStyle.italic,
+                            color: th.textSecondary.withOpacity(0.85),
+                          ),
+                        )
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              '${score.runs}/${score.wickets}',
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w800,
+                                color: isWinner ? (th.isDark ? Colors.amberAccent : AppTheme.primaryOrange) : th.textPrimary,
+                              ),
+                            ),
+                            SizedBox(width: 5.w),
+                            Text(
+                              '(${score.overs} ov)',
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.w500,
+                                color: th.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildMatchEquationStrip(MatchModel match, bool isLive, bool isUpcoming, bool isCompleted) {
+    String message;
+    IconData icon;
+    Color color;
+
+    if (isLive) {
+      color = AppTheme.primaryOrange;
+      if (match.currentInnings == 2 && match.target != null && match.target! > 0) {
+        final runsReq = match.runsRequired;
+        final ballsRem = match.ballsRemaining;
+        if (runsReq <= 0) {
+          message = 'Scores level! Need 1 run to win';
+        } else if (ballsRem > 0) {
+          message = 'Need $runsReq off $ballsRem balls (Target: ${match.target})';
+        } else {
+          message = 'Target: ${match.target} • Match in balance';
+        }
+      } else if (match.currentRunRate > 0) {
+        message = 'CRR: ${match.currentRunRate.toStringAsFixed(2)} • 1st Innings ongoing';
+      } else {
+        message = 'Match in progress';
+      }
+      icon = Icons.sports_cricket_outlined;
+    } else if (isCompleted) {
+      color = const Color(0xFF2E7D32);
+      final winner = match.winnerTeam;
+      final margin = match.winningMargin;
+      if (winner == 'Match Tied') {
+        message = 'Match Tied';
+      } else if (winner != null && winner.isNotEmpty) {
+        message = margin.isNotEmpty ? '$winner won by $margin' : '$winner won';
+      } else if (match.result != null && match.result!.winner.isNotEmpty) {
+        message = match.result!.margin.isNotEmpty 
+            ? '${match.result!.winner} won by ${match.result!.margin}' 
+            : '${match.result!.winner} won';
+      } else {
+        message = 'Match Completed';
+      }
+      icon = Icons.emoji_events_rounded;
+    } else {
+      color = const Color(0xFF1976D2);
+      message = 'Scheduled • ${DateFormat('EEE, d MMM, h:mm a').format(match.scheduledDate)}';
+      icon = Icons.event_available_outlined;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 14.sp, color: color),
+          SizedBox(width: 6.w),
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                message,
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+                maxLines: 1,
+              ),
+            ),
+          ),
+          if (isCompleted && match.result?.manOfMatch != null && match.result!.manOfMatch.isNotEmpty) ...[
+            SizedBox(width: 4.w),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+              decoration: BoxDecoration(
+                color: Colors.amber.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(4.r),
+              ),
+              child: Text(
+                'POTM: ${match.result!.manOfMatch}',
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.amber[800],
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTournamentCard(TournamentModel tournament) {
+    final th = ThemeHelper.of(context);
+    final userId = _currentUserId;
+    final bool isOrganizer = tournament.organizerId == userId || tournament.adminIds.contains(userId);
+
+    Color statusColor;
+    Color statusBgColor;
+    String statusText;
+    IconData statusIcon;
+
+    switch (tournament.effectiveStatus.toLowerCase()) {
+      case 'ongoing':
+        statusColor = const Color(0xFF2E7D32);
+        statusBgColor = const Color(0xFF2E7D32).withOpacity(0.12);
+        statusText = 'ONGOING';
+        statusIcon = Icons.fiber_manual_record;
+        break;
+      case 'upcoming':
+        statusColor = const Color(0xFF0288D1);
+        statusBgColor = const Color(0xFF0288D1).withOpacity(0.12);
+        statusText = 'UPCOMING';
+        statusIcon = Icons.schedule_rounded;
+        break;
+      default:
+        statusColor = Colors.grey[700]!;
+        statusBgColor = Colors.grey.withOpacity(0.12);
+        statusText = 'COMPLETED';
+        statusIcon = Icons.check_circle_outline_rounded;
+    }
+
+    final double fillPercent = tournament.maxTeams > 0
+        ? (tournament.registeredTeamsCount / tournament.maxTeams).clamp(0.0, 1.0)
+        : 0.0;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 14.h),
+      decoration: BoxDecoration(
+        color: th.cardBg,
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(
+          color: th.isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+          width: 1,
         ),
-      ],
+        boxShadow: [
+          BoxShadow(
+            color: th.isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context, 
+              MaterialPageRoute(builder: (_) => TournamentDetailsScreen(tournament: tournament)),
+            ).then((_) => _fetchData());
+          },
+          borderRadius: BorderRadius.circular(18.r),
+          child: Padding(
+            padding: EdgeInsets.all(16.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Header Row
+                Row(
+                  children: [
+                    // Status Pill
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                      decoration: BoxDecoration(
+                        color: statusBgColor,
+                        borderRadius: BorderRadius.circular(100.r),
+                        border: Border.all(color: statusColor.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (tournament.effectiveStatus.toLowerCase() == 'ongoing') ...[
+                            Container(
+                              width: 7.w,
+                              height: 7.h,
+                              decoration: BoxDecoration(
+                                color: statusColor,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            SizedBox(width: 5.w),
+                          ] else ...[
+                            Icon(statusIcon, size: 12.sp, color: statusColor),
+                            SizedBox(width: 4.w),
+                          ],
+                          Text(
+                            statusText,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                    // Ball type badge
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                      decoration: BoxDecoration(
+                        color: th.dividerColor.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(100.r),
+                      ),
+                      child: Text(
+                        tournament.ballType.toLowerCase() == 'leather' ? '🏏 Leather' : '🎾 Tennis',
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w600,
+                          color: th.textSecondary,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 6.w),
+                    // Format badge
+                    Flexible(
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                        decoration: BoxDecoration(
+                          color: th.dividerColor.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(100.r),
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            '${tournament.overs} Ov • ${tournament.format.toUpperCase()}',
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w600,
+                              color: th.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    // Organizer badge
+                    if (isOrganizer)
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryOrange.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8.r),
+                          border: Border.all(color: AppTheme.primaryOrange.withOpacity(0.25)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.shield_outlined, size: 12.sp, color: AppTheme.primaryOrange),
+                            SizedBox(width: 3.w),
+                            Text(
+                              'Organizer',
+                              style: TextStyle(
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.primaryOrange,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                SizedBox(height: 14.h),
+
+                // 2. Identity Row: Trophy Logo + Name + Organizer + Location
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Trophy / Logo Emblem
+                    Container(
+                      width: 52.w,
+                      height: 52.h,
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.primaryGradient,
+                        borderRadius: BorderRadius.circular(14.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryOrange.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.emoji_events_rounded,
+                        color: Colors.white,
+                        size: 28.sp,
+                      ),
+                    ),
+                    SizedBox(width: 14.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              tournament.name,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16.sp,
+                                color: th.textPrimary,
+                                letterSpacing: -0.2,
+                              ),
+                              maxLines: 1,
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          Row(
+                            children: [
+                              Icon(Icons.person_outline, size: 13.sp, color: th.textSecondary),
+                              SizedBox(width: 4.w),
+                              Expanded(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    'By ${tournament.organizerName.isNotEmpty ? tournament.organizerName : "ScorePartner"}',
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      color: th.textSecondary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 3.h),
+                          Row(
+                            children: [
+                              Icon(Icons.location_on_outlined, size: 13.sp, color: th.textSecondary),
+                              SizedBox(width: 4.w),
+                              Expanded(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    tournament.location.isNotEmpty ? tournament.location : 'Cricket Venue',
+                                    style: TextStyle(fontSize: 12.sp, color: th.textSecondary),
+                                    maxLines: 1,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 14.h),
+
+                // 3. Stats & Fill Progress Strip
+                Container(
+                  padding: EdgeInsets.all(12.w),
+                  decoration: BoxDecoration(
+                    color: th.dividerColor.withOpacity(0.35),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Dates
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.calendar_month_outlined, size: 14.sp, color: th.textSecondary),
+                                  SizedBox(width: 4.w),
+                                  Text(
+                                    '${DateFormat('d MMM').format(tournament.startDate)} - ${DateFormat('d MMM').format(tournament.endDate)}',
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: th.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 6.w),
+                          // Teams Slot Count
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerRight,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.groups_outlined, size: 15.sp, color: AppTheme.primaryOrange),
+                                  SizedBox(width: 4.w),
+                                  Text(
+                                    '${tournament.registeredTeamsCount}/${tournament.maxTeams} Teams',
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: th.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 8.h),
+                      // Mini Progress Bar
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4.r),
+                        child: LinearProgressIndicator(
+                          value: fillPercent,
+                          minHeight: 5.h,
+                          backgroundColor: th.dividerColor,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            fillPercent >= 1.0 ? Colors.green : AppTheme.primaryOrange,
+                          ),
+                        ),
+                      ),
+                      if (tournament.prizePool > 0 || tournament.entryFee > 0) ...[
+                        SizedBox(height: 8.h),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            if (tournament.prizePool > 0)
+                              Flexible(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.military_tech_outlined, size: 14.sp, color: Colors.amber[700]),
+                                      SizedBox(width: 3.w),
+                                      Text(
+                                        'Prize Pool: ₹${tournament.prizePool.toStringAsFixed(0)}',
+                                        style: TextStyle(
+                                          fontSize: 11.sp,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.amber[800],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            else
+                              const SizedBox.shrink(),
+                            SizedBox(width: 6.w),
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  tournament.entryFee > 0 
+                                      ? 'Entry: ₹${tournament.entryFee.toStringAsFixed(0)}' 
+                                      : 'Free Entry',
+                                  style: TextStyle(
+                                    fontSize: 11.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: tournament.entryFee > 0 ? th.textSecondary : Colors.green,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                SizedBox(height: 10.h),
+
+                // 4. Footer
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.visibility_outlined, size: 14.sp, color: th.textSecondary),
+                            SizedBox(width: 4.w),
+                            Text(
+                              '${tournament.views} views',
+                              style: TextStyle(fontSize: 11.sp, color: th.textSecondary),
+                            ),
+                            if (tournament.matchIds.isNotEmpty) ...[
+                              SizedBox(width: 8.w),
+                              Text('•', style: TextStyle(color: th.textSecondary, fontSize: 11.sp)),
+                              SizedBox(width: 8.w),
+                              Text(
+                                '${tournament.matchIds.length} matches',
+                                style: TextStyle(fontSize: 11.sp, color: th.textSecondary),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'View Tournament',
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryOrange,
+                          ),
+                        ),
+                        SizedBox(width: 4.w),
+                        Icon(Icons.arrow_forward_rounded, size: 14.sp, color: AppTheme.primaryOrange),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1007,7 +1734,7 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
               width: 40.w,
               height: 4.h,
               decoration: BoxDecoration(
-                color: ThemeHelper.of(context).dividerColor!,
+                color: ThemeHelper.of(context).dividerColor,
                 borderRadius: BorderRadius.circular(2.r),
               ),
             ),

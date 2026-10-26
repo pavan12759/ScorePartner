@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 /// Real-time viewer tracking for live matches.
 ///
@@ -55,30 +56,33 @@ class ViewerService {
         return;
       }
 
-      // Atomic: create viewer doc + update counters
-      await _db.runTransaction((tx) async {
-        final matchSnap = await tx.get(matchRef);
-        final data = matchSnap.data() ?? {};
+      // Atomic batch: create viewer doc + update counters
+      final matchSnap = await matchRef.get();
+      final data = matchSnap.data() ?? {};
 
-        final currentLive = (data['liveViewers'] as num? ?? 0).toInt();
-        final currentPeak = (data['peakViewers'] as num? ?? 0).toInt();
-        final newLive = currentLive + 1;
-        final newPeak = newLive > currentPeak ? newLive : currentPeak;
+      final currentLive = (data['liveViewers'] as num? ?? 0).toInt();
+      final currentPeak = (data['peakViewers'] as num? ?? 0).toInt();
+      final newLive = currentLive + 1;
+      final newPeak = newLive > currentPeak ? newLive : currentPeak;
 
-        tx.set(viewerRef, {
-          'joinedAt': FieldValue.serverTimestamp(),
-          'lastSeen': FieldValue.serverTimestamp(),
-        });
-
-        tx.update(matchRef, {
-          'liveViewers': newLive,
-          'peakViewers': newPeak,
-          'totalViews': FieldValue.increment(1),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+      final batch = _db.batch();
+      batch.set(viewerRef, {
+        'joinedAt': FieldValue.serverTimestamp(),
+        'lastSeen': FieldValue.serverTimestamp(),
       });
 
+      batch.update(matchRef, {
+        'liveViewers': FieldValue.increment(1),
+        'peakViewers': newPeak,
+        'totalViews': FieldValue.increment(1),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      await batch.commit();
+
       debugPrint('👁️ Viewer joined match $matchId');
+    } on MissingPluginException {
+      // Ignored: happens during hot reload or platform detach
     } catch (e) {
       debugPrint('❌ Error joining match viewers: $e');
     }
@@ -96,22 +100,25 @@ class ViewerService {
       final existing = await viewerRef.get();
       if (!existing.exists) return;
 
-      await _db.runTransaction((tx) async {
-        final matchSnap = await tx.get(matchRef);
-        final data = matchSnap.data() ?? {};
+      final matchSnap = await matchRef.get();
+      final data = matchSnap.data() ?? {};
+      final currentLive = (data['liveViewers'] as num? ?? 0).toInt();
 
-        final currentLive = (data['liveViewers'] as num? ?? 0).toInt();
-        final newLive = currentLive > 0 ? currentLive - 1 : 0;
+      final batch = _db.batch();
+      batch.delete(viewerRef);
 
-        tx.delete(viewerRef);
-
-        tx.update(matchRef, {
-          'liveViewers': newLive,
+      if (currentLive > 0) {
+        batch.update(matchRef, {
+          'liveViewers': FieldValue.increment(-1),
           'updatedAt': FieldValue.serverTimestamp(),
         });
-      });
+      }
+
+      await batch.commit();
 
       debugPrint('👁️ Viewer left match $matchId');
+    } on MissingPluginException {
+      // Ignored: happens during hot reload or platform detach
     } catch (e) {
       debugPrint('❌ Error leaving match viewers: $e');
     }

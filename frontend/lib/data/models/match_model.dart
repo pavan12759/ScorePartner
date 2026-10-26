@@ -202,13 +202,20 @@ class MatchModel {
     return null;
   }
   
-  // Helper getters for 2nd innings calculations
-  int get runsRequired => target != null && currentInnings == 2 
-      ? (target! - (currentBattingTeam == 'team1' ? team1Score.runs : team2Score.runs))
-      : 0;
+  // Helper: whether this is a chase innings
+  bool get _isChaseInnings =>
+      matchFormat == 'Test' ? currentInnings == 4 : (currentInnings == 2 || currentInnings == 4);
+
+  // Helper getters for chase innings calculations
+  int get runsRequired {
+    if (target == null || !_isChaseInnings) return 0;
+    final runs = (currentBattingTeam == 'team1' ? team1Score.runs : team2Score.runs);
+    final needed = target! - runs;
+    return needed > 0 ? needed : 0;
+  }
   
   int get ballsRemaining {
-    if (currentInnings != 2) return 0;
+    if (!_isChaseInnings) return 0;
     if (isUnlimitedOvers) return 0; // No balls remaining concept in Test
     final currentScore = currentBattingTeam == 'team1' ? team1Score : team2Score;
     final totalBalls = oversPerSide * 6;
@@ -218,7 +225,7 @@ class MatchModel {
   }
   
   double get requiredRunRate {
-    if (currentInnings != 2 || ballsRemaining <= 0) return 0.0;
+    if (!_isChaseInnings || ballsRemaining <= 0) return 0.0;
     return (runsRequired / ballsRemaining) * 6;
   }
   
@@ -227,6 +234,38 @@ class MatchModel {
     final ballsBowled = _scoreOversToBalls(currentScore.overs);
     if (ballsBowled <= 0) return 0.0;
     return currentScore.runs / (ballsBowled / 6.0);
+  }
+
+  /// Get total runs scored by a team across all innings
+  int getTeamTotalRuns(String team) {
+    if (matchFormat != 'Test') {
+      return team == 'team1' ? team1Score.runs : team2Score.runs;
+    }
+    if (team == 'team1') {
+      final inn1 = team1FirstInningsScore?.runs ?? (currentInnings <= 2 && currentBattingTeam == 'team1' ? team1Score.runs : 0);
+      final inn2 = currentInnings >= 3 ? team1Score.runs : 0;
+      return inn1 + inn2;
+    } else {
+      final inn1 = team2FirstInningsScore?.runs ?? (currentInnings <= 2 && currentBattingTeam == 'team2' ? team2Score.runs : 0);
+      final inn2 = currentInnings >= 3 ? team2Score.runs : 0;
+      return inn1 + inn2;
+    }
+  }
+
+  /// Whether follow-on can be enforced in a Test match (deficit >= 200 after innings 2)
+  bool get canEnforceFollowOn {
+    if (matchFormat != 'Test' || currentInnings != 2) return false;
+    final t1Inn1 = team1FirstInningsScore?.runs ?? (currentBattingTeam == 'team1' ? team1Score.runs : 0);
+    final t2Inn1 = team2FirstInningsScore?.runs ?? (currentBattingTeam == 'team2' ? team2Score.runs : 0);
+    // If team1 batted in inn 1 and team2 is batting in inn 2
+    if (team1FirstInningsScore != null) {
+      return (t1Inn1 - t2Inn1) >= 200;
+    }
+    // If team2 batted in inn 1 and team1 is batting in inn 2
+    if (team2FirstInningsScore != null) {
+      return (t2Inn1 - t1Inn1) >= 200;
+    }
+    return false;
   }
 
   /// Recalculates the entire match state from the ball-by-ball history.

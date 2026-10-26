@@ -1,8 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../data/models/match_model.dart';
-import '../../../../data/models/user_model.dart';
 import '../../../../data/services/firebase_data_service.dart';
+import '../../../../data/services/player_search_service.dart';
 
 class ManageAccessDialog extends StatefulWidget {
   final MatchModel match;
@@ -24,19 +24,12 @@ class _ManageAccessDialogState extends State<ManageAccessDialog> {
       return;
     }
     
-    // STRICT: SPP ID ONLY
-    if (!query.toUpperCase().startsWith('SPP')) {
-       if (mounted) setState(() => _searchResults = []);
-       return;
-    }
-
     if (mounted) setState(() => _isSearching = true);
     try {
-      final user = await _dataService.getUserBySppId(query.toUpperCase());
-      
+      final result = await PlayerSearchService.instance.searchPlayer(query);
       if (mounted) {
         setState(() {
-          _searchResults = user != null ? [user] : [];
+          _searchResults = (result.isSuccess && result.player != null) ? [result.player!] : [];
         });
       }
     } catch (e) {

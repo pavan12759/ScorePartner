@@ -431,6 +431,18 @@ class ApiService {
   Future<Map<String, dynamic>> lookupUserBySppId(String sppId) async {
     return get('/users/sppid/$sppId');
   }
+
+  /// Lookup user by verified mobile number
+  Future<Map<String, dynamic>> lookupUserByPhone(String phoneNumber) async {
+    final encoded = Uri.encodeComponent(phoneNumber);
+    return get('/users/phone/$encoded');
+  }
+
+  /// Unified player lookup by SPP ID or mobile number
+  Future<Map<String, dynamic>> lookupPlayer(String query) async {
+    final encoded = Uri.encodeComponent(query);
+    return get('/users/lookup?q=$encoded');
+  }
 }
 
 /// API Exception class

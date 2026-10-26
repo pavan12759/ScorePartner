@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/services/firebase_data_service.dart';
 import '../../data/models/user_model.dart';
+import '../../data/services/player_search_service.dart';
 import 'dart:convert';
 
 /// Dialog for managing tournament co-admins
@@ -63,7 +64,8 @@ class _ManageAdminsDialogState extends State<ManageAdminsDialog> {
   }
 
   Future<void> _searchUsers(String query) async {
-    if (query.length < 3) {
+    final trimmed = query.trim();
+    if (trimmed.length < 3) {
       setState(() => _searchResults = []);
       return;
     }
@@ -71,21 +73,19 @@ class _ManageAdminsDialogState extends State<ManageAdminsDialog> {
     setState(() => _isSearching = true);
     
     try {
-      // STRICT: Search by SPP ID ONLY
-      // We assume SPP ID starts with "SPP" (case insensitive check)
-      if (query.toUpperCase().startsWith('SPP')) {
-        final user = await FirebaseDataService.instance.getUserBySppId(query.toUpperCase());
-        if (user != null && 
-            user.uid != widget.organizerId && 
-            !_adminIds.contains(user.uid)) {
+      final result = await PlayerSearchService.instance.searchPlayer(trimmed);
+      if (result.isSuccess && result.player != null) {
+        final user = result.player!;
+        if (user.uid != widget.organizerId && !_adminIds.contains(user.uid)) {
           setState(() => _searchResults = [user]);
         } else {
           setState(() => _searchResults = []);
         }
       } else {
-        // Did not start with SPP - clear results and maybe show a snackbar or just nothing
-        // We only want to support SPP ID.
-        setState(() => _searchResults = []);
+        // Fallback to direct name/partial search in Firebase
+        final users = await FirebaseDataService.instance.searchUsers(trimmed);
+        final filtered = users.where((u) => u.uid != widget.organizerId && !_adminIds.contains(u.uid)).toList();
+        setState(() => _searchResults = filtered);
       }
     } catch (e) {
       debugPrint('Search error: $e');
@@ -192,7 +192,7 @@ class _ManageAdminsDialogState extends State<ManageAdminsDialog> {
               controller: _searchController,
               onChanged: _searchUsers,
               decoration: InputDecoration(
-                hintText: 'Search by SPP ID only (e.g., SPP...)',
+                hintText: 'Enter SPP ID or mobile number',
                 prefixIcon: Icon(Icons.search),
                 suffixIcon: _isSearching 
                     ? SizedBox(
@@ -210,7 +210,7 @@ class _ManageAdminsDialogState extends State<ManageAdminsDialog> {
                   borderRadius: BorderRadius.circular(12.r),
                   borderSide: BorderSide.none,
                 ),
-                helperText: 'Enter exact SPP ID to find user',
+                helperText: 'Search by SPP ID or 10-digit mobile number',
               ),
             ),
 
@@ -233,9 +233,10 @@ class _ManageAdminsDialogState extends State<ManageAdminsDialog> {
                       dense: true,
                       leading: CircleAvatar(
                         backgroundColor: AppTheme.primaryOrange.withOpacity(0.1),
-                        child: Text(
-                          user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                          style: TextStyle(color: AppTheme.primaryOrange),
+                        child: Icon(
+                          Icons.person_rounded,
+                          color: AppTheme.primaryOrange,
+                          size: 20.sp,
                         ),
                       ),
                       title: Text(user.name),

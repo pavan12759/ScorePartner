@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:scorepatner/data/models/match_model.dart';
 import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:scorepatner/presentation/screens/profile/player_profile_screen.dart';
+import 'package:scorepatner/presentation/widgets/player_avatar_widget.dart';
 import 'package:scorepatner/data/services/firebase_data_service.dart';
 import 'package:scorepatner/data/models/team_model.dart';
 import 'dart:convert';
@@ -129,19 +130,6 @@ class _SquadsTabState extends State<SquadsTab> {
       return Center(child: Text('Playing XI not announced yet', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontStyle: FontStyle.italic)));
     }
 
-    ImageProvider? getProfileImageProvider(String? url) {
-      if (url == null || url.isEmpty) return null;
-      if (url.trim().startsWith('data:')) {
-        try {
-          final base64Str = url.split(',').last.trim();
-          return MemoryImage(base64Decode(base64Str));
-        } catch (_) {
-          return null;
-        }
-      }
-      return NetworkImage(url);
-    }
-    
     return ListView.builder(
       padding: EdgeInsets.all(16.w),
       itemCount: players.length,
@@ -171,30 +159,13 @@ class _SquadsTabState extends State<SquadsTab> {
            color: ThemeHelper.of(context).cardBg,
            child: ListTile(
              contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
-             leading: CircleAvatar(
-               backgroundColor: AppTheme.primaryOrange.withOpacity(0.1),
-               child: _profilePhotos[player.id] != null && _profilePhotos[player.id]!.isNotEmpty
-                   ? ClipOval(
-                       child: Image(
-                         image: getProfileImageProvider(_profilePhotos[player.id]!)!,
-                         width: 40,
-                         height: 40,
-                         fit: BoxFit.cover,
-                         errorBuilder: (context, error, stackTrace) {
-                           return Center(
-                             child: Text(
-                               player.name.isNotEmpty ? player.name[0].toUpperCase() : '?', 
-                               style: TextStyle(color: AppTheme.primaryOrange, fontWeight: FontWeight.bold)
-                             ),
-                           );
-                         },
-                       ),
-                     )
-                   : Text(
-                       player.name.isNotEmpty ? player.name[0].toUpperCase() : '?', 
-                       style: TextStyle(color: AppTheme.primaryOrange, fontWeight: FontWeight.bold)
-                     ),
-             ),
+              leading: PlayerAvatarWidget(
+                profileImageUrl: _profilePhotos[player.id],
+                playerId: player.id,
+                playerName: player.name,
+                size: 42.sp,
+                enableProfileView: true,
+              ),
              title: Text(
                displayName, 
                style: TextStyle(

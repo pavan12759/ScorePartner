@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:scorepatner/core/theme/app_theme.dart';
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/models/team_model.dart';
 import '../../../data/models/match_model.dart';
 import '../../../data/services/firebase_data_service.dart';
+import '../../../data/services/player_search_service.dart';
 import 'package:scorepatner/core/utils/image_utils.dart';
 import '../profile/player_profile_screen.dart';
 import 'dart:math';
@@ -254,11 +256,17 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              tournament.name,
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                tournament.name,
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp),
+                                maxLines: 1,
+                              ),
                             ),
                           ),
+                          SizedBox(width: 8.w),
                           Container(
                             padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                             decoration: BoxDecoration(
@@ -278,10 +286,14 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                           Icon(Icons.location_on_outlined, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
                           SizedBox(width: 4.w),
                           Expanded(
-                            child: Text(
-                              tournament.location,
-                              style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 13.sp),
-                              overflow: TextOverflow.ellipsis,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                tournament.location,
+                                style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 13.sp),
+                                maxLines: 1,
+                              ),
                             ),
                           ),
                           SizedBox(width: 12.w),
@@ -356,6 +368,14 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
         return [user];
       }
     }
+    // If query looks like mobile number, search by mobile number
+    final normalizedPhone = PlayerSearchService.normalizeIndianPhone(query);
+    if (normalizedPhone != null && !RegExp(r'[a-zA-Z]').hasMatch(query)) {
+      final user = await FirebaseDataService.instance.getUserByPhone(normalizedPhone);
+      if (user != null) {
+        return [user];
+      }
+    }
     // Otherwise search by name
     return FirebaseDataService.instance.searchUsers(query);
   }
@@ -400,13 +420,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                   backgroundColor: AppTheme.primaryOrange.withOpacity(0.1),
                   backgroundImage: _getProfileImageProvider(player.profileImageUrl),
                   child: player.profileImageUrl.isEmpty
-                      ? Text(
-                          player.name.isNotEmpty ? player.name.substring(0, 1).toUpperCase() : 'P',
-                          style: TextStyle(
-                            color: AppTheme.primaryOrange,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18.sp,
-                          ),
+                      ? Icon(
+                          Icons.person_rounded,
+                          size: 30.sp,
+                          color: ThemeHelper.of(context).textSecondary,
                         )
                       : null,
                 ),

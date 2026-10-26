@@ -4,6 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../data/models/match_model.dart';
 import '../../../data/models/team_model.dart';
 import '../../../data/services/firebase_data_service.dart';
+import 'player_avatar_widget.dart';
 
 /// Dialog shown at match start to select opening batsmen and bowler
 class MatchInitializationDialog extends StatefulWidget {
@@ -399,9 +400,12 @@ class _MatchInitializationDialogState extends State<MatchInitializationDialog> {
                             
                             final player = filteredPlayers[index];
                             return ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: AppTheme.primaryOrange.withOpacity(0.1),
-                                child: Text(player.name.substring(0, 1).toUpperCase(), style: TextStyle(color: AppTheme.primaryOrange, fontWeight: FontWeight.bold)),
+                              leading: PlayerAvatarWidget(
+                                profileImageUrl: player.profileImageUrl,
+                                playerId: player.userId,
+                                playerName: player.name,
+                                size: 38.sp,
+                                enableProfileView: false,
                               ),
                               title: Text(player.name, style: TextStyle(fontWeight: FontWeight.w500)),
                               subtitle: Text(player.role.isNotEmpty ? player.role : 'Player'),
@@ -616,15 +620,11 @@ class NextBatsmanDialog extends StatelessWidget {
                       itemBuilder: (context, index) {
                         final batter = yetToBat[index];
                         return ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: AppTheme.primaryOrange.withOpacity(0.2),
-                            child: Text(
-                              '${index + 1}',
-                              style: TextStyle(
-                                color: AppTheme.primaryOrange,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          leading: PlayerAvatarWidget(
+                            playerId: batter.playerId,
+                            playerName: batter.playerName,
+                            size: 38.sp,
+                            enableProfileView: false,
                           ),
                           title: Text(batter.playerName, style: TextStyle(fontWeight: FontWeight.w600)),
                           subtitle: const Text('Yet to bat'),
@@ -690,12 +690,11 @@ class FielderSelectionDialog extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final player = fieldingTeamPlayers[index];
                   return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.blue.shade100,
-                      child: Text(
-                        player.playerName.substring(0, 1).toUpperCase(),
-                        style: TextStyle(color: Colors.blue.shade700, fontWeight: FontWeight.bold),
-                      ),
+                    leading: PlayerAvatarWidget(
+                      playerId: player.playerId,
+                      playerName: player.playerName,
+                      size: 38.sp,
+                      enableProfileView: false,
                     ),
                     title: Text(player.playerName),
                     onTap: () => Navigator.pop(context, player.playerName),
@@ -814,12 +813,11 @@ class EndOfOverBowlerDialog extends StatelessWidget {
 
                   final bowler = availableBowlers[index];
                   return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.orange.shade100,
-                      child: Text(
-                        bowler.playerName.substring(0, 1).toUpperCase(),
-                        style: TextStyle(color: Colors.orange.shade700, fontWeight: FontWeight.bold),
-                      ),
+                    leading: PlayerAvatarWidget(
+                      playerId: bowler.playerId,
+                      playerName: bowler.playerName,
+                      size: 38.sp,
+                      enableProfileView: false,
                     ),
                     title: Text(bowler.playerName, style: TextStyle(fontWeight: FontWeight.w600)),
                     subtitle: Text(
@@ -912,21 +910,71 @@ class InningsEndDialog extends StatelessWidget {
                   style: TextStyle(color: Colors.grey[600], fontSize: 16.sp),
                 ),
                 SizedBox(height: 24.h),
-                const Divider(),
-                SizedBox(height: 16.h),
-                Text(
-                  'TARGET',
-                  style: TextStyle(fontSize: 14.sp, letterSpacing: 2, color: Colors.grey),
-                ),
-                SizedBox(height: 4.h),
-                Text(
-                  '$target',
-                  style: TextStyle(fontSize: 48.sp, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  'Runs in ${match.oversPerSide} overs',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
+                if (match.matchFormat != 'Test') ...[
+                  const Divider(),
+                  SizedBox(height: 16.h),
+                  Text(
+                    'TARGET',
+                    style: TextStyle(fontSize: 14.sp, letterSpacing: 2, color: Colors.grey),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    '$target',
+                    style: TextStyle(fontSize: 48.sp, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    'Runs in ${match.oversPerSide} overs',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ] else if (match.currentInnings == 2) ...[
+                  const Divider(),
+                  SizedBox(height: 16.h),
+                  Builder(builder: (context) {
+                    final oppInn1 = (match.currentBattingTeam == 'team1' ? match.team2FirstInningsScore?.runs : match.team1FirstInningsScore?.runs) ?? 0;
+                    final diff = score.runs - oppInn1;
+                    final isLeading = diff >= 0;
+                    return Column(
+                      children: [
+                        Text(
+                          isLeading ? 'LEAD' : 'TRAIL',
+                          style: TextStyle(fontSize: 14.sp, letterSpacing: 2, color: Colors.grey),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          '${diff.abs()}',
+                          style: TextStyle(fontSize: 40.sp, fontWeight: FontWeight.bold, color: isLeading ? Colors.green : Colors.orange),
+                        ),
+                        Text(
+                          isLeading ? 'Lead by $diff runs' : 'Trails by ${-diff} runs',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
+                    );
+                  }),
+                ] else if (match.currentInnings == 3) ...[
+                  const Divider(),
+                  SizedBox(height: 16.h),
+                  Builder(builder: (context) {
+                    final targetVal = match.target ?? (score.runs + 1);
+                    return Column(
+                      children: [
+                        Text(
+                          'TARGET',
+                          style: TextStyle(fontSize: 14.sp, letterSpacing: 2, color: Colors.grey),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          '$targetVal',
+                          style: TextStyle(fontSize: 40.sp, fontWeight: FontWeight.bold, color: AppTheme.primaryOrange),
+                        ),
+                        Text(
+                          'Target in 4th Innings',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
+                    );
+                  }),
+                ],
                 SizedBox(height: 32.h),
                 SizedBox(
                   width: double.infinity,

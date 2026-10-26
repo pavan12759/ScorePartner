@@ -1,9 +1,10 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:scorepatner/core/theme/app_theme.dart';
+import 'package:scorepatner/presentation/widgets/player_avatar_widget.dart';
 
 enum BadgeType {
   win,
@@ -20,6 +21,7 @@ class HighlightBadgeCard extends StatelessWidget {
   final String matchName;
   final String ground;
   final String date;
+  final String? playerId;
   final String? playerName;
   final dynamic playerPhoto; // Can be File, String path, or Uint8List (for web)
   final String? team1Name;
@@ -35,6 +37,7 @@ class HighlightBadgeCard extends StatelessWidget {
     required this.matchName,
     required this.ground,
     required this.date,
+    this.playerId,
     this.playerName,
     this.playerPhoto,
     this.team1Name,
@@ -142,8 +145,28 @@ class HighlightBadgeCard extends StatelessWidget {
 
                 SizedBox(height: 16.h),
 
-                // Player Name & Achievement Description
-                if (playerName != null) ...[
+                // Player Profile Avatar & Name
+                if (playerName != null && playerName!.isNotEmpty) ...[
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.35),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: PlayerAvatarWidget(
+                      playerId: playerId,
+                      playerName: playerName!,
+                      profileImageUrl: playerPhoto is String ? playerPhoto : null,
+                      size: 64.w,
+                      enableProfileView: false,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
                   Text(
                     playerName!,
                     style: TextStyle(
@@ -151,12 +174,12 @@ class HighlightBadgeCard extends StatelessWidget {
                       fontSize: 22.sp,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 0.5,
-                      shadows: [
+                      shadows: const [
                         Shadow(color: Colors.black38, offset: Offset(0, 2), blurRadius: 4),
                       ],
                     ),
                   ),
-                  SizedBox(height: 4.h),
+                  SizedBox(height: 6.h),
                 ],
 
                 Container(

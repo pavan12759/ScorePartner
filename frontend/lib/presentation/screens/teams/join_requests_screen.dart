@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../data/models/join_request_model.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/services/firebase_data_service.dart';
 import '../../providers/auth_provider.dart';
 import '../profile/player_profile_screen.dart';
+import '../../widgets/player_avatar_widget.dart';
 
 /// Admin screen to review, accept, and reject join requests for a team
 class JoinRequestsScreen extends StatefulWidget {
@@ -113,7 +113,7 @@ class _JoinRequestsScreenState extends State<JoinRequestsScreen> {
     );
 
     try {
-      final user = await _dataService.getUserById(request.playerId);
+      final user = await _dataService.findUserByAnyId(request.playerId);
       if (mounted) Navigator.pop(context); // dismiss loading
 
       if (user != null && mounted) {
@@ -239,22 +239,12 @@ class _JoinRequestsScreenState extends State<JoinRequestsScreen> {
             Row(
               children: [
                 // Player avatar
-                CircleAvatar(
-                  radius: 28.r,
-                  backgroundColor: AppTheme.primaryOrange.withOpacity(0.1),
-                  backgroundImage: request.playerPhotoUrl.isNotEmpty
-                      ? NetworkImage(request.playerPhotoUrl)
-                      : null,
-                  child: request.playerPhotoUrl.isEmpty
-                      ? Text(
-                          request.playerName.isNotEmpty ? request.playerName[0].toUpperCase() : '?',
-                          style: TextStyle(
-                            fontSize: 22.sp,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryOrange,
-                          ),
-                        )
-                      : null,
+                PlayerAvatarWidget(
+                  profileImageUrl: request.playerPhotoUrl,
+                  playerId: request.playerId,
+                  playerName: request.playerName,
+                  size: 56.r,
+                  enableProfileView: true,
                 ),
                 SizedBox(width: 12.w),
                 Expanded(

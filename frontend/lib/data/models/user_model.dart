@@ -43,6 +43,8 @@ class UserModel {
   final String rankTitle;
   final List<String> unlockedTitles;
 
+  String get id => uid;
+
   const UserModel({
     required this.uid,
     this.email = '',

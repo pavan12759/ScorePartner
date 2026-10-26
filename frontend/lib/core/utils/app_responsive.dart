@@ -93,9 +93,9 @@ class AppResponsive {
 
   /// Height for horizontal match list sections
   double get matchListHeight {
-    if (hasVeryLargeText) return 265.0;
-    if (hasLargeText) return 245.0;
-    return 225.0;
+    if (hasVeryLargeText) return 280.0;
+    if (hasLargeText) return 260.0;
+    return 240.0;
   }
 
   /// Bottom navigation horizontal margin

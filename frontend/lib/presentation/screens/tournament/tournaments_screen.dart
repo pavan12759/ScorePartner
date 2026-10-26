@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/team_model.dart';
 import 'create_tournament_screen.dart';
-import 'tournament_details_screen.dart';
 import 'tournament_setup_screen.dart';
 import '../../widgets/state/scorepartner_skeleton.dart';
 import '../../widgets/state/scorepartner_empty_state.dart';
@@ -22,7 +20,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ThemeHelper.of(context).dividerColor!,
+      backgroundColor: ThemeHelper.of(context).dividerColor,
       appBar: AppBar(
         title: const Text('Tournaments'),
         backgroundColor: AppTheme.primaryOrange,
@@ -184,14 +182,20 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Text(
-                      tournament.name,
-                      style: TextStyle(
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.bold,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        tournament.name,
+                        style: TextStyle(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
                       ),
                     ),
                   ),
+                  SizedBox(width: 8.w),
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                     decoration: BoxDecoration(
@@ -217,7 +221,17 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                 children: [
                   Icon(Icons.location_on, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
                   SizedBox(width: 4.w),
-                  Text(tournament.location, style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        tournament.location, 
+                        style: TextStyle(color: ThemeHelper.of(context).textSecondary),
+                        maxLines: 1,
+                      ),
+                    ),
+                  ),
                   SizedBox(width: 16.w),
                   Icon(Icons.sports_cricket, size: 14.sp, color: ThemeHelper.of(context).textSecondary),
                   SizedBox(width: 4.w),

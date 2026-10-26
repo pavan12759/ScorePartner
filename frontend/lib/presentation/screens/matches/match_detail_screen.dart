@@ -21,8 +21,6 @@ import 'package:scorepatner/presentation/widgets/key_moments_widget.dart';
 import '../../widgets/dialogs/manage_access_dialog.dart';
 import 'package:scorepatner/data/models/team_model.dart';
 import 'package:scorepatner/presentation/screens/tournament/tournament_details_screen.dart';
-import 'package:scorepatner/presentation/screens/matches/match_highlights_generator_screen.dart';
-import 'package:scorepatner/presentation/widgets/match_highlights_badges_widget.dart';
 import '../ground/ground_profile_screen.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../widgets/live_audience_island.dart';
@@ -309,39 +307,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          if (isAdmin &&
-                              (match.status == 'past' ||
-                                  match.result != null)) ...[
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        MatchHighlightsGeneratorScreen(
-                                          matchId: match.id,
-                                        ),
-                                  ),
-                                );
-                              },
-                              icon: Icon(Icons.add_photo_alternate),
-                              label: const Text('Add Photos & Highlights'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryOrange,
-                                foregroundColor: Colors.white,
-                                padding: EdgeInsets.symmetric(vertical: 14.h),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12.r),
-                                ),
-                                elevation: 2,
-                              ),
-                            ),
-                            SizedBox(height: 16.h),
-                          ],
-                          if (match.highlights.isNotEmpty) ...[
-                            MatchHighlightsBadgesWidget(match: match),
-                            SizedBox(height: 16.h),
-                          ],
                           MvpRatingCard(match: match),
                         ],
                       ),
@@ -570,6 +535,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                         letterSpacing: 0.5,
                                       ),
                                       overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
                                     ),
                                     SizedBox(height: 4.h),
                                     // Match type & location integrated here
@@ -577,11 +543,15 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                       children: [
                                         Icon(Icons.sports_cricket_rounded, size: 10.sp, color: th.textSecondary),
                                         SizedBox(width: 4.w),
-                                        Text(
-                                          match.matchType,
-                                          style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w600),
+                                        Flexible(
+                                          child: Text(
+                                            match.matchType,
+                                            style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w600),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
+                                          ),
                                         ),
-                                        SizedBox(width: 10.w),
+                                        SizedBox(width: 8.w),
                                         Icon(Icons.location_on_rounded, size: 10.sp, color: th.textSecondary),
                                         SizedBox(width: 4.w),
                                         Expanded(
@@ -589,6 +559,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                             match.ground,
                                             style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w600),
                                             overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
                                           ),
                                         ),
                                       ],
@@ -596,6 +567,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                   ],
                                 ),
                               ),
+                              SizedBox(width: 6.w),
                               if (isLive || match.status == 'past' || match.status == 'completed')
                                 StreamBuilder<Map<String, int>>(
                                   stream: ViewerService.instance.streamViewerStats(match.id),
@@ -610,72 +582,75 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                       return str.replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
                                     }
 
-                                    return Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        if (isLive) ...[
-                                          Icon(Icons.remove_red_eye_rounded, size: 12.sp, color: th.textSecondary),
+                                    return FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (isLive) ...[
+                                            Icon(Icons.remove_red_eye_rounded, size: 12.sp, color: th.textSecondary),
+                                            SizedBox(width: 2.w),
+                                            Text(
+                                              formatCount(liveViewers),
+                                              style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w700),
+                                            ),
+                                            SizedBox(width: 8.w),
+                                          ],
+                                          Icon(Icons.play_circle_outline_rounded, size: 12.sp, color: th.textSecondary),
                                           SizedBox(width: 2.w),
                                           Text(
-                                            formatCount(liveViewers),
+                                            formatCount(totalViews),
                                             style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w700),
                                           ),
                                           SizedBox(width: 8.w),
-                                        ],
-                                        Icon(Icons.play_circle_outline_rounded, size: 12.sp, color: th.textSecondary),
-                                        SizedBox(width: 2.w),
-                                        Text(
-                                          formatCount(totalViews),
-                                          style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w700),
-                                        ),
-                                        SizedBox(width: 8.w),
-                                        if (isLive)
-                                          Container(
-                                            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                                            decoration: BoxDecoration(
-                                              color: Color(0xFFCC1C1C),
-                                              borderRadius: BorderRadius.circular(12.r),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Container(
-                                                  width: 6.w,
-                                                  height: 6.h,
-                                                  decoration: BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    color: ThemeHelper.of(context).cardBg,
+                                          if (isLive)
+                                            Container(
+                                              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                                              decoration: BoxDecoration(
+                                                color: Color(0xFFCC1C1C),
+                                                borderRadius: BorderRadius.circular(12.r),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Container(
+                                                    width: 6.w,
+                                                    height: 6.h,
+                                                    decoration: BoxDecoration(
+                                                      shape: BoxShape.circle,
+                                                      color: ThemeHelper.of(context).cardBg,
+                                                    ),
                                                   ),
-                                                ),
-                                                SizedBox(width: 4.w),
-                                                Text(
-                                                  'LIVE',
-                                                  style: TextStyle(
-                                                    color: ThemeHelper.of(context).cardBg,
-                                                    fontSize: 10.sp,
-                                                    fontWeight: FontWeight.w900,
+                                                  SizedBox(width: 4.w),
+                                                  Text(
+                                                    'LIVE',
+                                                    style: TextStyle(
+                                                      color: ThemeHelper.of(context).cardBg,
+                                                      fontSize: 10.sp,
+                                                      fontWeight: FontWeight.w900,
+                                                    ),
                                                   ),
+                                                ],
+                                              ),
+                                            )
+                                          else
+                                            Container(
+                                              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                                              decoration: BoxDecoration(
+                                                color: th.isDark ? AppTheme.darkContainer : ThemeHelper.of(context).textSecondary,
+                                                borderRadius: BorderRadius.circular(10.r),
+                                              ),
+                                              child: Text(
+                                                'COMPLETED',
+                                                style: TextStyle(
+                                                  color: ThemeHelper.of(context).cardBg,
+                                                  fontSize: 9.sp,
+                                                  fontWeight: FontWeight.w800,
                                                 ),
-                                              ],
-                                            ),
-                                          )
-                                        else
-                                          Container(
-                                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                                            decoration: BoxDecoration(
-                                              color: th.isDark ? AppTheme.darkContainer : ThemeHelper.of(context).textSecondary,
-                                              borderRadius: BorderRadius.circular(10.r),
-                                            ),
-                                            child: Text(
-                                              'COMPLETED',
-                                              style: TextStyle(
-                                                color: ThemeHelper.of(context).cardBg,
-                                                fontSize: 9.sp,
-                                                fontWeight: FontWeight.w800,
                                               ),
                                             ),
-                                          ),
-                                      ],
+                                        ],
+                                      ),
                                     );
                                   },
                                 ),
@@ -693,6 +668,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                             children: [
                               // Batting team (left)
                               Expanded(
+                                flex: 6,
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -703,10 +679,11 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                             battingTeamName,
                                             style: TextStyle(
                                               fontSize: 12.sp,
-                                              fontWeight: FontWeight.w500,
+                                              fontWeight: FontWeight.w600,
                                               color: th.textPrimary,
                                             ),
                                             overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
                                           ),
                                         ),
                                         SizedBox(width: 6.w),
@@ -714,33 +691,38 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                       ],
                                     ),
                                     SizedBox(height: 4.h),
-                                    Row(
-                                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                                      textBaseline: TextBaseline.alphabetic,
-                                      children: [
-                                        Text(
-                                          '${battingScore.runs}/${battingScore.wickets}',
-                                          style: TextStyle(
-                                            fontSize: 32.sp,
-                                            fontWeight: FontWeight.w900,
-                                            color: th.textPrimary,
-                                            height: 1.1,
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                                        textBaseline: TextBaseline.alphabetic,
+                                        children: [
+                                          Text(
+                                            '${battingScore.runs}/${battingScore.wickets}',
+                                            style: TextStyle(
+                                              fontSize: 32.sp,
+                                              fontWeight: FontWeight.w900,
+                                              color: th.textPrimary,
+                                              height: 1.1,
+                                            ),
                                           ),
-                                        ),
-                                        SizedBox(width: 6.w),
-                                        Text(
-                                          '(${battingScore.oversDisplay})',
-                                          style: TextStyle(
-                                            fontSize: 16.sp,
-                                            fontWeight: FontWeight.w600,
-                                            color: th.textSecondary,
+                                          SizedBox(width: 6.w),
+                                          Text(
+                                            '(${battingScore.oversDisplay})',
+                                            style: TextStyle(
+                                              fontSize: 16.sp,
+                                              fontWeight: FontWeight.w600,
+                                              color: th.textSecondary,
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                     
                                     if (tossInfo.isNotEmpty) ...[
-                                      SizedBox(height: 12.h),
+                                      SizedBox(height: 8.h),
                                       Text(
                                         tossInfo,
                                         style: TextStyle(
@@ -748,54 +730,59 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                           fontWeight: FontWeight.w500,
                                           color: AppTheme.primaryOrange,
                                         ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
                                   ],
                                 ),
                               ),
 
+                              SizedBox(width: 10.w),
+
                               // Bowling team (right)
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.sports_baseball, size: 14.sp, color: AppTheme.primaryOrange),
-                                      SizedBox(width: 6.w),
-                                      Flexible(
-                                        child: Text(
-                                          bowlingTeamName,
-                                          style: TextStyle(
-                                            fontSize: 12.sp,
-                                            fontWeight: FontWeight.w500,
-                                            color: th.textPrimary,
+                              Expanded(
+                                flex: 5,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Icon(Icons.sports_baseball, size: 14.sp, color: AppTheme.primaryOrange),
+                                        SizedBox(width: 6.w),
+                                        Flexible(
+                                          child: Text(
+                                            bowlingTeamName,
+                                            style: TextStyle(
+                                              fontSize: 12.sp,
+                                              fontWeight: FontWeight.w600,
+                                              color: th.textPrimary,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
+                                            textAlign: TextAlign.right,
                                           ),
-                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 4.h),
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerRight,
+                                      child: Text(
+                                        bowlingTeamYetToBat
+                                            ? 'Yet to bat'
+                                            : '${bowlingScore.runs}/${bowlingScore.wickets} (${bowlingScore.oversDisplay})',
+                                        style: TextStyle(
+                                          fontSize: 16.sp,
+                                          fontWeight: FontWeight.w800,
+                                          color: th.textPrimary,
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 4.h),
-                                  if (bowlingTeamYetToBat)
-                                    Text(
-                                      'Yet to bat',
-                                      style: TextStyle(
-                                        fontSize: 16.sp,
-                                        fontWeight: FontWeight.w800,
-                                        color: th.textPrimary,
-                                      ),
-                                    )
-                                  else
-                                    Text(
-                                      '${bowlingScore.runs}/${bowlingScore.wickets} (${bowlingScore.oversDisplay})',
-                                      style: TextStyle(
-                                        fontSize: 16.sp,
-                                        fontWeight: FontWeight.w800,
-                                        color: th.textPrimary,
-                                      ),
                                     ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -856,68 +843,71 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                           Divider(height: 1, thickness: 1, color: th.dividerColor),
                           Padding(
                             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-                            child: Row(
-                              children: [
-                                // CRR
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('CRR', style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w600)),
-                                    SizedBox(height: 2.h),
-                                    Text(crr.toStringAsFixed(2), style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: th.textPrimary)),
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  // CRR
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('CRR', style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w600)),
+                                      SizedBox(height: 2.h),
+                                      Text(crr.toStringAsFixed(2), style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: th.textPrimary)),
+                                    ],
+                                  ),
+                                  SizedBox(width: 20.w),
+                                  // Target / RRR / Proj Score
+                                  if (isSecondInnings && match.target != null) ...[
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('RRR', style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w600)),
+                                        SizedBox(height: 2.h),
+                                        Text(match.requiredRunRate.toStringAsFixed(2), style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: th.textPrimary)),
+                                      ],
+                                    ),
+                                    SizedBox(width: 20.w),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('TARGET', style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w600)),
+                                        SizedBox(height: 2.h),
+                                        Text('${match.target}', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: th.textPrimary)),
+                                      ],
+                                    ),
+                                  ] else if (isLive) ...[
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('PROJ. SCORE', style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w600)),
+                                        SizedBox(height: 2.h),
+                                        Text('${projectedScore.round()}', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: th.textPrimary)),
+                                      ],
+                                    ),
                                   ],
-                                ),
-                                SizedBox(width: 24.w),
-                                // Target / RRR / Proj Score
-                                if (isSecondInnings && match.target != null) ...[
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('RRR', style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w600)),
-                                      SizedBox(height: 2.h),
-                                      Text(match.requiredRunRate.toStringAsFixed(2), style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: th.textPrimary)),
-                                    ],
-                                  ),
-                                  SizedBox(width: 24.w),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('TARGET', style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w600)),
-                                      SizedBox(height: 2.h),
-                                      Text('${match.target}', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: th.textPrimary)),
-                                    ],
-                                  ),
-                                ] else if (isLive) ...[
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('PROJ. SCORE', style: TextStyle(fontSize: 10.sp, color: th.textSecondary, fontWeight: FontWeight.w600)),
-                                      SizedBox(height: 2.h),
-                                      Text('${projectedScore.round()}', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: th.textPrimary)),
-                                    ],
+                                  
+                                  SizedBox(width: 20.w),
+                                  
+                                  // Refresh Button
+                                  OutlinedButton.icon(
+                                    onPressed: () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Refreshing...'), duration: Duration(seconds: 1)),
+                                      );
+                                    },
+                                    icon: Icon(Icons.refresh_rounded, size: 14.sp, color: AppTheme.primaryOrange),
+                                    label: Text('Refresh', style: TextStyle(fontSize: 11.sp, color: AppTheme.primaryOrange, fontWeight: FontWeight.w600)),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                                      side: BorderSide(color: AppTheme.primaryOrange.withOpacity(0.5)),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6.r)),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
                                   ),
                                 ],
-                                
-                                Spacer(),
-                                
-                                // Refresh Button
-                                OutlinedButton.icon(
-                                  onPressed: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Refreshing...'), duration: Duration(seconds: 1)),
-                                    );
-                                  },
-                                  icon: Icon(Icons.refresh_rounded, size: 14.sp, color: AppTheme.primaryOrange),
-                                  label: Text('Refresh', style: TextStyle(fontSize: 11.sp, color: AppTheme.primaryOrange, fontWeight: FontWeight.w600)),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                                    side: BorderSide(color: AppTheme.primaryOrange.withOpacity(0.5)),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6.r)),
-                                    minimumSize: Size.zero,
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                           ),
                         ],
@@ -1763,7 +1753,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
       return '${match.winnerTeam} won by ${match.winningMargin}';
     }
     if (match.status == 'live') {
-      final target = match.team1Score.runs + 1;
       if (match.currentInnings == 2) {
         final bool isTeam1Batting = match.currentBattingTeam == 'team1';
         final chasingTeamName = isTeam1Batting ? match.team1Name : match.team2Name;

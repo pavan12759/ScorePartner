@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'player_avatar_widget.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/match_model.dart';
@@ -224,19 +225,11 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
     final isPlaying = batter.isPlaying;
 
     return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: isOut
-            ? Colors.red.shade100
-            : isPlaying
-                ? AppTheme.primaryOrange.withOpacity(0.2)
-                : Colors.grey.shade200,
-        child: Text(
-          batter.playerName.substring(0, 1).toUpperCase(),
-          style: TextStyle(
-            color: isOut ? Colors.red : AppTheme.primaryOrange,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+      leading: PlayerAvatarWidget(
+        playerId: batter.playerId,
+        playerName: batter.playerName,
+        size: 40,
+        enableProfileView: false,
       ),
       title: Text(
         batter.playerName,
@@ -271,17 +264,11 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
 
   Widget _buildBowlerTile(BowlerStats bowler) {
     return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: bowler.isBowling
-            ? Colors.red.shade100
-            : Colors.grey.shade200,
-        child: Text(
-          bowler.playerName.substring(0, 1).toUpperCase(),
-          style: TextStyle(
-            color: bowler.isBowling ? Colors.red : Colors.grey[700],
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+      leading: PlayerAvatarWidget(
+        playerId: bowler.playerId,
+        playerName: bowler.playerName,
+        size: 40,
+        enableProfileView: false,
       ),
       title: Text(
         bowler.playerName,
@@ -362,15 +349,11 @@ class NewBatsmanDialog extends StatelessWidget {
                       itemBuilder: (context, index) {
                         final batter = yetToBat[index];
                         return ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: AppTheme.primaryOrange.withOpacity(0.2),
-                            child: Text(
-                              '${index + 1}',
-                              style: TextStyle(
-                                color: AppTheme.primaryOrange,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          leading: PlayerAvatarWidget(
+                            playerId: batter.playerId,
+                            playerName: batter.playerName,
+                            size: 40,
+                            enableProfileView: false,
                           ),
                           title: Text(
                             batter.playerName,
@@ -444,15 +427,11 @@ class ChangeBowlerDialog extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final bowler = availableBowlers[index];
                   return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.red.shade100,
-                      child: Text(
-                        bowler.playerName.substring(0, 1).toUpperCase(),
-                        style: TextStyle(
-                          color: Colors.red.shade700,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                    leading: PlayerAvatarWidget(
+                      playerId: bowler.playerId,
+                      playerName: bowler.playerName,
+                      size: 40,
+                      enableProfileView: false,
                     ),
                     title: Text(
                       bowler.playerName,

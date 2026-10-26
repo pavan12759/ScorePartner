@@ -165,6 +165,7 @@ class TeamPlayer {
   final bool isCaptain;
   final bool isViceCaptain;
   final bool isRegistered;
+  final String profileImageUrl;
 
   const TeamPlayer({
     required this.userId,
@@ -177,6 +178,7 @@ class TeamPlayer {
     this.isCaptain = false,
     this.isViceCaptain = false,
     this.isRegistered = false,
+    this.profileImageUrl = '',
   });
 
   factory TeamPlayer.fromMap(Map<String, dynamic> data) {
@@ -191,6 +193,7 @@ class TeamPlayer {
       isCaptain: data['isCaptain'] ?? false,
       isViceCaptain: data['isViceCaptain'] ?? false,
       isRegistered: data['isRegistered'] ?? (data['spPId'] != null && data['spPId'] != ''),
+      profileImageUrl: data['profileImageUrl'] ?? data['photoUrl'] ?? data['playerPhotoUrl'] ?? '',
     );
   }
 
@@ -206,7 +209,36 @@ class TeamPlayer {
       'isCaptain': isCaptain,
       'isViceCaptain': isViceCaptain,
       'isRegistered': isRegistered,
+      'profileImageUrl': profileImageUrl,
     };
+  }
+
+  TeamPlayer copyWith({
+    String? userId,
+    String? spPId,
+    String? name,
+    String? mobileNumber,
+    String? role,
+    String? battingStyle,
+    String? bowlingStyle,
+    bool? isCaptain,
+    bool? isViceCaptain,
+    bool? isRegistered,
+    String? profileImageUrl,
+  }) {
+    return TeamPlayer(
+      userId: userId ?? this.userId,
+      spPId: spPId ?? this.spPId,
+      name: name ?? this.name,
+      mobileNumber: mobileNumber ?? this.mobileNumber,
+      role: role ?? this.role,
+      battingStyle: battingStyle ?? this.battingStyle,
+      bowlingStyle: bowlingStyle ?? this.bowlingStyle,
+      isCaptain: isCaptain ?? this.isCaptain,
+      isViceCaptain: isViceCaptain ?? this.isViceCaptain,
+      isRegistered: isRegistered ?? this.isRegistered,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+    );
   }
 }
 

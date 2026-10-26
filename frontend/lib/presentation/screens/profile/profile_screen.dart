@@ -1,27 +1,21 @@
-import 'dart:convert';
 import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../../recalculate_user_stats_script.dart';
 import 'followers_list_screen.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../../core/theme/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import '../../../data/models/user_model.dart';
 import '../../../data/models/achievement_model.dart';
 import '../../../data/models/match_model.dart';
 import '../../../core/utils/image_utils.dart';
-import '../../../data/services/auth_service.dart';
 import '../../../data/services/firebase_data_service.dart';
 import '../../widgets/genz_badge_widget.dart';
-import '../../widgets/highlight_badge_widgets.dart';
 import '../../widgets/rank_badge.dart';
+import '../../widgets/key_moment_poster_card.dart';
 import '../../providers/auth_provider.dart';
 import '../settings/help_support_screen.dart';
 import '../settings/about_screen.dart';
-import '../../../recalculate_user_stats_script.dart';
 import '../home/home_screen.dart';
 import '../auth/login_screen.dart';
 import '../auth/user_onboarding_screen.dart';
@@ -29,8 +23,11 @@ import '../teams/my_teams_screen.dart';
 import '../main/my_matches_screen.dart';
 import '../matches/manage_matches_screen.dart';
 import '../tournament/my_tournaments_screen.dart';
-import '../matches/create_match_screen.dart';
-import '../chat/chat_list_screen.dart';
+import '../tournament/tournament_details_screen.dart';
+import '../../../data/models/team_model.dart';
+import 'package:intl/intl.dart';
+import '../matches/match_detail_screen.dart';
+import '../../widgets/match/profile_match_card.dart';
 import '../../widgets/achievement_share_card.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
@@ -40,6 +37,7 @@ import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import '../../../data/services/storage_service.dart';
+import '../../../recalculate_user_stats_script.dart';
 
 
 
@@ -113,7 +111,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Stream<UserModel?>? _userStream;
   Future<List<MatchModel>>? _recentMatchesFuture;
+  Future<List<TournamentModel>>? _tournamentsFuture;
   String? _currentUserId;
+
+  Future<List<TournamentModel>> _loadUserTournaments(String uid, UserModel user) async {
+    try {
+      final dataService = FirebaseDataService.instance;
+      final created = await dataService.getUserTournaments(uid);
+
+      final userTeams = await dataService.getUserTeams(uid);
+      final spPId = user.spPId;
+      final playerTeams = spPId.isNotEmpty
+          ? await dataService.getTeamsWhereUserIsPlayer(uid, spPId)
+          : <TeamModel>[];
+
+      final teamIds = <String>{
+        ...userTeams.map((t) => t.id),
+        ...playerTeams.map((t) => t.id),
+      }.toList();
+
+      List<TournamentModel> playerTournaments = [];
+      if (teamIds.isNotEmpty) {
+        playerTournaments = await dataService.getPlayerTournaments(uid, teamIds);
+      }
+
+      final Map<String, TournamentModel> map = {};
+      for (final t in created) {
+        map[t.id] = t;
+      }
+      for (final t in playerTournaments) {
+        map[t.id] = t;
+      }
+
+      if (user.tournamentIds.isNotEmpty) {
+        for (final tId in user.tournamentIds) {
+          if (!map.containsKey(tId)) {
+            final t = await dataService.getTournament(tId);
+            if (t != null) {
+              map[t.id] = t;
+            }
+          }
+        }
+      }
+
+      final list = map.values.toList();
+      list.sort((a, b) => b.startDate.compareTo(a.startDate));
+      return list;
+    } catch (e) {
+      debugPrint('Error loading user tournaments: $e');
+      return [];
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -124,6 +172,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _currentUserId = uid;
       _userStream = FirebaseDataService.instance.streamUser(uid);
       _recentMatchesFuture = FirebaseDataService.instance.getUserPlayedMatches(uid);
+      final initialUser = authProvider.user;
+      if (initialUser != null) {
+        _tournamentsFuture = _loadUserTournaments(uid, initialUser);
+      }
     }
   }
 
@@ -234,7 +286,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ? ClipOval(
                                   child: _buildProfileImage(user.profileImageUrl, 96),
                                 )
-                              : Icon(Icons.person, size: 50.sp, color: Colors.grey.withOpacity(0.5)),
+                              : Icon(Icons.person, size: 50.sp, color: Colors.grey.withValues(alpha: 0.5)),
                         ),
                         // Add photo button
                         Positioned(
@@ -359,7 +411,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 borderRadius: BorderRadius.circular(8.r),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.15),
+                                    color: Colors.black.withValues(alpha: 0.15),
                                     blurRadius: 4,
                                     offset: Offset(0, 2),
                                   ),
@@ -388,9 +440,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Container(
                               padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
                               decoration: BoxDecoration(
-                                color: _getFormColor(user).withOpacity(0.15),
+                                color: _getFormColor(user).withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(8.r),
-                                border: Border.all(color: _getFormColor(user).withOpacity(0.3)),
+                                border: Border.all(color: _getFormColor(user).withValues(alpha: 0.3)),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -437,7 +489,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     borderRadius: BorderRadius.circular(8.r),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: AppTheme.stadiumOrange.withOpacity(0.2),
+                                        color: AppTheme.stadiumOrange.withValues(alpha: 0.2),
                                         blurRadius: 8,
                                       ),
                                     ],
@@ -527,7 +579,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 borderRadius: BorderRadius.circular(12.r),
                 border: Border.all(color: ThemeHelper.of(context).dividerColor!),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: Offset(0, 2))
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: Offset(0, 2))
                 ]
               ),
               child: Column(
@@ -638,7 +690,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   height: 50.h,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: bg.withOpacity(0.15),
+                    color: bg.withValues(alpha: 0.15),
                   ),
                   child: Icon(icon, size: 28.sp, color: bg),
                 ),
@@ -687,7 +739,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: EdgeInsets.all(6.w),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6.r),
       ),
       child: Icon(icon, size: 18.sp, color: color),
@@ -893,7 +945,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 28.sp),
@@ -921,7 +973,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   end: Alignment.bottomRight,
                   colors: [
                     AppTheme.primaryOrange,
-                    AppTheme.primaryOrange.withOpacity(0.8),
+                    AppTheme.primaryOrange.withValues(alpha: 0.8),
                   ],
                 ),
               ),
@@ -941,7 +993,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     'Manage your content',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withValues(alpha: 0.8),
                       fontSize: 14.sp,
                     ),
                   ),
@@ -956,7 +1008,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               leading: Container(
                 padding: EdgeInsets.all(8.w),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFF6B35).withOpacity(0.1),
+                  color: const Color(0xFFFF6B35).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: Icon(Icons.emoji_events, color: Color(0xFFFF6B35)),
@@ -976,7 +1028,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               leading: Container(
                 padding: EdgeInsets.all(8.w),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryOrange.withOpacity(0.1),
+                  color: AppTheme.primaryOrange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: Icon(Icons.sports_cricket, color: AppTheme.primaryOrange),
@@ -998,7 +1050,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               leading: Container(
                 padding: EdgeInsets.all(8.w),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF3B82F6).withOpacity(0.1),
+                  color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: Icon(Icons.groups, color: Color(0xFF3B82F6)),
@@ -1512,7 +1564,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           borderRadius: BorderRadius.circular(16.r),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.15),
+              color: color.withValues(alpha: 0.15),
               blurRadius: 12,
               offset: Offset(0, 4),
             ),
@@ -1523,7 +1575,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               padding: EdgeInsets.all(12.w),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12.r),
               ),
               child: Icon(icon, color: color, size: 24.sp),
@@ -1946,140 +1998,136 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildRealMatchCard(MatchModel match) {
-    bool isCompleted = match.status == 'completed';
-    String resultText = match.result?.winner != null ? '${match.result!.winner} won' : match.status.toUpperCase();
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 12.h),
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: ThemeHelper.of(context).cardBg,
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: Offset(0, 2)),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('${match.scheduledDate.day}/${match.scheduledDate.month}/${match.scheduledDate.year}', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: isCompleted ? Colors.green.withValues(alpha: 0.1) : AppTheme.primaryOrange.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: Text(
-                  match.status.toUpperCase(),
-                  style: TextStyle(color: isCompleted ? Colors.green : AppTheme.primaryOrange, fontSize: 10.sp, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 12.h),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(match.team1Name, style: TextStyle(fontWeight: FontWeight.w600)),
-                    Text('${match.team1Score.runs}/${match.team1Score.wickets}', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ),
-              Text('vs', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(match.team2Name, style: TextStyle(fontWeight: FontWeight.w600)),
-                    Text('${match.team2Score.runs}/${match.team2Score.wickets}', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (isCompleted) ...[
-            Divider(height: 20.h),
-            Text(resultText, style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
-          ],
-        ],
-      ),
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final currentUserName = _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : null;
+    return ProfileMatchCard(
+      match: match,
+      targetUserId: currentUserId,
+      targetUserName: currentUserName,
     );
   }
 
   Widget _buildMatchCard(Map<String, dynamic> match) {
     bool isWin = match['isWin'] == true;
+    final th = ThemeHelper.of(context);
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
-      padding: EdgeInsets.all(16.w),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
       decoration: BoxDecoration(
-        color: ThemeHelper.of(context).cardBg,
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: isWin ? Colors.green.withValues(alpha: 0.3) : Colors.red.withValues(alpha: 0.3)),
+        color: th.cardBg,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: isWin ? Colors.green.withValues(alpha: 0.35) : Colors.red.withValues(alpha: 0.35),
+          width: 1.0,
+        ),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: Offset(0, 2)),
+          BoxShadow(
+            color: th.isDark ? Colors.black.withValues(alpha: 0.25) : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(match['date'], style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
+              Text(
+                match['date'] ?? '',
+                style: TextStyle(color: th.textSecondary, fontSize: 11.sp, fontWeight: FontWeight.w500),
+              ),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
                 decoration: BoxDecoration(
-                  color: isWin ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12.r),
+                  color: isWin ? Colors.green.withValues(alpha: 0.12) : Colors.red.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(100.r),
+                  border: Border.all(
+                    color: isWin ? Colors.green.withValues(alpha: 0.4) : Colors.red.withValues(alpha: 0.4),
+                    width: 0.8,
+                  ),
                 ),
                 child: Text(
                   isWin ? 'WON' : 'LOST',
-                  style: TextStyle(color: isWin ? Colors.green : Colors.red, fontSize: 10.sp, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: isWin ? Colors.green : Colors.red,
+                    fontSize: 9.5.sp,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.4,
+                  ),
                 ),
               ),
             ],
           ),
-          SizedBox(height: 12.h),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(match['team1'], style: TextStyle(fontWeight: FontWeight.w600)),
-                    Text(match['score1'], style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
-                  ],
+          SizedBox(height: 10.h),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+            decoration: BoxDecoration(
+              color: th.dividerColor.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(match['team1'] ?? '', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.sp, color: th.textPrimary)),
+                      SizedBox(height: 2.h),
+                      Text(match['score1'] ?? '', style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w800, color: th.textPrimary)),
+                    ],
+                  ),
                 ),
-              ),
-              Text('vs', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(match['team2'], style: TextStyle(fontWeight: FontWeight.w600)),
-                    Text(match['score2'], style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
-                  ],
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                  decoration: BoxDecoration(
+                    color: th.dividerColor.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Text('VS', style: TextStyle(color: th.textSecondary, fontWeight: FontWeight.bold, fontSize: 10.sp)),
                 ),
-              ),
-            ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(match['team2'] ?? '', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.sp, color: th.textPrimary)),
+                      SizedBox(height: 2.h),
+                      Text(match['score2'] ?? '', style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w800, color: th.textPrimary)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          Divider(height: 20.h),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(match['result'], style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
-              Row(
-                children: [
-                  Text('Your Score: ', style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary)),
-                  Text(match['playerScore'], style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryOrange)),
-                ],
-              ),
-            ],
+          SizedBox(height: 8.h),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryOrange.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(6.r),
+              border: Border.all(color: AppTheme.primaryOrange.withValues(alpha: 0.2), width: 0.5),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  match['result'] ?? '',
+                  style: TextStyle(color: th.textSecondary, fontSize: 10.5.sp, fontWeight: FontWeight.w600),
+                ),
+                if (match['playerScore'] != null && match['playerScore'].toString().isNotEmpty)
+                  Row(
+                    children: [
+                      Text('Your Score: ', style: TextStyle(fontSize: 10.5.sp, color: th.textSecondary)),
+                      Text(
+                        match['playerScore'],
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.sp, color: AppTheme.primaryOrange),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
           ),
         ],
       ),
@@ -2143,9 +2191,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(tournament['name'], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp)),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(tournament['name'], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp), maxLines: 1),
+                    ),
                     SizedBox(height: 2.h),
-                    Text('${tournament['status']} • ${tournament['date']}', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text('${tournament['status']} • ${tournament['date']}', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp), maxLines: 1),
+                    ),
                   ],
                 ),
               ),
@@ -2174,97 +2230,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  /// Rewards & Awards Section
-  Widget _buildRewardsSection(BuildContext context) {
-    final rewards = [
-      {'title': 'Player of the Tournament', 'tournament': 'Mahbubnagar Premier League', 'icon': Icons.star, 'color': Colors.amber, 'date': 'Dec 2025'},
-      {'title': 'Best Batsman', 'tournament': 'Street Cricket Cup', 'icon': Icons.sports_cricket, 'color': Colors.blue, 'date': 'Nov 2025'},
-      {'title': 'Man of the Match', 'tournament': 'Final - MPL 2025', 'icon': Icons.emoji_events, 'color': Colors.orange, 'date': 'Dec 2025'},
-      {'title': 'Highest Scorer', 'tournament': 'Weekend Warriors League', 'icon': Icons.trending_up, 'color': Colors.green, 'date': 'Oct 2025'},
-      {'title': 'Best All-rounder', 'tournament': 'Corporate Championship', 'icon': Icons.military_tech, 'color': Colors.purple, 'date': 'Sep 2025'},
-      {'title': 'Hat-trick Hero', 'tournament': 'Street Cricket Cup', 'icon': Icons.local_fire_department, 'color': Colors.red, 'date': 'Nov 2025'},
-    ];
 
-    return Container(
-      margin: EdgeInsets.fromLTRB(16, 24, 16, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(8.w),
-                decoration: BoxDecoration(
-                  color: Colors.purple.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: Icon(Icons.military_tech, size: 20.sp, color: Colors.purple),
-              ),
-              SizedBox(width: 10.w),
-              Text('Rewards & Awards', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          SizedBox(height: 12.h),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.3,
-            ),
-            itemCount: rewards.length,
-            itemBuilder: (context, index) => _buildRewardCard(rewards[index]),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRewardCard(Map<String, dynamic> reward) {
-    return Container(
-      padding: EdgeInsets.all(14.w),
-      decoration: BoxDecoration(
-        color: ThemeHelper.of(context).cardBg,
-        borderRadius: BorderRadius.circular(12.r),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: Offset(0, 2)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: EdgeInsets.all(8.w),
-            decoration: BoxDecoration(
-              color: (reward['color'] as Color).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-            child: Icon(reward['icon'] as IconData, size: 20.sp, color: reward['color'] as Color),
-          ),
-          const Spacer(),
-          Text(
-            reward['title'],
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.sp),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          SizedBox(height: 2.h),
-          Text(
-            reward['tournament'],
-            style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 11.sp),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            reward['date'],
-            style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 10.sp),
-          ),
-        ],
-      ),
-    );
-  }
 
   List<PlayerAchievement> _getUniqueAchievements(List<PlayerAchievement> achievements) {
     if (achievements.isEmpty) return [];
@@ -2284,7 +2250,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildFloatingTabSection(BuildContext context, UserModel user) {
     return DefaultTabController(
-      length: 5,
+      length: 4,
       child: Column(
         children: [
           // Floating Tab Bar
@@ -2311,12 +2277,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               labelColor: Colors.white,
               unselectedLabelColor: ThemeHelper.of(context).textSecondary,
-              tabs: const [
-                Tab(icon: Icon(Icons.query_stats), text: 'Stats'),
-                Tab(icon: Icon(Icons.emoji_events), text: 'Achieve'),
-                Tab(icon: Icon(Icons.sports_cricket), text: 'Matches'),
-                Tab(icon: Icon(Icons.workspace_premium), text: 'Tourney'),
-                Tab(icon: Icon(Icons.card_giftcard), text: 'Rewards'),
+              tabs: [
+                const Tab(icon: Icon(Icons.query_stats), text: 'Stats'),
+                const Tab(icon: Icon(Icons.emoji_events), text: 'Achieve'),
+                const Tab(icon: Icon(Icons.sports_cricket), text: 'Matches'),
+                Tab(
+                  icon: const Icon(Icons.workspace_premium),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Tournaments', style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.bold)),
+                  ),
+                ),
               ],
               labelStyle: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.bold),
               labelPadding: EdgeInsets.zero,
@@ -2332,7 +2303,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _buildAchievementsContent(user),
                 _buildRecentMatchesContent(),
                 _buildTournamentsContent(user),
-                _buildRewardsContent(user),
               ],
             ),
           ),
@@ -2386,6 +2356,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _openKeyMomentPosterForAchievement(BuildContext context, PlayerAchievement ach, UserModel user) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator(color: AppTheme.stadiumOrange)),
+    );
+
+    try {
+      final poster = await KeyMomentPosterModel.fromAchievement(
+        ach,
+        playerName: user.name,
+        photoUrl: user.profileImageUrl.isNotEmpty ? user.profileImageUrl : null,
+        playerId: user.uid,
+      );
+      if (context.mounted) {
+        Navigator.pop(context); // close loading indicator
+        KeyMomentPosterDialog.show(context, poster, poster.defaultTheme);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // close loading indicator
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open poster: $e')),
+        );
+      }
+    }
+  }
+
   Widget _buildAchievementsContent(UserModel user) {
     final uniqueAchievements = _getUniqueAchievements(user.achievements);
     if (uniqueAchievements.isEmpty) {
@@ -2397,7 +2395,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             SizedBox(height: 16.h),
             Text('No achievements yet', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
             SizedBox(height: 4.h),
-            Text('Play matches to earn badges!', style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary)),
+            Text('Play matches to earn badges and key moment posters!', style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textSecondary)),
           ],
         ),
       );
@@ -2414,27 +2412,87 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final ach = achievements[index];
         return Card(
           margin: EdgeInsets.only(bottom: 12.h),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: AppTheme.primaryOrange.withOpacity(0.1),
-              child: Text(ach.badgeIcon, style: TextStyle(fontSize: 20.sp)),
-            ),
-            title: Text(ach.title, style: TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(ach.description),
-                SizedBox(height: 2.h),
-                Text(
-                  '${ach.earnedAt.day}/${ach.earnedAt.month}/${ach.earnedAt.year}',
-                  style: TextStyle(fontSize: 10.sp, color: ThemeHelper.of(context).textSecondary),
-                ),
-              ],
-            ),
-            trailing: IconButton(
-              icon: Icon(Icons.share, color: ThemeHelper.of(context).textSecondary, size: 20.sp),
-              onPressed: () => _showFullRewardDialog(context, ach, user),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => _openKeyMomentPosterForAchievement(context, ach, user),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 22.r,
+                    backgroundColor: AppTheme.primaryOrange.withValues(alpha: 0.12),
+                    child: Text(ach.badgeIcon, style: TextStyle(fontSize: 20.sp)),
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                ach.title,
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.sp),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryOrange.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(10.r),
+                                border: Border.all(color: AppTheme.primaryOrange.withValues(alpha: 0.4), width: 1),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.auto_awesome, size: 10.sp, color: AppTheme.primaryOrange),
+                                  SizedBox(width: 3.w),
+                                  Text(
+                                    'POSTER',
+                                    style: TextStyle(
+                                      fontSize: 9.sp,
+                                      fontWeight: FontWeight.w900,
+                                      color: AppTheme.primaryOrange,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 3.h),
+                        Text(
+                          ach.description,
+                          style: TextStyle(fontSize: 11.5.sp, color: ThemeHelper.of(context).textSecondary),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          '${ach.earnedAt.day}/${ach.earnedAt.month}/${ach.earnedAt.year}${ach.matchName != null ? ' • ${ach.matchName}' : ''}',
+                          style: TextStyle(fontSize: 10.sp, color: ThemeHelper.of(context).textSecondary.withValues(alpha: 0.7)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 6.w),
+                  IconButton(
+                    icon: Icon(Icons.share_outlined, color: ThemeHelper.of(context).textSecondary, size: 19.sp),
+                    onPressed: () {
+                      Share.share(
+                        'I earned the "${ach.title}" achievement on ScorePartner! 🏏🏆\n${ach.description}',
+                        subject: 'Cricket Achievement - ${ach.title}',
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -2478,305 +2536,444 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildTournamentsContent(UserModel user) {
-    final tourneyAchievements = user.achievements
-        .where((a) => a.type == 'tournament_win' || a.type == 'tournamentRunner')
+    final tourneyWins = user.achievements
+        .where((a) => a.type == 'tournament_win' || a.type == 'win')
+        .toList();
+    final tourneyRunners = user.achievements
+        .where((a) => a.type == 'tournamentRunner')
         .toList();
 
-    if (tourneyAchievements.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+    _tournamentsFuture ??= _loadUserTournaments(user.uid, user);
+
+    return FutureBuilder<List<TournamentModel>>(
+      future: _tournamentsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final tournaments = snapshot.data ?? [];
+
+        if (tournaments.isEmpty && tourneyWins.isEmpty && tourneyRunners.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(18.w),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.workspace_premium, size: 44.sp, color: Colors.amber[700]),
+                  ),
+                  SizedBox(height: 14.h),
+                  Text(
+                    'No tournament history',
+                    style: TextStyle(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.bold,
+                      color: ThemeHelper.of(context).textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 6.h),
+                  Text(
+                    'Participate in or organize tournaments to track your journey here.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp),
+                  ),
+                  SizedBox(height: 16.h),
+                  ElevatedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const MyTournamentsScreen()),
+                    ),
+                    icon: const Icon(Icons.explore, size: 16),
+                    label: const Text('View Tournaments'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryOrange,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100.r)),
+                      padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 10.h),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return ListView(
+          padding: EdgeInsets.all(16.w),
           children: [
-            Icon(Icons.workspace_premium, size: 48.sp, color: ThemeHelper.of(context).dividerColor!),
-            SizedBox(height: 16.h),
-            Text('No tournament history', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
+            // Trophy showcase if user has wins or runner up trophies
+            if (tourneyWins.isNotEmpty || tourneyRunners.isNotEmpty) ...[
+              Container(
+                margin: EdgeInsets.only(bottom: 14.h),
+                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: ThemeHelper.of(context).isDark
+                        ? [const Color(0xFF3E2723), const Color(0xFF261D19)]
+                        : [const Color(0xFFFFF8E1), const Color(0xFFFFECB3)],
+                  ),
+                  borderRadius: BorderRadius.circular(14.r),
+                  border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.emoji_events, size: 26.sp, color: Colors.amber[700]),
+                    SizedBox(width: 10.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Tournament Trophies',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13.sp,
+                              color: ThemeHelper.of(context).isDark ? Colors.amber[200] : const Color(0xFFB45309),
+                            ),
+                          ),
+                          SizedBox(height: 2.h),
+                          Text(
+                            '${tourneyWins.length} Winner • ${tourneyRunners.length} Runner-up',
+                            style: TextStyle(fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // Real tournament cards
+            ...tournaments.map((t) => _buildRealTournamentCard(t, user)),
+
+            // Legacy tournament achievement fallback cards (if any achievements exist with names not in tournaments list)
+            ...tourneyWins.where((a) => !tournaments.any((t) => t.id == a.tournamentId || t.name == a.tournamentName)).map((a) {
+              return _buildTournamentCard({
+                'name': a.tournamentName ?? 'Tournament',
+                'status': 'Winner',
+                'icon': '🏆',
+                'date': '${a.earnedAt.month}/${a.earnedAt.year}',
+                'matches': a.stats['matches'] ?? 0,
+                'runs': a.stats['runs'] ?? 0,
+                'wickets': a.stats['wickets'] ?? 0,
+              });
+            }),
+            ...tourneyRunners.where((a) => !tournaments.any((t) => t.id == a.tournamentId || t.name == a.tournamentName)).map((a) {
+              return _buildTournamentCard({
+                'name': a.tournamentName ?? 'Tournament',
+                'status': 'Runner-up',
+                'icon': '🥈',
+                'date': '${a.earnedAt.month}/${a.earnedAt.year}',
+                'matches': a.stats['matches'] ?? 0,
+                'runs': a.stats['runs'] ?? 0,
+                'wickets': a.stats['wickets'] ?? 0,
+              });
+            }),
           ],
-        ),
-      );
-    }
-
-    final tournaments = tourneyAchievements.map((a) {
-      return {
-        'name': a.tournamentName ?? 'Unknown Tournament',
-        'status': a.type == 'tournament_win' ? 'Winner' : 'Runner-up',
-        'icon': '🏆',
-        'date': '${a.earnedAt.month}/${a.earnedAt.year}',
-        'matches': a.stats['matches'] ?? 0,
-        'runs': a.stats['runs'] ?? 0,
-        'wickets': a.stats['wickets'] ?? 0,
-      };
-    }).toList();
-
-    return ListView.builder(
-      padding: EdgeInsets.all(16.w),
-      itemCount: tournaments.length,
-      itemBuilder: (context, index) => _buildTournamentCard(tournaments[index]),
+        );
+      },
     );
   }
 
-  BadgeType _achievementTypeToBadgeType(String type) {
-    switch (type) {
-      case 'tournament_win':
-      case 'win':
-        return BadgeType.win;
-      case 'century':
-        return BadgeType.century;
-      case 'half_century':
-      case 'fifty':
-        return BadgeType.fifty;
-      case 'five_wickets':
-      case 'wicket':
-        return BadgeType.wicket;
-      case 'man_of_match':
-      case 'mvp':
-        return BadgeType.mvp;
-      default:
-        return BadgeType.fifty;
-    }
-  }
+  Widget _buildRealTournamentCard(TournamentModel tournament, UserModel user) {
+    final th = ThemeHelper.of(context);
+    final isOrganizer = tournament.organizerId == user.uid || tournament.adminIds.contains(user.uid);
+    final isChampion = tournament.winnerId.isNotEmpty &&
+        (tournament.winnerId == user.uid ||
+            user.achievements.any((a) =>
+                (a.type == 'tournament_win' || a.type == 'win') &&
+                (a.tournamentId == tournament.id || a.tournamentName == tournament.name)));
+    final isRunnerUp = tournament.runnerUpId.isNotEmpty &&
+        (tournament.runnerUpId == user.uid ||
+            user.achievements.any((a) =>
+                (a.type == 'tournamentRunner') &&
+                (a.tournamentId == tournament.id || a.tournamentName == tournament.name)));
 
-  Widget _buildRewardsContent(UserModel user) {
-    final uniqueAchievements = _getUniqueAchievements(user.achievements)
-        .where((a) => !a.type.startsWith('badge_'))
-        .toList();
-    if (uniqueAchievements.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.card_giftcard, size: 48.sp, color: ThemeHelper.of(context).dividerColor!),
-            SizedBox(height: 16.h),
-            Text('No rewards yet', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
-          ],
+    final status = tournament.effectiveStatus.toLowerCase();
+    final isOngoing = status == 'ongoing';
+    final isUpcoming = status == 'upcoming';
+
+    Color statusColor;
+    Color statusBgColor;
+    String statusText;
+    IconData statusIcon;
+
+    if (isOngoing) {
+      statusColor = const Color(0xFF2E7D32);
+      statusBgColor = const Color(0xFF2E7D32).withValues(alpha: 0.12);
+      statusText = 'ONGOING';
+      statusIcon = Icons.fiber_manual_record;
+    } else if (isUpcoming) {
+      statusColor = const Color(0xFF0288D1);
+      statusBgColor = const Color(0xFF0288D1).withValues(alpha: 0.12);
+      statusText = 'UPCOMING';
+      statusIcon = Icons.schedule_rounded;
+    } else {
+      statusColor = Colors.grey[700]!;
+      statusBgColor = Colors.grey.withValues(alpha: 0.12);
+      statusText = 'COMPLETED';
+      statusIcon = Icons.check_circle_outline_rounded;
+    }
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 12.h),
+      decoration: BoxDecoration(
+        color: th.cardBg,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: isOngoing
+              ? const Color(0xFF2E7D32).withValues(alpha: 0.4)
+              : (th.isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06)),
+          width: isOngoing ? 1.4 : 1.0,
         ),
-      );
-    }
-
-    return GridView.builder(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 0.8,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
+        boxShadow: [
+          BoxShadow(
+            color: th.isDark ? Colors.black.withValues(alpha: 0.25) : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      itemCount: uniqueAchievements.length,
-      itemBuilder: (context, index) {
-        final achievement = uniqueAchievements[index];
-        return GestureDetector(
-          onTap: () => _showFullRewardDialog(context, achievement, user),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12.r),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: Offset(0, 2),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => TournamentDetailsScreen(tournament: tournament),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(16.r),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Header (Status pill + Role badge + Ball type/Format pill)
+                Row(
+                  children: [
+                    // Status Pill
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                      decoration: BoxDecoration(
+                        color: statusBgColor,
+                        borderRadius: BorderRadius.circular(100.r),
+                        border: Border.all(color: statusColor.withValues(alpha: 0.35), width: 0.8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isOngoing) ...[
+                            Container(
+                              width: 6.w,
+                              height: 6.h,
+                              decoration: BoxDecoration(
+                                color: statusColor,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            SizedBox(width: 4.w),
+                          ] else ...[
+                            Icon(statusIcon, size: 10.sp, color: statusColor),
+                            SizedBox(width: 3.w),
+                          ],
+                          Text(
+                            statusText,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 9.5.sp,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    SizedBox(width: 6.w),
+
+                    // Role pill
+                    if (isChampion) ...[
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(100.r),
+                          border: Border.all(color: Colors.amber.withValues(alpha: 0.4), width: 0.8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.emoji_events, size: 10.sp, color: Colors.amber[800]),
+                            SizedBox(width: 2.w),
+                            Text(
+                              'CHAMPION',
+                              style: TextStyle(
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.amber[800],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 6.w),
+                    ] else if (isRunnerUp) ...[
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
+                        decoration: BoxDecoration(
+                          color: Colors.blueGrey.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(100.r),
+                          border: Border.all(color: Colors.blueGrey.withValues(alpha: 0.4), width: 0.8),
+                        ),
+                        child: Text(
+                          'RUNNER-UP',
+                          style: TextStyle(
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.blueGrey[700],
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 6.w),
+                    ] else if (isOrganizer) ...[
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryOrange.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(100.r),
+                          border: Border.all(color: AppTheme.primaryOrange.withValues(alpha: 0.35), width: 0.8),
+                        ),
+                        child: Text(
+                          'ORGANIZER',
+                          style: TextStyle(
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.primaryOrange,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 6.w),
+                    ],
+
+                    const Spacer(),
+
+                    // Format badge (e.g. Tennis • T20)
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
+                      decoration: BoxDecoration(
+                        color: th.dividerColor.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(100.r),
+                      ),
+                      child: Text(
+                        '${tournament.ballType.toUpperCase()} • ${tournament.overs} Ov',
+                        style: TextStyle(
+                          fontSize: 9.5.sp,
+                          fontWeight: FontWeight.w600,
+                          color: th.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 10.h),
+
+                // 2. Tournament Name & Location
+                Text(
+                  tournament.name,
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.bold,
+                    color: th.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+
+                SizedBox(height: 4.h),
+
+                Row(
+                  children: [
+                    Icon(Icons.location_on_outlined, size: 12.sp, color: th.textSecondary),
+                    SizedBox(width: 3.w),
+                    Expanded(
+                      child: Text(
+                        tournament.location.isNotEmpty ? tournament.location : 'Cricket Stadium',
+                        style: TextStyle(fontSize: 11.sp, color: th.textSecondary),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                    Icon(Icons.calendar_month_outlined, size: 11.sp, color: th.textSecondary),
+                    SizedBox(width: 3.w),
+                    Text(
+                      DateFormat('d MMM yyyy').format(tournament.startDate),
+                      style: TextStyle(fontSize: 11.sp, color: th.textSecondary, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 10.h),
+
+                // 3. Stats Strip (Teams, Prize Pool, Format)
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                  decoration: BoxDecoration(
+                    color: th.dividerColor.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.groups_outlined, size: 14.sp, color: AppTheme.primaryOrange),
+                      SizedBox(width: 4.w),
+                      Text(
+                        '${tournament.registeredTeamIds.length}/${tournament.maxTeams} Teams',
+                        style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w600, color: th.textPrimary),
+                      ),
+                      if (tournament.prizePool > 0) ...[
+                        const Spacer(),
+                        Icon(Icons.emoji_events_outlined, size: 13.sp, color: Colors.amber[700]),
+                        SizedBox(width: 3.w),
+                        Text(
+                          '₹${tournament.prizePool.toStringAsFixed(0)}',
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.bold,
+                            color: th.isDark ? Colors.amber[300] : const Color(0xFFD97706),
+                          ),
+                        ),
+                      ] else ...[
+                        const Spacer(),
+                        Text(
+                          tournament.format.toUpperCase(),
+                          style: TextStyle(fontSize: 10.5.sp, fontWeight: FontWeight.w600, color: th.textSecondary),
+                        ),
+                      ],
+                      SizedBox(width: 6.w),
+                      Icon(Icons.arrow_forward_ios_rounded, size: 9.sp, color: th.textSecondary.withValues(alpha: 0.6)),
+                    ],
+                  ),
                 ),
               ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12.r),
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: 400.w,
-                  height: 500.h,
-                  child: IgnorePointer(
-                    child: _buildHighlightRewardCard(achievement, user),
-                  ),
-                ),
-              ),
-            ),
           ),
-        );
-      },
-    );
-  }
-
-  void _showFullRewardDialog(BuildContext context, PlayerAchievement achievement, UserModel user) {
-    final screenshotController = ScreenshotController();
-    
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: EdgeInsets.symmetric(horizontal: 16.w),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Align(
-              alignment: Alignment.topRight,
-              child: IconButton(
-                icon: Icon(Icons.close, color: Colors.white, size: 28.sp),
-                onPressed: () => Navigator.pop(ctx),
-              ),
-            ),
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.contain,
-                child: SizedBox(
-                  width: 400.w,
-                  height: 500.h,
-                  child: Screenshot(
-                    controller: screenshotController,
-                    child: _buildHighlightRewardCard(achievement, user),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 20.h),
-            ElevatedButton.icon(
-              onPressed: () async {
-                try {
-                  final imageBytes = await screenshotController.capture(
-                    delay: const Duration(milliseconds: 10),
-                    pixelRatio: 3.0,
-                  );
-
-                  if (imageBytes != null) {
-                    await Share.shareXFiles(
-                      [
-                        XFile.fromData(
-                          imageBytes,
-                          mimeType: 'image/png',
-                          name: 'achievement_${achievement.id}.png',
-                        )
-                      ],
-                      text: 'Check out my achievement on ScorePartner! 🏏🏆\n#Cricket #ScorePartner #Achievement',
-                      subject: 'My Cricket Achievement',
-                    );
-                  }
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to share achievement: $e')),
-                  );
-                }
-              },
-              icon: Icon(Icons.share),
-              label: const Text('SHARE MOMENT'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.stadiumOrange,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
-              ),
-            ),
-          ],
         ),
       ),
     );
   }
 
-  Widget _buildHighlightRewardCard(PlayerAchievement achievement, UserModel user) {
-    final matchId = achievement.matchId;
-    if (matchId == null || matchId.isEmpty) {
-      // No match linked — show a simple gradient card
-      final badgeType = _achievementTypeToBadgeType(achievement.type);
-      final dateStr = '${achievement.earnedAt.day} ${_monthName(achievement.earnedAt.month)} ${achievement.earnedAt.year}';
-      return Center(
-        child: HighlightBadgeCard(
-          type: badgeType,
-          title: achievement.title,
-          description: achievement.description,
-          matchName: achievement.matchName ?? 'Match',
-          ground: '',
-          date: dateStr,
-          playerName: user.name,
-          playerPhoto: user.profileImageUrl.isNotEmpty ? user.profileImageUrl : null,
-        ),
-      );
-    }
-
-    // Fetch match data for team names and scores
-    return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('matches').doc(matchId).get(),
-      builder: (context, snapshot) {
-        final badgeType = _achievementTypeToBadgeType(achievement.type);
-        final dateStr = '${achievement.earnedAt.day} ${_monthName(achievement.earnedAt.month)} ${achievement.earnedAt.year}';
-
-        String matchName = achievement.matchName ?? 'Match';
-        String ground = '';
-        String? team1Name;
-        String? team2Name;
-        String? team1Score;
-        String? team2Score;
-
-        String? generatedImageUrl;
-        if (snapshot.hasData && snapshot.data!.exists) {
-          final matchData = snapshot.data!.data() as Map<String, dynamic>;
-          team1Name = matchData['team1Name'] as String? ?? 'Team 1';
-          team2Name = matchData['team2Name'] as String? ?? 'Team 2';
-          matchName = '$team1Name vs $team2Name';
-          ground = matchData['ground'] as String? ?? matchData['location'] as String? ?? '';
-
-          // Extract scores
-          final t1Score = matchData['team1Score'] as Map<String, dynamic>?;
-          final t2Score = matchData['team2Score'] as Map<String, dynamic>?;
-          if (t1Score != null) {
-            final runs = t1Score['runs'] ?? 0;
-            final wickets = t1Score['wickets'] ?? 0;
-            final overs = t1Score['overs'] ?? 0;
-            team1Score = '$runs/$wickets ($overs ov)';
-          }
-          if (t2Score != null) {
-            final runs = t2Score['runs'] ?? 0;
-            final wickets = t2Score['wickets'] ?? 0;
-            final overs = t2Score['overs'] ?? 0;
-            team2Score = '$runs/$wickets ($overs ov)';
-          }
-
-          // Check if a highlight image was already generated for this achievement
-          final highlightsList = matchData['highlights'] as List<dynamic>? ?? [];
-          for (final h in highlightsList) {
-            final hType = h['type'] as String?;
-            final hPlayerId = h['playerId'] as String?;
-            final hImg = h['imageUrl'] as String?;
-            if (hType != null && hPlayerId == user.uid && hType == achievement.type && hImg != null && hImg.isNotEmpty) {
-              generatedImageUrl = hImg;
-              break;
-            }
-          }
-        }
-
-        return Center(
-          child: HighlightBadgeCard(
-            type: badgeType,
-            title: achievement.title,
-            description: achievement.description,
-            matchName: matchName,
-            ground: ground,
-            date: dateStr,
-            playerName: user.name,
-            playerPhoto: (generatedImageUrl != null && generatedImageUrl.isNotEmpty) ? generatedImageUrl : (user.profileImageUrl.isNotEmpty ? user.profileImageUrl : null),
-            team1Name: team1Name,
-            team2Name: team2Name,
-            team1Score: team1Score,
-            team2Score: team2Score,
-          ),
-        );
-      },
-    );
-  }
-
-  ImageProvider _getHighlightImageProvider(String imageUrl) {
-    if (imageUrl.startsWith('data:image') || imageUrl.startsWith('data:')) {
-      try {
-        final base64Str = imageUrl.split(',').last;
-        final bytes = base64Decode(base64Str);
-        return MemoryImage(bytes);
-      } catch (e) {
-        debugPrint('Error parsing highlight base64 image: $e');
-      }
-    }
-    return NetworkImage(imageUrl);
-  }
-
-  String _monthName(int month) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return months[month - 1];
-  }
 }
 
 class TennisBallWidget extends StatelessWidget {

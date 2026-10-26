@@ -195,13 +195,21 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
                      child: Row(
                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                        children: [
-                         Text(
-                           battingTeamName.toUpperCase(),
-                           style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.w900, fontSize: 15.sp),
+                         Expanded(
+                           child: Text(
+                             battingTeamName.toUpperCase(),
+                             style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.w900, fontSize: 15.sp),
+                             overflow: TextOverflow.ellipsis,
+                             maxLines: 1,
+                           ),
                          ),
-                         Text(
-                           '${battingScore.runs}-${battingScore.wickets} (${battingScore.overs} OV)',
-                           style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.w900, fontSize: 16.sp),
+                         SizedBox(width: 8.w),
+                         FittedBox(
+                           fit: BoxFit.scaleDown,
+                           child: Text(
+                             '${battingScore.runs}-${battingScore.wickets} (${battingScore.overs} OV)',
+                             style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.w900, fontSize: 16.sp),
+                           ),
                          ),
                        ],
                      ),
@@ -258,7 +266,9 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
                      child: Text(
                        '${battingTeamName} Bowlers'.toUpperCase(),
                        style: TextStyle(color: ThemeHelper.of(context).cardBg, fontWeight: FontWeight.bold, fontSize: 14.sp),
-                      ),
+                       overflow: TextOverflow.ellipsis,
+                       maxLines: 1,
+                     ),
                    ),
                    
                    _buildBowlerHeader(),
@@ -412,12 +422,16 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
             flex: 5, 
             child: GestureDetector(
               onTap: () => _navigateToPlayerProfile(b.playerId, context),
-              child: Text(b.playerName, style: TextStyle(
-                fontWeight: FontWeight.bold, fontSize: 13.sp, color: ThemeHelper.of(context).textPrimary,
-                decoration: TextDecoration.underline,
-                decorationColor: Color(0x66FF9800),
-                decorationStyle: TextDecorationStyle.dotted,
-              )),
+              child: Text(
+                b.playerName, 
+                style: TextStyle(
+                  fontWeight: FontWeight.bold, fontSize: 13.sp, color: ThemeHelper.of(context).textPrimary,
+                  decoration: TextDecoration.underline,
+                  decorationColor: const Color(0x66FF9800),
+                  decorationStyle: TextDecorationStyle.dotted,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ),
           Expanded(flex: 1, child: Text(b.oversDisplay, textAlign: TextAlign.right, style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textSecondary))),
@@ -601,7 +615,7 @@ class _MatchScorecardScreenState extends State<MatchScorecardScreen>
     );
     
     try {
-      final user = await FirebaseDataService.instance.getUserById(playerId);
+      final user = await FirebaseDataService.instance.findUserByAnyId(playerId);
       if (!context.mounted) return;
       Navigator.pop(context); // Dismiss loading
       

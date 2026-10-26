@@ -8,7 +8,6 @@ import 'package:scorepatner/presentation/widgets/team_logo_widget.dart';
 import 'package:intl/intl.dart';
 import 'match_summary_theme.dart';
 import 'match_poster_customization.dart';
-import 'package:scorepatner/core/theme/app_theme.dart';
 
 /// The renderable poster card widget.
 /// This widget builds the visual poster from read-only data.
@@ -474,17 +473,14 @@ class MatchSummaryPosterCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Text(
-                    batter.playerName,
-                    style: _textStyle(
-                      size: isTop ? 14 : 12,
-                      weight: isTop ? FontWeight.w700 : FontWeight.w600,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+              Text(
+                batter.playerName,
+                style: _textStyle(
+                  size: isTop ? 14 : 12,
+                  weight: isTop ? FontWeight.w700 : FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
               if (isTop) ...[
                 const SizedBox(height: 2),
@@ -588,17 +584,14 @@ class MatchSummaryPosterCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Text(
-                    bowler.playerName,
-                    style: _textStyle(
-                      size: isTop ? 14 : 12,
-                      weight: isTop ? FontWeight.w700 : FontWeight.w600,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+              Text(
+                bowler.playerName,
+                style: _textStyle(
+                  size: isTop ? 14 : 12,
+                  weight: isTop ? FontWeight.w700 : FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
               if (isTop) ...[
                 const SizedBox(height: 2),
@@ -765,34 +758,63 @@ class MatchSummaryPosterCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '${data.team1Name}  ${data.superOverTeam1Score!.runs}/${data.superOverTeam1Score!.wickets}',
-                style: _textStyle(
-                  size: 12,
-                  weight: FontWeight.w600,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  'vs',
-                  style: _textStyle(
-                    size: 10,
-                    color: theme.textSecondaryColor,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 130),
+                  child: Text(
+                    data.team1Name,
+                    style: _textStyle(
+                      size: 12,
+                      weight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ),
-              ),
-              Text(
-                '${data.team2Name}  ${data.superOverTeam2Score!.runs}/${data.superOverTeam2Score!.wickets}',
-                style: _textStyle(
-                  size: 12,
-                  weight: FontWeight.w600,
+                const SizedBox(width: 6),
+                Text(
+                  '${data.superOverTeam1Score!.runs}/${data.superOverTeam1Score!.wickets}',
+                  style: _textStyle(
+                    size: 12,
+                    weight: FontWeight.w800,
+                  ),
                 ),
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Text(
+                    'vs',
+                    style: _textStyle(
+                      size: 10,
+                      color: theme.textSecondaryColor,
+                    ),
+                  ),
+                ),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 130),
+                  child: Text(
+                    data.team2Name,
+                    style: _textStyle(
+                      size: 12,
+                      weight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '${data.superOverTeam2Score!.runs}/${data.superOverTeam2Score!.wickets}',
+                  style: _textStyle(
+                    size: 12,
+                    weight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

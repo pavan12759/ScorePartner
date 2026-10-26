@@ -87,13 +87,14 @@ class ScoringProvider extends ChangeNotifier {
     // Validation: Check if match is already finished or innings complete
     final isTeam1BattingDirect = match.currentBattingTeam == 'team1';
     final currentScoreActive = isTeam1BattingDirect ? match.team1Score : match.team2Score;
+    final isTestMatchActive = match.matchFormat == 'Test';
     
-    final maxWicketsActive = match.isSuperOver
+    final maxWicketsActive = !isTestMatchActive && match.isSuperOver
         ? 2
         : (currentScoreActive.batters.length > 1 ? currentScoreActive.batters.length - 1 : 10);
     bool isAllOutActive = currentScoreActive.wickets >= maxWicketsActive;
-    bool areOversCompleteActive = match.oversPerSide > 0 && currentScoreActive.overs >= match.oversPerSide;
-    bool targetReachedActive = match.currentInnings == 2 &&
+    bool areOversCompleteActive = !match.isUnlimitedOvers && match.oversPerSide > 0 && currentScoreActive.overs >= match.oversPerSide;
+    bool targetReachedActive = (isTestMatchActive ? match.currentInnings == 4 : match.currentInnings == 2) &&
         match.target != null &&
         currentScoreActive.runs >= match.target!;
     
@@ -370,29 +371,45 @@ class ScoringProvider extends ChangeNotifier {
       // ============ CHECK FOR END OF INNINGS ============
       
       // Determine if team is all out
-      final maxWickets = match.isSuperOver
+      final isTestMatch = match.matchFormat == 'Test';
+      final maxWickets = !isTestMatch && match.isSuperOver
           ? 2
           : 10; // Default to 10 wickets for a standard match
       bool isAllOut = newWickets >= maxWickets;
       
       // Determine if overs are complete
-      bool areOversComplete = isLegalBall && currentBall == 0 && match.oversPerSide > 0 && currentOver >= match.oversPerSide;
+      bool areOversComplete = !match.isUnlimitedOvers && isLegalBall && currentBall == 0 && match.oversPerSide > 0 && currentOver >= match.oversPerSide;
       
       if (match.currentInnings == 1) {
         if (isAllOut || areOversComplete) {
           _commentaryService.speakEvent('Innings over. ${isAllOut ? "All out." : "Overs complete."}', 0);
+          final breakMessage = isTestMatch
+              ? "INNINGS BREAK - End of 1st Innings. Total: $newRuns/$newWickets"
+              : "INNINGS BREAK - End of Innings 1. Target: ${newRuns + 1}";
           // Insert Innings Break Event
           await _addSystemEvent(
             match,
-            "INNINGS BREAK - End of Innings 1. Target: ${newRuns + 1}",
+            breakMessage,
             newBattingTeamScore,
             newBowlingTeamScore,
             existingBallByBall: updatedBallByBall,
           );
         }
       } else if (match.currentInnings == 2) {
-        if (match.matchFormat == 'Test') {
-           if (isAllOut) _commentaryService.speakEvent('Innings over. All out.', 0);
+        if (isTestMatch) {
+           if (isAllOut) {
+             _commentaryService.speakEvent('Innings over. All out.', 0);
+             final inn1Runs = (isTeam1Batting ? match.team2FirstInningsScore?.runs : match.team1FirstInningsScore?.runs) ?? 0;
+             final diff = newRuns - inn1Runs;
+             final trailLeadText = diff >= 0 ? "leads by $diff runs" : "trails by ${-diff} runs";
+             await _addSystemEvent(
+               match,
+               "INNINGS BREAK - End of 2nd Innings. ${isTeam1Batting ? match.team1Name : match.team2Name} $trailLeadText",
+               newBattingTeamScore,
+               newBowlingTeamScore,
+               existingBallByBall: updatedBallByBall,
+             );
+           }
            return; 
         }
         
@@ -444,8 +461,29 @@ class ScoringProvider extends ChangeNotifier {
           }
         }
       } else if (match.currentInnings == 3) {
-        if (match.matchFormat == 'Test') {
-           if (isAllOut) _commentaryService.speakEvent('Innings over. All out.', 0);
+        if (isTestMatch) {
+           if (isAllOut) {
+             _commentaryService.speakEvent('Innings over. All out.', 0);
+             final batting1stInn = (isTeam1Batting ? match.team1FirstInningsScore?.runs : match.team2FirstInningsScore?.runs) ?? 0;
+             final bowling1stInn = (isTeam1Batting ? match.team2FirstInningsScore?.runs : match.team1FirstInningsScore?.runs) ?? 0;
+             final combinedBatting = batting1stInn + newRuns;
+             
+             if (combinedBatting <= bowling1stInn) {
+               final winnerName = isTeam1Batting ? match.team2Name : match.team1Name;
+               final winnerId = isTeam1Batting ? match.team2Id : match.team1Id;
+               final margin = 'an innings and ${bowling1stInn - combinedBatting} runs';
+               await _completeMatch(match, winnerName, margin, winnerId, isTeam1Batting, newBattingTeamScore, newBowlingTeamScore, updatedBallByBall);
+             } else {
+               final target = (combinedBatting - bowling1stInn) + 1;
+               await _addSystemEvent(
+                 match,
+                 "INNINGS BREAK - End of 3rd Innings. Target for ${isTeam1Batting ? match.team2Name : match.team1Name}: $target runs",
+                 newBattingTeamScore,
+                 newBowlingTeamScore,
+                 existingBallByBall: updatedBallByBall,
+               );
+             }
+           }
            return;
         }
 
@@ -455,10 +493,10 @@ class ScoringProvider extends ChangeNotifier {
           // UI will handle transition to second team batting
         }
       } else if (match.currentInnings == 4) {
-        if (match.matchFormat == 'Test') {
+        if (isTestMatch) {
            // Test Match Chase Logic
            final dynamicTarget = match.target ?? 0;
-           bool targetReached = newRuns >= dynamicTarget;
+           bool targetReached = dynamicTarget > 0 && newRuns >= dynamicTarget;
            
            if (targetReached || isAllOut) {
               String winnerTeamName = '';
@@ -472,10 +510,16 @@ class ScoringProvider extends ChangeNotifier {
                  margin = '$wicketsLeft wickets';
                  await _completeMatch(match, winnerTeamName, margin, winnerTeamId, isTeam1Batting, newBattingTeamScore, newBowlingTeamScore, updatedBallByBall);
               } else if (isAllOut) {
-                 winnerTeamName = isTeam1Batting ? match.team2Name : match.team1Name;
-                 winnerTeamId = isTeam1Batting ? match.team2Id : match.team1Id;
-                 int runDiff = (dynamicTarget - 1) - newRuns;
-                 margin = '$runDiff runs';
+                 if (dynamicTarget > 0 && newRuns == dynamicTarget - 1) {
+                   winnerTeamName = 'Match Tied';
+                   winnerTeamId = 'tied';
+                   margin = '0 runs';
+                 } else {
+                   winnerTeamName = isTeam1Batting ? match.team2Name : match.team1Name;
+                   winnerTeamId = isTeam1Batting ? match.team2Id : match.team1Id;
+                   int runDiff = (dynamicTarget - 1) - newRuns;
+                   margin = '$runDiff runs';
+                 }
                  await _completeMatch(match, winnerTeamName, margin, winnerTeamId, isTeam1Batting, newBattingTeamScore, newBowlingTeamScore, updatedBallByBall);
               }
            }
@@ -1039,14 +1083,17 @@ class ScoringProvider extends ChangeNotifier {
     changeBowler(nextBowlerId);
   }
 
-  Future<void> changeInnings(MatchModel match) async {
+  Future<void> changeInnings(
+    MatchModel match, {
+    bool enforceFollowOn = false,
+    bool isDeclaration = false,
+  }) async {
     if (_isLoading) return;
     _isLoading = true;
     notifyListeners();
     try {
       final isTeam1Batting = match.currentBattingTeam == 'team1';
-      final newBattingTeam = isTeam1Batting ? 'team2' : 'team1';
-      final newBowlingTeam = isTeam1Batting ? 'team1' : 'team2';
+      final isTest = match.matchFormat == 'Test';
       
       _currentStrikerId = null;
       _currentNonStrikerId = null;
@@ -1054,28 +1101,248 @@ class ScoringProvider extends ChangeNotifier {
       _lastOverBowlerId = null;
       _undoStack.clear();
       _undoStateStack.clear();
-      
-      int targetRuns = 0;
-      if (match.currentInnings == 1) {
-         final firstInningsScore = isTeam1Batting ? match.team1Score : match.team2Score;
-         targetRuns = firstInningsScore.runs + 1;
-      } else if (match.currentInnings == 3) {
-         final firstInningsScore = isTeam1Batting ? match.team1Score : match.team2Score;
-         targetRuns = firstInningsScore.runs + 1; // Super over target
-      }
-      
-      await _dataService.updateMatch(match.id, {
+
+      final currentBattingScore = isTeam1Batting ? match.team1Score : match.team2Score;
+      final currentBowlingScore = isTeam1Batting ? match.team2Score : match.team1Score;
+
+      // Base map to hold update payload
+      final Map<String, dynamic> updateData = {
         'currentInnings': match.currentInnings + 1,
-        'currentBattingTeam': newBattingTeam,
-        'bowlingTeam': newBowlingTeam,
         'currentOver': 0,
         'currentBall': 0,
         'currentStrikerId': null,
         'currentNonStrikerId': null,
         'currentBowlerId': null,
-        if (targetRuns > 0) 'target': targetRuns,
-      });
-      _commentaryService.speakEvent('Innings change. $newBattingTeam to bat.', 0);
+      };
+
+      if (!isTest) {
+        // LIMITED OVERS / SUPER OVER LOGIC
+        final newBattingTeam = isTeam1Batting ? 'team2' : 'team1';
+        final newBowlingTeam = isTeam1Batting ? 'team1' : 'team2';
+        updateData['currentBattingTeam'] = newBattingTeam;
+        updateData['bowlingTeam'] = newBowlingTeam;
+
+        int targetRuns = 0;
+        if (match.currentInnings == 1 || match.currentInnings == 3) {
+          targetRuns = currentBattingScore.runs + 1;
+          updateData['target'] = targetRuns;
+        }
+
+        await _dataService.updateMatch(match.id, updateData);
+        final teamName = newBattingTeam == 'team1' ? match.team1Name : match.team2Name;
+        _commentaryService.speakEvent('Innings change. $teamName to bat.', 0);
+      } else {
+        // TEST MATCH LOGIC (4 INNINGS)
+        if (match.currentInnings == 1) {
+          // --- INNINGS 1 -> 2 ---
+          // Save Innings 1 score into team1FirstInningsScore or team2FirstInningsScore
+          if (isTeam1Batting) {
+            updateData['team1FirstInningsScore'] = currentBattingScore.toMap();
+          } else {
+            updateData['team2FirstInningsScore'] = currentBattingScore.toMap();
+          }
+
+          final newBattingTeam = isTeam1Batting ? 'team2' : 'team1';
+          final newBowlingTeam = isTeam1Batting ? 'team1' : 'team2';
+          updateData['currentBattingTeam'] = newBattingTeam;
+          updateData['bowlingTeam'] = newBowlingTeam;
+          updateData['target'] = null; // No target in 2nd innings of Test
+
+          await _dataService.updateMatch(match.id, updateData);
+
+          final teamName = newBattingTeam == 'team1' ? match.team1Name : match.team2Name;
+          final statusMsg = isDeclaration 
+              ? 'Innings declared at ${currentBattingScore.runs}/${currentBattingScore.wickets}. $teamName to bat 1st innings.'
+              : 'End of 1st innings. $teamName to bat.';
+          _commentaryService.speakEvent(statusMsg, 0);
+
+        } else if (match.currentInnings == 2) {
+          // --- INNINGS 2 -> 3 ---
+          // Save Innings 2 score into team2FirstInningsScore or team1FirstInningsScore
+          TeamScore? t1Inn1 = match.team1FirstInningsScore;
+          TeamScore? t2Inn1 = match.team2FirstInningsScore;
+
+          if (isTeam1Batting) {
+            // Team 1 batted 2nd, Team 2 batted 1st
+            t1Inn1 = currentBattingScore;
+            if (t2Inn1 != null) {
+              t2Inn1 = t2Inn1.copyWith(bowlers: match.team2Score.bowlers);
+            }
+            t1Inn1 = t1Inn1.copyWith(bowlers: match.team1Score.bowlers);
+          } else {
+            // Team 2 batted 2nd, Team 1 batted 1st
+            t2Inn1 = currentBattingScore;
+            if (t1Inn1 != null) {
+              t1Inn1 = t1Inn1.copyWith(bowlers: match.team1Score.bowlers);
+            }
+            t2Inn1 = t2Inn1.copyWith(bowlers: match.team2Score.bowlers);
+          }
+
+          if (t1Inn1 != null) updateData['team1FirstInningsScore'] = t1Inn1.toMap();
+          if (t2Inn1 != null) updateData['team2FirstInningsScore'] = t2Inn1.toMap();
+
+          // Reset both team scores for 2nd innings (keeping squad rosters clean)
+          TeamScore cleanTeamScore(TeamScore existing) {
+            return TeamScore(
+              runs: 0,
+              wickets: 0,
+              overs: 0.0,
+              extras: const Extras(),
+              batters: existing.batters.map((b) => BatterStats(playerId: b.playerId, playerName: b.playerName)).toList(),
+              bowlers: existing.bowlers.map((b) => BowlerStats(playerId: b.playerId, playerName: b.playerName)).toList(),
+            );
+          }
+
+          updateData['team1Score'] = cleanTeamScore(match.team1Score).toMap();
+          updateData['team2Score'] = cleanTeamScore(match.team2Score).toMap();
+          updateData['target'] = null;
+
+          String newBattingTeam;
+          String newBowlingTeam;
+          if (enforceFollowOn) {
+            // Trailing team bats again!
+            newBattingTeam = match.currentBattingTeam;
+            newBowlingTeam = match.bowlingTeam;
+          } else {
+            // Normal transition: team that batted 1st bats again
+            newBattingTeam = isTeam1Batting ? 'team2' : 'team1';
+            newBowlingTeam = isTeam1Batting ? 'team1' : 'team2';
+          }
+          updateData['currentBattingTeam'] = newBattingTeam;
+          updateData['bowlingTeam'] = newBowlingTeam;
+
+          await _dataService.updateMatch(match.id, updateData);
+
+          final teamName = newBattingTeam == 'team1' ? match.team1Name : match.team2Name;
+          final statusMsg = enforceFollowOn
+              ? 'Follow-on enforced! $teamName to bat again in 3rd innings.'
+              : '3rd innings begins. $teamName to bat.';
+          _commentaryService.speakEvent(statusMsg, 0);
+
+        } else if (match.currentInnings == 3) {
+          // --- INNINGS 3 -> 4 ---
+          final inn3BattingTeam = match.currentBattingTeam;
+          final inn4BattingTeam = inn3BattingTeam == 'team1' ? 'team2' : 'team1';
+
+          final inn3BattingInn1Runs = (inn3BattingTeam == 'team1' ? match.team1FirstInningsScore?.runs : match.team2FirstInningsScore?.runs) ?? 0;
+          final inn3BattingTotalRuns = inn3BattingInn1Runs + currentBattingScore.runs;
+
+          final inn4BattingInn1Runs = (inn4BattingTeam == 'team1' ? match.team1FirstInningsScore?.runs : match.team2FirstInningsScore?.runs) ?? 0;
+
+          final targetRuns = (inn3BattingTotalRuns - inn4BattingInn1Runs) + 1;
+
+          if (targetRuns <= 0) {
+            // Innings defeat!
+            final winnerTeamName = inn4BattingTeam == 'team1' ? match.team1Name : match.team2Name;
+            final winnerTeamId = inn4BattingTeam == 'team1' ? match.team1Id : match.team2Id;
+            final margin = 'an innings and ${-(targetRuns - 1)} runs';
+
+            await _completeMatch(
+              match,
+              winnerTeamName,
+              margin,
+              winnerTeamId,
+              isTeam1Batting,
+              currentBattingScore,
+              currentBowlingScore,
+              match.ballByBall,
+            );
+            return;
+          }
+
+          updateData['target'] = targetRuns;
+          updateData['currentBattingTeam'] = inn4BattingTeam;
+          updateData['bowlingTeam'] = inn3BattingTeam;
+
+          // Innings 4 batting team needs clean batting score
+          final inn4BattingExistingScore = inn4BattingTeam == 'team1' ? match.team1Score : match.team2Score;
+          final freshChaseBattingScore = TeamScore(
+            runs: 0,
+            wickets: 0,
+            overs: 0.0,
+            extras: const Extras(),
+            batters: inn4BattingExistingScore.batters.map((b) => BatterStats(playerId: b.playerId, playerName: b.playerName)).toList(),
+            bowlers: inn4BattingExistingScore.bowlers.map((b) => BowlerStats(playerId: b.playerId, playerName: b.playerName)).toList(),
+          );
+
+          // Innings 4 bowling team keeps their 2nd innings batting stats in their score, but resets bowlers for innings 4 bowling
+          final inn4BowlingExistingScore = currentBattingScore;
+          final freshInn4BowlingTeamScore = inn4BowlingExistingScore.copyWith(
+            bowlers: inn4BowlingExistingScore.bowlers.map((b) => BowlerStats(playerId: b.playerId, playerName: b.playerName)).toList(),
+          );
+
+          if (inn4BattingTeam == 'team1') {
+            updateData['team1Score'] = freshChaseBattingScore.toMap();
+            updateData['team2Score'] = freshInn4BowlingTeamScore.toMap();
+          } else {
+            updateData['team2Score'] = freshChaseBattingScore.toMap();
+            updateData['team1Score'] = freshInn4BowlingTeamScore.toMap();
+          }
+
+          await _dataService.updateMatch(match.id, updateData);
+
+          final teamName = inn4BattingTeam == 'team1' ? match.team1Name : match.team2Name;
+          final statusMsg = isDeclaration
+              ? 'Innings declared! $teamName need $targetRuns runs to win.'
+              : '4th innings begins. $teamName need $targetRuns runs to win.';
+          _commentaryService.speakEvent(statusMsg, 0);
+        }
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Manually end a match (e.g. Draw, Tie, Abandon, or Concede)
+  Future<void> endMatchManually(
+    MatchModel match, {
+    required String resultType, // 'draw', 'tie', 'abandoned', 'winner'
+    String? winnerTeamId,
+    String? customMargin,
+  }) async {
+    if (_isLoading) return;
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      String winnerTeamName = '';
+      String margin = customMargin ?? '';
+
+      if (resultType == 'draw') {
+        winnerTeamName = 'Match Drawn';
+        winnerTeamId = 'drawn';
+        margin = 'Draw';
+      } else if (resultType == 'tie') {
+        winnerTeamName = 'Match Tied';
+        winnerTeamId = 'tied';
+        margin = '0 runs';
+      } else if (resultType == 'abandoned') {
+        winnerTeamName = 'Match Abandoned';
+        winnerTeamId = null;
+        margin = 'No Result';
+      } else if (resultType == 'winner') {
+        if (winnerTeamId == match.team1Id) {
+          winnerTeamName = match.team1Name;
+        } else if (winnerTeamId == match.team2Id) {
+          winnerTeamName = match.team2Name;
+        }
+        if (margin.isEmpty) margin = 'Result by decision';
+      }
+
+      final isTeam1Batting = match.currentBattingTeam == 'team1';
+      await _completeMatch(
+        match,
+        winnerTeamName,
+        margin,
+        winnerTeamId,
+        isTeam1Batting,
+        isTeam1Batting ? match.team1Score : match.team2Score,
+        isTeam1Batting ? match.team2Score : match.team1Score,
+        match.ballByBall,
+      );
     } catch (e) {
       _errorMessage = e.toString();
     } finally {

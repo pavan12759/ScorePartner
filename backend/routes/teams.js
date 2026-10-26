@@ -187,12 +187,30 @@ router.post('/:id/players', auth, async (req, res) => {
         }
 
         const teamData = teamDoc.data();
-        if (teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid && teamData.viceCaptainId !== req.user.uid) {
+        const isAdmin = (teamData.adminIds || []).includes(req.user.uid);
+        if (teamData.createdBy !== req.user.uid && teamData.captainId !== req.user.uid && teamData.viceCaptainId !== req.user.uid && !isAdmin) {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
+        const newPlayer = req.body;
+        if (!newPlayer || !newPlayer.name) {
+            return res.status(400).json({ error: 'Player name is required' });
+        }
+
         const players = teamDoc.data().players || [];
-        players.push(req.body);
+
+        // Prevent duplicate players in team
+        const isDuplicate = players.some(p => {
+            if (newPlayer.userId && p.userId && !newPlayer.userId.startsWith('manual_') && p.userId === newPlayer.userId) return true;
+            if (newPlayer.spPId && p.spPId && p.spPId.toUpperCase() === newPlayer.spPId.toUpperCase()) return true;
+            return false;
+        });
+
+        if (isDuplicate) {
+            return res.status(400).json({ error: 'Player is already in this team' });
+        }
+
+        players.push(newPlayer);
 
         await db.collection('teams').doc(req.params.id).update({ players });
 

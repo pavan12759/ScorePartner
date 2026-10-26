@@ -7,6 +7,7 @@ import 'package:scorepatner/data/models/user_model.dart';
 import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:scorepatner/data/services/firebase_data_service.dart';
 import 'package:scorepatner/presentation/screens/profile/player_profile_screen.dart';
+import 'package:scorepatner/presentation/widgets/player_avatar_widget.dart';
 import 'package:scorepatner/presentation/widgets/match_initialization_dialog.dart';
 import 'package:scorepatner/presentation/screens/matches/poster/match_summary_poster_screen.dart';
 import 'package:scorepatner/core/utils/image_utils.dart';
@@ -242,11 +243,8 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
           _buildResultBanner(),
           SizedBox(height: 20.h),
           
-          if (match.result?.manOfMatch != null && match.result!.manOfMatch.isNotEmpty)
-            _buildPlayerOfTheMatchCard(match.result!.manOfMatch, '', 'PLAYER OF THE MATCH', null, null),
-          
-          if (match.result?.manOfMatch != null && match.result!.manOfMatch.isNotEmpty)
-            SizedBox(height: 20.h),
+          _buildBestPerformerSection(),
+          SizedBox(height: 20.h),
             
           _buildTopPerformances(),
           SizedBox(height: 20.h),
@@ -410,11 +408,11 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildPerformanceCard({required String title, required String playerName, required String playerId, required String details}) {
+    final effectiveId = playerId.isNotEmpty ? playerId : playerName;
     return GestureDetector(
       onTap: () {
-        String idToUse = playerId.isNotEmpty ? playerId : playerName;
-        if (idToUse.isNotEmpty) {
-          _navigateToPlayerProfile(idToUse, context);
+        if (effectiveId.isNotEmpty) {
+          _navigateToPlayerProfile(effectiveId, context);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Player profile is not available or not linked.')),
@@ -439,38 +437,12 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Player Avatar Bubble with FutureBuilder to load profile image
-          FutureBuilder<UserModel?>(
-            future: FirebaseDataService.instance.findUserByAnyId(playerId),
-            builder: (context, snapshot) {
-              Widget placeholder = Container(
-                width: 48.w,
-                height: 48.h,
-                decoration: BoxDecoration(
-                  color: ThemeHelper.of(context).isDark ? Color(0xFF1E1E1E) : ThemeHelper.of(context).dividerColor,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: ThemeHelper.of(context).dividerColor),
-                ),
-                child: Icon(Icons.person, color: ThemeHelper.of(context).textSecondary, size: 24.sp),
-              );
-
-              if (!snapshot.hasData || snapshot.data!.profileImageUrl.isEmpty) {
-                return placeholder;
-              }
-              
-              return Container(
-                width: 48.w,
-                height: 48.h,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: ThemeHelper.of(context).dividerColor),
-                  image: DecorationImage(
-                    image: _getProfileImageProvider(snapshot.data!.profileImageUrl),
-                    fit: BoxFit.cover,
-                  )
-                ),
-              );
-            }
+          // Player Avatar
+          PlayerAvatarWidget(
+            playerId: effectiveId,
+            playerName: playerName,
+            size: 48.sp,
+            enableProfileView: true,
           ),
           SizedBox(width: 16.w),
           Expanded(
@@ -735,15 +707,31 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
       }
       
       // Try to find the player ID by searching players in both teams
-      for (var b in match.team1Score.batters) { if (isMatch(b.playerName)) matchedPlayerId = b.playerId; }
+      for (var b in match.team1Score.batters) { if (isMatch(b.playerName) && b.playerId.isNotEmpty) matchedPlayerId = b.playerId; }
       if (matchedPlayerId.isEmpty) {
-        for (var b in match.team2Score.batters) { if (isMatch(b.playerName)) matchedPlayerId = b.playerId; }
+        for (var b in match.team2Score.batters) { if (isMatch(b.playerName) && b.playerId.isNotEmpty) matchedPlayerId = b.playerId; }
       }
       if (matchedPlayerId.isEmpty) {
-        for (var b in match.team1Score.bowlers) { if (isMatch(b.playerName)) matchedPlayerId = b.playerId; }
+        for (var b in match.team1Score.bowlers) { if (isMatch(b.playerName) && b.playerId.isNotEmpty) matchedPlayerId = b.playerId; }
       }
       if (matchedPlayerId.isEmpty) {
-        for (var b in match.team2Score.bowlers) { if (isMatch(b.playerName)) matchedPlayerId = b.playerId; }
+        for (var b in match.team2Score.bowlers) { if (isMatch(b.playerName) && b.playerId.isNotEmpty) matchedPlayerId = b.playerId; }
+      }
+      if (matchedPlayerId.isEmpty) {
+        for (var ball in match.ballByBall) {
+          if (isMatch(ball.batsmanName) && ball.batsmanId.isNotEmpty) {
+            matchedPlayerId = ball.batsmanId;
+            break;
+          }
+          if (isMatch(ball.bowlerName) && ball.bowlerId.isNotEmpty) {
+            matchedPlayerId = ball.bowlerId;
+            break;
+          }
+        }
+      }
+      // If still empty, pass declared name as fallback ID so PlayerAvatarWidget searches Firestore by name
+      if (matchedPlayerId.isEmpty) {
+        matchedPlayerId = match.result!.manOfMatch.trim();
       }
 
       return _buildPlayerOfTheMatchCard(match.result!.manOfMatch, matchedPlayerId, 'PLAYER OF THE MATCH', null, null);
@@ -810,11 +798,11 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildPlayerOfTheMatchCard(String playerName, String playerId, String title, String? stat1, String? stat2) {
+    final effectiveId = playerId.isNotEmpty ? playerId : playerName;
     return GestureDetector(
       onTap: () {
-        String idToUse = playerId.isNotEmpty ? playerId : playerName;
-        if (idToUse.isNotEmpty) {
-          _navigateToPlayerProfile(idToUse, context);
+        if (effectiveId.isNotEmpty) {
+          _navigateToPlayerProfile(effectiveId, context);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Player profile is not available or not linked.')),
@@ -840,50 +828,12 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Player avatar
-          if (playerId.isNotEmpty)
-            FutureBuilder<UserModel?>(
-              future: FirebaseDataService.instance.findUserByAnyId(playerId),
-              builder: (context, snapshot) {
-                 Widget placeholder = Container(
-                   width: 60.w,
-                   height: 60.h,
-                   decoration: BoxDecoration(
-                     color: ThemeHelper.of(context).isDark ? Color(0xFF1E1E1E) : ThemeHelper.of(context).dividerColor,
-                     shape: BoxShape.circle,
-                     border: Border.all(color: ThemeHelper.of(context).dividerColor),
-                   ),
-                   child: Icon(Icons.person, color: ThemeHelper.of(context).textSecondary, size: 30.sp),
-                 );
-                 
-                 if (!snapshot.hasData || snapshot.data!.profileImageUrl.isEmpty) {
-                    return placeholder;
-                 }
-                 
-                 return Container(
-                   width: 60.w,
-                   height: 60.h,
-                   decoration: BoxDecoration(
-                     shape: BoxShape.circle,
-                     border: Border.all(color: ThemeHelper.of(context).dividerColor),
-                     image: DecorationImage(
-                       image: _getProfileImageProvider(snapshot.data!.profileImageUrl),
-                       fit: BoxFit.cover,
-                     )
-                   ),
-                 );
-              }
-            )
-          else
-            Container(
-              width: 60.w,
-              height: 60.h,
-              decoration: BoxDecoration(
-                color: ThemeHelper.of(context).isDark ? Color(0xFF1E1E1E) : ThemeHelper.of(context).dividerColor,
-                shape: BoxShape.circle,
-                border: Border.all(color: ThemeHelper.of(context).dividerColor),
-              ),
-              child: Icon(Icons.person, color: ThemeHelper.of(context).textSecondary, size: 30.sp),
-            ),
+          PlayerAvatarWidget(
+            playerId: effectiveId,
+            playerName: playerName,
+            size: 56.sp,
+            enableProfileView: true,
+          ),
           SizedBox(width: 16.w),
           // Details
           Expanded(

@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
@@ -136,6 +136,7 @@ class MatchHighlightsBadgesWidget extends StatelessWidget {
                     matchName: match.matchName,
                     ground: match.ground ?? '',
                     date: DateFormat('dd MMM yyyy').format(match.scheduledDate),
+                    playerId: highlight.playerId,
                     playerName: highlight.playerName ?? '',
                     playerPhoto: highlight.imageUrl.isNotEmpty ? highlight.imageUrl : null,
                     team1Name: match.team1Name,
@@ -190,6 +191,7 @@ class MatchHighlightsBadgesWidget extends StatelessWidget {
                         matchName: match.matchName,
                         ground: match.ground ?? '',
                         date: DateFormat('dd MMM yyyy').format(match.scheduledDate),
+                        playerId: highlight.playerId,
                         playerName: highlight.playerName ?? '',
                         playerPhoto: highlight.imageUrl.isNotEmpty ? highlight.imageUrl : null,
                         team1Name: match.team1Name,

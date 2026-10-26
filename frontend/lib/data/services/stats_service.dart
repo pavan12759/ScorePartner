@@ -142,7 +142,23 @@ class StatsService {
         }
       }
 
-      // 3. Man of the Match (MVP)
+      // 3. Maximums King (3+ sixes)
+      for (final batter in allBatters) {
+        if (batter.sixes >= 3 && batter.playerId.isNotEmpty && validPlayerIds.contains(batter.playerId)) {
+          automaticHighlights.add(MatchHighlight(
+            id: uuid.v4(),
+            imageUrl: '',
+            type: 'sixes',
+            title: 'MAXIMUMS KING',
+            description: 'Explosive hitting with ${batter.sixes} massive sixes in ${batter.balls} balls!',
+            playerId: batter.playerId,
+            playerName: batter.playerName,
+            createdAt: DateTime.now(),
+          ));
+        }
+      }
+
+      // 4. Man of the Match (MVP)
       final mvpList = calculateMvpRatings(match);
       if (mvpList.isNotEmpty) {
         final mvp = mvpList.firstWhere(

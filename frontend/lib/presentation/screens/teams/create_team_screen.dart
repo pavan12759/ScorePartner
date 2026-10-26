@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:async';
 import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -6,7 +7,9 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../data/models/team_model.dart';
+import '../../../data/models/user_model.dart';
 import '../../../data/services/firebase_data_service.dart';
+import '../../../data/services/player_search_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/team_logo_widget.dart';
 
@@ -31,6 +34,8 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
   bool _isLoading = false;
   bool _isLookingUp = false;
   String? _lookedUpUserId; // Stores the Firebase UID from SPP ID lookup
+  UserModel? _foundUser;
+  Timer? _searchDebounceTimer;
 
   // Logo state
   Uint8List? _logoBytes;
@@ -63,6 +68,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
 
   @override
   void dispose() {
+    _searchDebounceTimer?.cancel();
     _teamNameController.dispose();
     _playerNameController.dispose();
     _spPIdController.dispose();
@@ -210,10 +216,10 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
   }
 
   Future<void> _lookupPlayer() async {
-    final sppId = _spPIdController.text.trim().toUpperCase();
-    if (sppId.isEmpty) {
+    final query = _spPIdController.text.trim();
+    if (query.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter an SPP ID to search')),
+        const SnackBar(content: Text('Please enter an SPP ID or mobile number to search')),
       );
       return;
     }
@@ -221,9 +227,10 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
     setState(() => _isLookingUp = true);
 
     try {
-      final user = await FirebaseDataService.instance.getUserBySppId(sppId);
-      
-      if (user != null) {
+      final result = await PlayerSearchService.instance.searchPlayer(query);
+
+      if (result.isSuccess && result.player != null) {
+        final user = result.player!;
         setState(() {
           _playerNameController.text = user.name;
           _lookedUpUserId = user.uid; // Store the actual Firebase UID
@@ -237,7 +244,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ Player found: ${user.name}'),
+              content: Text('✅ Player found: ${user.name} (${user.spPId})'),
               backgroundColor: Colors.green,
             ),
           );
@@ -246,7 +253,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('❌ No player found with SPP ID: $sppId'),
+              content: Text('❌ ${result.errorMessage ?? "No registered player found"}'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -262,7 +269,9 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
         );
       }
     } finally {
-      setState(() => _isLookingUp = false);
+      if (mounted) {
+        setState(() => _isLookingUp = false);
+      }
     }
   }
 
@@ -278,6 +287,25 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
     final spPId = _spPIdController.text.trim().toUpperCase();
     final mobile = _mobileController.text.trim();
 
+    // Prevent duplicate player additions to team roster
+    final isDuplicate = _players.any((p) {
+      if (_lookedUpUserId != null && p.userId == _lookedUpUserId) return true;
+      if (spPId.isNotEmpty && p.spPId.isNotEmpty && p.spPId.toUpperCase() == spPId) return true;
+      if (mobile.isNotEmpty && p.mobileNumber.isNotEmpty && p.mobileNumber == mobile) return true;
+      if (p.name.toLowerCase() == name.toLowerCase() && p.isRegistered == (_lookedUpUserId != null)) return true;
+      return false;
+    });
+
+    if (isDuplicate) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This player is already added to the team'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _players.add(TeamPlayer(
         userId: _lookedUpUserId ?? 'manual_${DateTime.now().millisecondsSinceEpoch}',
@@ -292,7 +320,8 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
       _spPIdController.clear();
       _mobileController.clear();
       _selectedRole = 'Batsman';
-      _lookedUpUserId = null; // Reset after adding
+      _lookedUpUserId = null;
+      _foundUser = null; // Reset after adding
     });
   }
 
@@ -524,8 +553,8 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                           child: TextField(
                             controller: _spPIdController,
                             decoration: InputDecoration(
-                              labelText: 'SPP ID (Optional)',
-                              hintText: 'SPP12345678',
+                              labelText: 'SPP ID or Mobile Number (Optional)',
+                              hintText: 'Enter SPP ID or mobile number',
                               prefixIcon: Icon(Icons.badge),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8.r),

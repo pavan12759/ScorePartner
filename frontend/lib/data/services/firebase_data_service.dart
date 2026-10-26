@@ -145,6 +145,7 @@ class FirebaseDataService {
       
       String cleanName = playerName.trim();
       if (cleanName.toLowerCase().startsWith('p_')) cleanName = cleanName.substring(2).trim();
+      cleanName = cleanName.replaceAll('_', ' ').trim();
       
       // 2. Multi-pronged exact name search in Firestore (Direct Queries)
       // This is way faster and more reliable than downloading 1000 users
@@ -170,6 +171,17 @@ class FirebaseDataService {
         if (snapshot.docs.isNotEmpty) {
           final doc = snapshot.docs.first;
           debugPrint('🎯 Resolved $playerName via exact name match: $nameVariant');
+          return UserModel.fromMap({...doc.data(), 'uid': doc.id});
+        }
+
+        final displaySnapshot = await _db.collection(usersCollection)
+            .where('displayName', isEqualTo: nameVariant)
+            .limit(1)
+            .get();
+        
+        if (displaySnapshot.docs.isNotEmpty) {
+          final doc = displaySnapshot.docs.first;
+          debugPrint('🎯 Resolved $playerName via displayName match: $nameVariant');
           return UserModel.fromMap({...doc.data(), 'uid': doc.id});
         }
         
@@ -237,10 +249,34 @@ class FirebaseDataService {
   }
 
 
+  /// Helper to mask phone numbers for privacy
+  static String maskPhoneNumber(String phone) {
+    if (phone.isEmpty) return '';
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.length < 4) return '******';
+    final last4 = digits.substring(digits.length - 4);
+    return '+91 ****** $last4';
+  }
+
+  /// Helper to normalize Indian mobile numbers to 10 digits
+  static String? normalizeIndianPhone(String input) {
+    if (input.trim().isEmpty) return null;
+    String digits = input.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('0') && digits.length == 11) {
+      digits = digits.substring(1);
+    } else if (digits.startsWith('91') && digits.length == 12) {
+      digits = digits.substring(2);
+    } else if (digits.startsWith('091') && digits.length == 13) {
+      digits = digits.substring(3);
+    }
+    if (digits.length != 10) return null;
+    return digits;
+  }
+
   /// Get user by SPP ID
   Future<UserModel?> getUserBySppId(String sppId) async {
     try {
-      final normalizedId = sppId.toUpperCase();
+      final normalizedId = sppId.trim().toUpperCase();
       debugPrint('🔍 Looking up user by SPP ID: $normalizedId');
       
       final snapshot = await _db
@@ -251,8 +287,14 @@ class FirebaseDataService {
 
       if (snapshot.docs.isNotEmpty) {
         final doc = snapshot.docs.first;
-        debugPrint('✅ Found user: ${doc.data()['name']}');
-        return UserModel.fromMap({...doc.data(), 'uid': doc.id});
+        final data = doc.data();
+        final rawPhone = data['phoneNumber']?.toString() ?? '';
+        debugPrint('✅ Found user: ${data['name']}');
+        return UserModel.fromMap({
+          ...data,
+          'uid': doc.id,
+          'phoneNumber': maskPhoneNumber(rawPhone),
+        });
       }
       debugPrint('❌ No user found with SPP ID: $normalizedId');
       return null;
@@ -260,6 +302,78 @@ class FirebaseDataService {
       debugPrint('❌ Error looking up user by SPP ID: $e');
       return null;
     }
+  }
+
+  /// Get user by verified mobile number
+  Future<UserModel?> getUserByPhone(String phoneNumber) async {
+    try {
+      final normalized = normalizeIndianPhone(phoneNumber);
+      if (normalized == null) {
+        debugPrint('❌ Invalid phone number format: $phoneNumber');
+        return null;
+      }
+      debugPrint('🔍 Looking up user by phone: $normalized');
+
+      final candidates = [
+        '+91$normalized',
+        '91$normalized',
+        normalized,
+        '0$normalized',
+      ];
+
+      final snapshot = await _db
+          .collection(usersCollection)
+          .where('phoneNumber', whereIn: candidates)
+          .limit(5)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        QueryDocumentSnapshot<Map<String, dynamic>>? verifiedDoc;
+        for (final d in snapshot.docs) {
+          if (d.data()['isVerified'] == true) {
+            verifiedDoc = d;
+            break;
+          }
+        }
+        final doc = verifiedDoc ?? snapshot.docs.first;
+
+        final data = doc.data();
+        if (data['isVerified'] == false) {
+          debugPrint('❌ User phone is unverified');
+          return null;
+        }
+
+        final rawPhone = data['phoneNumber']?.toString() ?? '';
+        debugPrint('✅ Found user by phone: ${data['name']} (SPP: ${data['spPId']})');
+        return UserModel.fromMap({
+          ...data,
+          'uid': doc.id,
+          'phoneNumber': maskPhoneNumber(rawPhone),
+        });
+      }
+      debugPrint('❌ No user found with phone: $normalized');
+      return null;
+    } catch (e) {
+      debugPrint('❌ Error looking up user by phone: $e');
+      return null;
+    }
+  }
+
+  /// Lookup user by either SPP ID or mobile number
+  Future<UserModel?> getUserBySppOrPhone(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return null;
+
+    if (trimmed.toUpperCase().startsWith('SPP')) {
+      return getUserBySppId(trimmed);
+    }
+
+    final normalized = normalizeIndianPhone(trimmed);
+    if (normalized != null) {
+      return getUserByPhone(normalized);
+    }
+
+    return null;
   }
 
   /// Search users by name (case-insensitive)
@@ -1062,6 +1176,23 @@ class FirebaseDataService {
   /// Add player to team
   Future<bool> addPlayerToTeam(String teamId, TeamPlayer player) async {
     try {
+      // Check for duplicate player before adding
+      final teamDoc = await _db.collection(teamsCollection).doc(teamId).get();
+      if (teamDoc.exists) {
+        final existingPlayers = (teamDoc.data()?['players'] as List<dynamic>? ?? []);
+        final isDuplicate = existingPlayers.any((p) {
+          if (p is Map<String, dynamic>) {
+            if (player.userId.isNotEmpty && !player.userId.startsWith('manual_') && p['userId'] == player.userId) return true;
+            if (player.spPId.isNotEmpty && p['spPId']?.toString().toUpperCase() == player.spPId.toUpperCase()) return true;
+          }
+          return false;
+        });
+        if (isDuplicate) {
+          debugPrint('⚠️ Player already exists in team $teamId');
+          return false;
+        }
+      }
+
       await _db.collection(teamsCollection).doc(teamId).update({
         'players': FieldValue.arrayUnion([player.toMap()]),
       });
@@ -2041,6 +2172,18 @@ class FirebaseDataService {
     });
   }
 
+  /// Stream all matches belonging to a specific tournament
+  Stream<List<MatchModel>> streamTournamentMatches(String tournamentId) {
+    if (tournamentId.isEmpty) return Stream.value([]);
+    return _db
+        .collection(matchesCollection)
+        .where('tournamentId', isEqualTo: tournamentId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => MatchModel.fromMap({...doc.data(), 'id': doc.id}))
+            .toList());
+  }
+
   // ==================== TOURNAMENTS ====================
 
   /// Get tournament by ID
@@ -2079,6 +2222,25 @@ class FirebaseDataService {
       return true;
     } catch (e) {
       debugPrint('❌ Error adding team to tournament: $e');
+      return false;
+    }
+  }
+
+  /// Remove a team from an existing tournament
+  Future<bool> removeTeamFromTournament(String tournamentId, String teamId) async {
+    try {
+      final doc = await _db.collection(tournamentsCollection).doc(tournamentId).get();
+      if (!doc.exists) return false;
+
+      await _db.collection(tournamentsCollection).doc(tournamentId).update({
+        'registeredTeamIds': FieldValue.arrayRemove([teamId]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      debugPrint('✅ Team $teamId removed from tournament $tournamentId');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error removing team from tournament: $e');
       return false;
     }
   }

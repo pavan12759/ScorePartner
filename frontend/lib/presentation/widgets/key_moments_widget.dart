@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:scorepatner/data/models/match_model.dart';
-import 'package:scorepatner/presentation/widgets/mvp_calculator_widget.dart';
+import 'package:scorepatner/presentation/widgets/player_avatar_widget.dart';
+import 'package:scorepatner/presentation/widgets/key_moment_poster_card.dart';
 
 /// Types of key moments in a cricket match
 enum MomentType {
@@ -27,6 +26,8 @@ class KeyMoment {
   final IconData icon;
   final Color color;
   final int importance; // 1-10 scale for sorting
+  final String? playerId;
+  final String? playerName;
 
   KeyMoment({
     required this.type,
@@ -36,6 +37,8 @@ class KeyMoment {
     required this.icon,
     required this.color,
     required this.importance,
+    this.playerId,
+    this.playerName,
   });
 }
 
@@ -84,6 +87,8 @@ List<KeyMoment> extractKeyMoments(MatchModel match) {
         icon: Icons.sports_cricket,
         color: Colors.purple,
         importance: 5,
+        playerId: ball.batsmanId,
+        playerName: ball.batsmanName,
       ));
     }
     
@@ -97,6 +102,8 @@ List<KeyMoment> extractKeyMoments(MatchModel match) {
         icon: Icons.sports_cricket,
         color: Colors.blue,
         importance: 3,
+        playerId: ball.batsmanId,
+        playerName: ball.batsmanName,
       ));
     }
     
@@ -137,6 +144,8 @@ List<KeyMoment> extractKeyMoments(MatchModel match) {
         icon: Icons.close,
         color: Colors.red,
         importance: 7,
+        playerId: ball.bowlerId,
+        playerName: ball.bowlerName,
       ));
       
       // Hat-trick detection
@@ -152,13 +161,10 @@ List<KeyMoment> extractKeyMoments(MatchModel match) {
             icon: Icons.celebration,
             color: Colors.amber,
             importance: 10,
+            playerId: ball.bowlerId,
+            playerName: ball.bowlerName,
           ));
         }
-      }
-    } else {
-      // Reset hat-trick tracking on non-wicket legal balls
-      if (ball.isLegalBall) {
-        // Don't reset — hat-trick is consecutive deliveries including across overs
       }
     }
     
@@ -175,6 +181,8 @@ List<KeyMoment> extractKeyMoments(MatchModel match) {
         icon: Icons.star,
         color: Colors.teal,
         importance: 8,
+        playerId: ball.batsmanId,
+        playerName: ball.batsmanName,
       ));
     }
     
@@ -189,6 +197,8 @@ List<KeyMoment> extractKeyMoments(MatchModel match) {
         icon: Icons.emoji_events,
         color: Colors.amber,
         importance: 10,
+        playerId: ball.batsmanId,
+        playerName: ball.batsmanName,
       ));
     }
   }
@@ -197,7 +207,6 @@ List<KeyMoment> extractKeyMoments(MatchModel match) {
   for (var teamEntry in teamOverRuns.entries) {
     for (var overEntry in teamEntry.value.entries) {
       if (overEntry.value == 0) {
-        // Find bowler name for this over
         final bowlerBall = match.ballByBall.firstWhere(
           (b) => b.battingTeam == teamEntry.key && b.overNumber == overEntry.key,
           orElse: () => match.ballByBall.first,
@@ -210,6 +219,8 @@ List<KeyMoment> extractKeyMoments(MatchModel match) {
           icon: Icons.block,
           color: Colors.green,
           importance: 4,
+          playerId: bowlerBall.bowlerId,
+          playerName: bowlerBall.bowlerName,
         ));
       }
       // High-scoring over (15+)
@@ -227,14 +238,14 @@ List<KeyMoment> extractKeyMoments(MatchModel match) {
     }
   }
   
-  // Sort by importance (highest first), then limit to most exciting moments
+  // Sort by importance (highest first)
   moments.sort((a, b) => b.importance.compareTo(a.importance));
   
   return moments;
 }
 
-/// Widget that displays key moments / highlights timeline
-class KeyMomentsCard extends StatelessWidget {
+/// Widget that displays key moments / highlights timeline and performance posters
+class KeyMomentsCard extends StatefulWidget {
   final MatchModel match;
   final int maxMoments;
   final bool showAll;
@@ -247,131 +258,215 @@ class KeyMomentsCard extends StatelessWidget {
   });
 
   @override
+  State<KeyMomentsCard> createState() => _KeyMomentsCardState();
+}
+
+class _KeyMomentsCardState extends State<KeyMomentsCard> {
+  KeyMomentPosterTheme? _selectedTheme;
+
+  @override
+  void initState() {
+    super.initState();
+    _preloadPlayerPhotos();
+  }
+
+  void _preloadPlayerPhotos() {
+    final posters = KeyMomentPosterModel.extractPosters(widget.match);
+    final playerIds = posters
+        .map((p) => p.playerId)
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    if (playerIds.isNotEmpty) {
+      PlayerAvatarWidget.prefetch(playerIds);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final allMoments = extractKeyMoments(match);
-    
-    // Extract top performance stats for summary widgets
-    final allBatters = [...match.team1Score.batters, ...match.team2Score.batters];
-    final allBowlers = [...match.team1Score.bowlers, ...match.team2Score.bowlers];
-    
-    // 1. Find Best Batter
-    allBatters.sort((a, b) => b.runs.compareTo(a.runs));
-    final bestBatter = allBatters.isNotEmpty && allBatters.first.runs > 0 ? allBatters.first : null;
-
-    // 2. Find Best Bowler
-    allBowlers.sort((a, b) {
-      final comp = b.wickets.compareTo(a.wickets);
-      if (comp != 0) return comp;
-      return a.runs.compareTo(b.runs);
-    });
-    final bestBowler = allBowlers.isNotEmpty && allBowlers.first.wickets > 0 ? allBowlers.first : null;
-
-    // 3. Find Most Sixes
-    final sixesList = List<dynamic>.from(allBatters)..sort((a, b) => b.sixes.compareTo(a.sixes));
-    final mostSixes = sixesList.isNotEmpty && sixesList.first.sixes > 0 ? sixesList.first : null;
-
-    // 4. Man of the Match (MVP)
-    final mvpList = calculateMvpRatings(match);
-    final mvp = mvpList.isNotEmpty ? mvpList.firstWhere((p) => p.isManOfMatch, orElse: () => mvpList.first) : null;
-
-    final displayMoments = showAll ? allMoments : allMoments.take(maxMoments).toList();
+    final allMoments = extractKeyMoments(widget.match);
+    final posters = KeyMomentPosterModel.extractPosters(widget.match);
+    final displayMoments = widget.showAll ? allMoments : allMoments.take(widget.maxMoments).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 🏆 A. TOP SUMMARY HERO CARDS (IPL / GAMING ACHIEVEMENT STYLE)
+        // 🏆 A. KEY MOMENTS PERFORMANCE POSTERS CAROUSEL
         Container(
-          padding: EdgeInsets.all(16.w),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20.r),
+            borderRadius: BorderRadius.circular(22.r),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.04),
-                blurRadius: 10,
-                offset: Offset(0, 4),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
-            border: Border.all(color: Colors.orange.withOpacity(0.12), width: 1.5.w),
+            border: Border.all(color: Colors.orange.withOpacity(0.15), width: 1.5.w),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Section Header
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    padding: EdgeInsets.all(6.w),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(Icons.stars_rounded, color: Colors.orange, size: 20.sp),
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(7.w),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.stars_rounded, color: Colors.orange, size: 20.sp),
+                      ),
+                      SizedBox(width: 8.w),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'KEY MOMENTS & POSTERS 🏆',
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.black87,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                          Text(
+                            'Player profile photos, scores & performances',
+                            style: TextStyle(
+                              fontSize: 9.5.sp,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  SizedBox(width: 8.w),
-                  Text(
-                    'MATCH CHAMPION BOARDS 🏆',
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.black87,
-                      letterSpacing: 0.8,
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryOrange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    child: Text(
+                      '${posters.length} Posters',
+                      style: TextStyle(
+                        fontSize: 9.sp,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.primaryOrange,
+                      ),
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 16.h),
-              
-              // Scrollable Row of high-fidelity overlay highlight blocks
+              SizedBox(height: 12.h),
+
+              // Theme Filter Chips
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    // MOTM Card
-                    if (mvp != null)
-                      _buildHeroStatsCard(
-                        title: 'Man Of The Match',
-                        name: mvp.playerName,
-                        subtitle: '${mvp.mvpPoints.toStringAsFixed(0)} MVP Rating 👑',
-                        badgeType: 'team',
-                        themeColor: Colors.amberAccent,
-                        icon: Icons.emoji_events,
+                    GestureDetector(
+                      onTap: () => setState(() => _selectedTheme = null),
+                      child: Container(
+                        margin: EdgeInsets.only(right: 6.w),
+                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                        decoration: BoxDecoration(
+                          color: _selectedTheme == null
+                              ? AppTheme.primaryOrange
+                              : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        child: Text(
+                          '✨ Auto Badges',
+                          style: TextStyle(
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.w800,
+                            color: _selectedTheme == null ? Colors.white : Colors.grey.shade700,
+                          ),
+                        ),
                       ),
-                    
-                    // Batter Card
-                    if (bestBatter != null)
-                      _buildHeroStatsCard(
-                        title: 'Best Batter',
-                        name: bestBatter.playerName,
-                        subtitle: '${bestBatter.runs} Runs in ${bestBatter.balls}b 🏏',
-                        badgeType: 'batsman',
-                        themeColor: Colors.orangeAccent,
-                        icon: Icons.flash_on,
-                      ),
-                    
-                    // Bowler Card
-                    if (bestBowler != null)
-                      _buildHeroStatsCard(
-                        title: 'Best Bowler',
-                        name: bestBowler.playerName,
-                        subtitle: '${bestBowler.wickets} Wkts for ${bestBowler.runs}r 🎯',
-                        badgeType: 'bowler',
-                        themeColor: Colors.cyanAccent,
-                        icon: Icons.local_fire_department,
-                      ),
-
-                    // Most Sixes Card
-                    if (mostSixes != null)
-                      _buildHeroStatsCard(
-                        title: 'Six Storm',
-                        name: mostSixes.playerName,
-                        subtitle: '${mostSixes.sixes} Over-the-boundary ⚡',
-                        badgeType: 'batsman',
-                        themeColor: Colors.purpleAccent,
-                        icon: Icons.bolt,
-                      ),
+                    ),
+                    ...KeyMomentPosterTheme.values.map((theme) {
+                      final isSelected = _selectedTheme == theme;
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedTheme = theme),
+                        child: Container(
+                          margin: EdgeInsets.only(right: 6.w),
+                          padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 4.h),
+                          decoration: BoxDecoration(
+                            color: isSelected ? theme.primary : Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(12.r),
+                            border: Border.all(
+                              color: isSelected ? Colors.transparent : theme.primary.withOpacity(0.35),
+                              width: 1.w,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 7.w,
+                                height: 7.w,
+                                decoration: BoxDecoration(
+                                  color: isSelected ? Colors.black : theme.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              SizedBox(width: 4.w),
+                              Text(
+                                theme.name,
+                                style: TextStyle(
+                                  fontSize: 8.5.sp,
+                                  fontWeight: FontWeight.w800,
+                                  color: isSelected ? Colors.black : Colors.grey.shade800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
                   ],
                 ),
               ),
+              SizedBox(height: 12.h),
+
+              // Poster Cards Horizontal Carousel
+              if (posters.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(vertical: 24.h),
+                  alignment: Alignment.center,
+                  child: Text(
+                    'Match performance posters will appear as match progresses...',
+                    style: TextStyle(
+                      color: Colors.grey[500],
+                      fontSize: 11.sp,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                )
+              else
+                SizedBox(
+                  height: 395.h,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: posters.length,
+                    itemBuilder: (context, index) {
+                      return KeyMomentPosterCard(
+                        poster: posters[index],
+                        overrideTheme: _selectedTheme,
+                      );
+                    },
+                  ),
+                ),
             ],
           ),
         ),
@@ -387,7 +482,7 @@ class KeyMomentsCard extends StatelessWidget {
               BoxShadow(
                 color: Colors.black.withOpacity(0.04),
                 blurRadius: 12,
-                offset: Offset(0, 4),
+                offset: const Offset(0, 4),
               ),
             ],
             border: Border.all(color: Colors.grey[100]!),
@@ -465,7 +560,7 @@ class KeyMomentsCard extends StatelessWidget {
                               ),
                               SizedBox(width: 4.w),
                               
-                              // Moment detail glass card
+                              // Moment detail glass card with Player Avatar
                               Expanded(
                                 child: Padding(
                                   padding: EdgeInsets.only(bottom: isLast ? 0 : 16.0),
@@ -482,50 +577,69 @@ class KeyMomentsCard extends StatelessWidget {
                                         BoxShadow(
                                           color: Colors.black.withOpacity(0.02),
                                           blurRadius: 4,
-                                          offset: Offset(0, 2),
+                                          offset: const Offset(0, 2),
                                         ),
                                       ],
                                     ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.center,
                                       children: [
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Container(
-                                              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-                                              decoration: BoxDecoration(
-                                                color: moment.color.withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(8.r),
+                                        // Optional mini avatar if player exists
+                                        if (moment.playerName != null && moment.playerName!.isNotEmpty) ...[
+                                          PlayerAvatarWidget(
+                                            playerId: moment.playerId,
+                                            playerName: moment.playerName!,
+                                            size: 36.w,
+                                            enableProfileView: true,
+                                          ),
+                                          SizedBox(width: 10.w),
+                                        ],
+
+                                        // Text Details
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Container(
+                                                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                                                    decoration: BoxDecoration(
+                                                      color: moment.color.withOpacity(0.1),
+                                                      borderRadius: BorderRadius.circular(8.r),
+                                                    ),
+                                                    child: Text(
+                                                      moment.title.toUpperCase(),
+                                                      style: TextStyle(
+                                                        fontSize: 9.sp,
+                                                        fontWeight: FontWeight.w900,
+                                                        color: moment.color,
+                                                        letterSpacing: 0.5,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    moment.overInfo,
+                                                    style: TextStyle(
+                                                      fontSize: 10.sp,
+                                                      color: Colors.grey[500],
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                              child: Text(
-                                                moment.title.toUpperCase(),
+                                              SizedBox(height: 6.h),
+                                              Text(
+                                                moment.description,
                                                 style: TextStyle(
-                                                  fontSize: 9.sp,
-                                                  fontWeight: FontWeight.w900,
-                                                  color: moment.color,
-                                                  letterSpacing: 0.5,
+                                                  fontSize: 12.sp,
+                                                  color: Colors.black87,
+                                                  fontWeight: FontWeight.w600,
+                                                  height: 1.3,
                                                 ),
                                               ),
-                                            ),
-                                            Text(
-                                              moment.overInfo,
-                                              style: TextStyle(
-                                                fontSize: 10.sp,
-                                                color: Colors.grey[500],
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        SizedBox(height: 6.h),
-                                        Text(
-                                          moment.description,
-                                          style: TextStyle(
-                                            fontSize: 12.sp,
-                                            color: Colors.black87,
-                                            fontWeight: FontWeight.w600,
-                                            height: 1.3,
+                                            ],
                                           ),
                                         ),
                                       ],
@@ -542,75 +656,6 @@ class KeyMomentsCard extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildHeroStatsCard({
-    required String title,
-    required String name,
-    required String subtitle,
-    required String badgeType,
-    required Color themeColor,
-    required IconData icon,
-  }) {
-    return Container(
-      width: 165.w,
-      margin: EdgeInsets.only(right: 12.w),
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: themeColor.withOpacity(0.35), width: 1.2.w),
-        boxShadow: [
-          BoxShadow(
-            color: themeColor.withOpacity(0.12),
-            blurRadius: 10,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title.toUpperCase(),
-                style: TextStyle(
-                  color: themeColor,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 8.sp,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              Icon(icon, color: themeColor, size: 14.sp),
-            ],
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            name.toUpperCase(),
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w900,
-              fontSize: 13.sp,
-              overflow: TextOverflow.ellipsis,
-            ),
-            maxLines: 1,
-          ),
-          SizedBox(height: 2.h),
-          Text(
-            subtitle,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.75),
-              fontSize: 9.sp,
-              fontWeight: FontWeight.bold,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
     );
   }
 }

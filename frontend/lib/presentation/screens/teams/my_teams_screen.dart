@@ -8,7 +8,10 @@ import '../../../data/services/firebase_data_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/team_logo_widget.dart';
 import 'create_team_screen.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'team_details_screen.dart';
+import 'poster/team_poster_screen.dart';
 
 /// Screen to display user's teams
 class MyTeamsScreen extends StatefulWidget {
@@ -464,6 +467,26 @@ class _MyTeamsScreenState extends State<MyTeamsScreen> {
                                   ),
                                 ),
                               ),
+                              SizedBox(width: 4.w),
+                              InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => TeamPosterScreen(team: team),
+                                    ),
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(20.r),
+                                child: Padding(
+                                  padding: EdgeInsets.all(4.w),
+                                  child: Icon(
+                                    Icons.style_outlined,
+                                    size: 18.sp,
+                                    color: AppTheme.primaryOrange,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                           SizedBox(height: 4.h),
@@ -644,11 +667,44 @@ class _MyTeamsScreenState extends State<MyTeamsScreen> {
                     BoxShadow(color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05), blurRadius: 10),
                   ],
                 ),
-                child: QrImageView(
-                  data: team.spTId,
-                  version: QrVersions.auto,
-                  size: 200.0.sp,
-                  foregroundColor: const Color(0xFFFF6B35),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    QrImageView(
+                      data: team.spTId,
+                      version: QrVersions.auto,
+                      size: 200.0.sp,
+                      padding: EdgeInsets.zero,
+                      errorCorrectionLevel: QrErrorCorrectLevel.H,
+                      eyeStyle: const QrEyeStyle(
+                        eyeShape: QrEyeShape.circle,
+                        color: Color(0xFFFF6B35),
+                      ),
+                      dataModuleStyle: const QrDataModuleStyle(
+                        dataModuleShape: QrDataModuleShape.circle,
+                        color: Color(0xFFFF6B35),
+                      ),
+                      embeddedImage: const AssetImage('assets/images/app_icon_foreground.png'),
+                      embeddedImageStyle: QrEmbeddedImageStyle(
+                        size: Size(54.sp, 54.sp),
+                      ),
+                    ),
+                    IgnorePointer(
+                      child: Container(
+                        width: 52.sp,
+                        height: 52.sp,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        padding: EdgeInsets.all(4.w),
+                        child: Image.asset(
+                          'assets/images/app_icon_foreground.png',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               SizedBox(height: 16.h),
@@ -656,18 +712,41 @@ class _MyTeamsScreenState extends State<MyTeamsScreen> {
                 'Scan to Join Team',
                 style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 14.sp),
               ),
-              SizedBox(height: 24.h),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF6B35),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+              SizedBox(height: 20.h),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 12.h),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                      ),
+                      child: const Text('Close'),
+                    ),
                   ),
-                  child: const Text('Close'),
-                ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Share.share(
+                          '🏏 Join my cricket team *${team.name}* on ScorePartner!\n'
+                          'Team ID: ${team.spTId}\n\n'
+                          'Search for this ID in ScorePartner to join our squad!',
+                        );
+                      },
+                      icon: const Icon(Icons.share_rounded, size: 18),
+                      label: const Text('Share ID', style: TextStyle(fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF6B35),
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: 12.h),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -760,17 +839,27 @@ class TournamentListScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        tournament.name,
-                        style: TextStyle(
-                          color: ThemeHelper.of(context).cardBg,
-                          fontSize: 18.sp,
-                          fontWeight: FontWeight.bold,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          tournament.name,
+                          style: TextStyle(
+                            color: ThemeHelper.of(context).cardBg,
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
                         ),
                       ),
-                      Text(
-                        tournament.location,
-                        style: TextStyle(color: ThemeHelper.of(context).textSecondary),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          tournament.location,
+                          style: TextStyle(color: ThemeHelper.of(context).textSecondary),
+                          maxLines: 1,
+                        ),
                       ),
                     ],
                   ),

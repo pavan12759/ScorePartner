@@ -5,7 +5,6 @@ import 'package:scorepatner/data/models/team_model.dart';
 import 'package:scorepatner/data/services/firebase_data_service.dart';
 import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:scorepatner/presentation/screens/profile/player_profile_screen.dart';
-
 import 'package:scorepatner/presentation/widgets/dls_calculator_widget.dart';
 
 class ScorecardTab extends StatefulWidget {
@@ -31,12 +30,14 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
   }
 
   void _initTabController() {
-    // If super over, we need 4 tabs: 1st Innings, 2nd Innings, SO Inn 1, SO Inn 2
-    final isSuperOver = widget.match.isSuperOver || widget.match.currentInnings >= 3;
-    final tabCount = isSuperOver ? 4 : 2;
+    final isTestMatch = widget.match.matchFormat == 'Test';
+    final isSuperOver = !isTestMatch && (widget.match.isSuperOver || widget.match.currentInnings >= 3);
+    final tabCount = (isTestMatch || isSuperOver) ? 4 : 2;
     int initialIndex = 0;
     
-    if (isSuperOver) {
+    if (isTestMatch) {
+      initialIndex = (widget.match.currentInnings - 1).clamp(0, 3);
+    } else if (isSuperOver) {
       // Default to super over tabs
       initialIndex = widget.match.currentInnings == 4 ? 3 : 2;
     } else {
@@ -44,6 +45,22 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
     }
     
     _tabController = TabController(length: tabCount, vsync: this, initialIndex: initialIndex);
+  }
+
+  @override
+  void didUpdateWidget(ScorecardTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldIsTest = oldWidget.match.matchFormat == 'Test';
+    final newIsTest = widget.match.matchFormat == 'Test';
+    final oldIsSuper = !oldIsTest && (oldWidget.match.isSuperOver || oldWidget.match.currentInnings >= 3);
+    final newIsSuper = !newIsTest && (widget.match.isSuperOver || widget.match.currentInnings >= 3);
+    final oldTabCount = (oldIsTest || oldIsSuper) ? 4 : 2;
+    final newTabCount = (newIsTest || newIsSuper) ? 4 : 2;
+
+    if (oldTabCount != newTabCount) {
+      _tabController.dispose();
+      _initTabController();
+    }
   }
 
   Future<void> _fetchTeams() async {
@@ -68,9 +85,9 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    final isSuperOver = widget.match.isSuperOver || widget.match.currentInnings >= 3;
+    final isTestMatch = widget.match.matchFormat == 'Test';
+    final isSuperOver = !isTestMatch && (widget.match.isSuperOver || widget.match.currentInnings >= 3);
     
-    // Determine which team batted first
     // Determine which team batted first
     bool team1BattedFirst = true;
     
@@ -96,70 +113,134 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
       }
     }
 
-    // Get main match scores
-    final mainTeam1Score = isSuperOver && widget.match.mainMatchScores != null
-        ? widget.match.mainMatchScores!['team1']!
-        : widget.match.team1Score;
-    final mainTeam2Score = isSuperOver && widget.match.mainMatchScores != null
-        ? widget.match.mainMatchScores!['team2']!
-        : widget.match.team2Score;
+    List<Tab> tabs = [];
+    List<Widget> tabViews = [];
 
-    // Build main match innings views
-    final firstInningsView = team1BattedFirst 
-        ? _buildScorecardView(widget.match.team1Name, widget.match.team2Name, mainTeam1Score, mainTeam2Score, _team1)
-        : _buildScorecardView(widget.match.team2Name, widget.match.team1Name, mainTeam2Score, mainTeam1Score, _team2);
-        
-    final secondInningsView = team1BattedFirst
-        ? _buildScorecardView(widget.match.team2Name, widget.match.team1Name, mainTeam2Score, mainTeam1Score, _team2)
-        : _buildScorecardView(widget.match.team1Name, widget.match.team2Name, mainTeam1Score, mainTeam2Score, _team1);
+    if (isTestMatch) {
+      // ================== TEST MATCH (4 INNINGS) ==================
+      final teamAName = team1BattedFirst ? widget.match.team1Name : widget.match.team2Name;
+      final teamBName = team1BattedFirst ? widget.match.team2Name : widget.match.team1Name;
+      final teamAModel = team1BattedFirst ? _team1 : _team2;
+      final teamBModel = team1BattedFirst ? _team2 : _team1;
 
-    // Build super over views if applicable
-    Widget? superOverFirstInningsView;
-    Widget? superOverSecondInningsView;
-    
-    if (isSuperOver) {
-      superOverFirstInningsView = _buildScorecardView(
-        '${widget.match.team1Name} (SO)',
-        '${widget.match.team2Name} (SO)',
-        widget.match.team1Score,
-        widget.match.team2Score,
-        _team1,
-        isSuperOverInnings: true,
-      );
-      superOverSecondInningsView = _buildScorecardView(
-        '${widget.match.team2Name} (SO)',
-        '${widget.match.team1Name} (SO)',
-        widget.match.team2Score,
-        widget.match.team1Score,
-        _team2,
-        isSuperOverInnings: true,
-      );
+      // Innings 1: Team A batted, Team B bowled
+      final inn1BattingScore = team1BattedFirst
+          ? (widget.match.team1FirstInningsScore ?? (widget.match.currentInnings == 1 ? widget.match.team1Score : TeamScore.empty()))
+          : (widget.match.team2FirstInningsScore ?? (widget.match.currentInnings == 1 ? widget.match.team2Score : TeamScore.empty()));
+      final inn1BowlingScore = team1BattedFirst
+          ? (widget.match.team2FirstInningsScore ?? widget.match.team2Score)
+          : (widget.match.team1FirstInningsScore ?? widget.match.team1Score);
+
+      // Innings 2: Team B batted, Team A bowled
+      final inn2BattingScore = team1BattedFirst
+          ? (widget.match.team2FirstInningsScore ?? (widget.match.currentInnings >= 2 ? widget.match.team2Score : TeamScore.empty()))
+          : (widget.match.team1FirstInningsScore ?? (widget.match.currentInnings >= 2 ? widget.match.team1Score : TeamScore.empty()));
+      final inn2BowlingScore = team1BattedFirst
+          ? (widget.match.team1FirstInningsScore ?? widget.match.team1Score)
+          : (widget.match.team2FirstInningsScore ?? widget.match.team2Score);
+
+      // Innings 3: (Team A 2nd inn or follow-on)
+      final isTeam1BattingInn3 = widget.match.currentInnings == 3
+          ? widget.match.currentBattingTeam == 'team1'
+          : team1BattedFirst;
+      final inn3TeamName = isTeam1BattingInn3 ? widget.match.team1Name : widget.match.team2Name;
+      final inn3OppName = isTeam1BattingInn3 ? widget.match.team2Name : widget.match.team1Name;
+      final inn3TeamModel = isTeam1BattingInn3 ? _team1 : _team2;
+      final inn3BattingScore = widget.match.currentInnings >= 3
+          ? (isTeam1BattingInn3 ? widget.match.team1Score : widget.match.team2Score)
+          : const TeamScore();
+      final inn3BowlingScore = widget.match.currentInnings >= 3
+          ? (isTeam1BattingInn3 ? widget.match.team2Score : widget.match.team1Score)
+          : const TeamScore();
+
+      // Innings 4: (Opponent 2nd inn)
+      final isTeam1BattingInn4 = !isTeam1BattingInn3;
+      final inn4TeamName = isTeam1BattingInn4 ? widget.match.team1Name : widget.match.team2Name;
+      final inn4OppName = isTeam1BattingInn4 ? widget.match.team2Name : widget.match.team1Name;
+      final inn4TeamModel = isTeam1BattingInn4 ? _team1 : _team2;
+      final inn4BattingScore = widget.match.currentInnings >= 4
+          ? (isTeam1BattingInn4 ? widget.match.team1Score : widget.match.team2Score)
+          : const TeamScore();
+      final inn4BowlingScore = widget.match.currentInnings >= 4
+          ? (isTeam1BattingInn4 ? widget.match.team2Score : widget.match.team1Score)
+          : const TeamScore();
+
+      tabs = const [
+        Tab(text: "1ST INNINGS"),
+        Tab(text: "2ND INNINGS"),
+        Tab(text: "3RD INNINGS"),
+        Tab(text: "4TH INNINGS"),
+      ];
+
+      tabViews = [
+        _buildScorecardView(teamAName, teamBName, inn1BattingScore, inn1BowlingScore, teamAModel),
+        _buildScorecardView(teamBName, teamAName, inn2BattingScore, inn2BowlingScore, teamBModel),
+        _buildScorecardView(inn3TeamName, inn3OppName, inn3BattingScore, inn3BowlingScore, inn3TeamModel),
+        _buildScorecardView(inn4TeamName, inn4OppName, inn4BattingScore, inn4BowlingScore, inn4TeamModel),
+      ];
+    } else {
+      // ================== LIMITED OVERS / SUPER OVER ==================
+      final mainTeam1Score = isSuperOver && widget.match.mainMatchScores != null
+          ? widget.match.mainMatchScores!['team1']!
+          : widget.match.team1Score;
+      final mainTeam2Score = isSuperOver && widget.match.mainMatchScores != null
+          ? widget.match.mainMatchScores!['team2']!
+          : widget.match.team2Score;
+
+      final firstInningsView = team1BattedFirst 
+          ? _buildScorecardView(widget.match.team1Name, widget.match.team2Name, mainTeam1Score, mainTeam2Score, _team1)
+          : _buildScorecardView(widget.match.team2Name, widget.match.team1Name, mainTeam2Score, mainTeam1Score, _team2);
+          
+      final secondInningsView = team1BattedFirst
+          ? _buildScorecardView(widget.match.team2Name, widget.match.team1Name, mainTeam2Score, mainTeam1Score, _team2)
+          : _buildScorecardView(widget.match.team1Name, widget.match.team2Name, mainTeam1Score, mainTeam2Score, _team1);
+
+      Widget? superOverFirstInningsView;
+      Widget? superOverSecondInningsView;
+      
+      if (isSuperOver) {
+        superOverFirstInningsView = _buildScorecardView(
+          '${widget.match.team1Name} (SO)',
+          '${widget.match.team2Name} (SO)',
+          widget.match.team1Score,
+          widget.match.team2Score,
+          _team1,
+          isSuperOverInnings: true,
+        );
+        superOverSecondInningsView = _buildScorecardView(
+          '${widget.match.team2Name} (SO)',
+          '${widget.match.team1Name} (SO)',
+          widget.match.team2Score,
+          widget.match.team1Score,
+          _team2,
+          isSuperOverInnings: true,
+        );
+      }
+
+      tabs = isSuperOver
+          ? const [
+              Tab(text: "1ST INNINGS"),
+              Tab(text: "2ND INNINGS"),
+              Tab(text: "S.O INN 1"),
+              Tab(text: "S.O INN 2"),
+            ]
+          : const [
+              Tab(text: "1ST INNINGS"),
+              Tab(text: "2ND INNINGS"),
+            ];
+
+      tabViews = isSuperOver
+          ? [
+              firstInningsView,
+              secondInningsView,
+              superOverFirstInningsView!,
+              superOverSecondInningsView!,
+            ]
+          : [
+              firstInningsView,
+              secondInningsView,
+            ];
     }
-
-    // Build tabs based on whether it's a super over
-    final tabs = isSuperOver
-        ? const [
-            Tab(text: "1ST INNINGS"),
-            Tab(text: "2ND INNINGS"),
-            Tab(text: "S.O INN 1"),
-            Tab(text: "S.O INN 2"),
-          ]
-        : const [
-            Tab(text: "1ST INNINGS"),
-            Tab(text: "2ND INNINGS"),
-          ];
-
-    final tabViews = isSuperOver
-        ? [
-            firstInningsView,
-            secondInningsView,
-            superOverFirstInningsView!,
-            superOverSecondInningsView!,
-          ]
-        : [
-            firstInningsView,
-            secondInningsView,
-          ];
 
     return Column(
       children: [
@@ -174,7 +255,7 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
             labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp, letterSpacing: 0.5),
             unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.sp, letterSpacing: 0.5),
             indicatorSize: TabBarIndicatorSize.tab,
-            isScrollable: isSuperOver,
+            isScrollable: isTestMatch || isSuperOver,
             tabs: tabs,
           ),
         ),
@@ -191,6 +272,29 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
   }
   
   Widget _buildScorecardView(String battingTeamName, String bowlingTeamName, TeamScore battingScore, TeamScore bowlingScore, TeamModel? team, {bool isSuperOverInnings = false}) {
+    if (battingScore.runs == 0 && battingScore.wickets == 0 && battingScore.overs == 0.0 && battingScore.batters.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.w),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.sports_cricket, size: 56.sp, color: ThemeHelper.of(context).textSecondary.withOpacity(0.3)),
+              SizedBox(height: 16.h),
+              Text(
+                '$battingTeamName Innings',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp, color: ThemeHelper.of(context).textPrimary),
+              ),
+              SizedBox(height: 6.h),
+              Text(
+                'Innings has not started yet',
+                style: TextStyle(fontSize: 13.sp, color: ThemeHelper.of(context).textSecondary),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     final teamBalls = widget.match.ballByBall.where((b) => b.battingTeam == team?.id).toList();
     
     Map<String, int> battingPositions = {};
@@ -265,13 +369,30 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          battingTeamName.toUpperCase(),
-                          style: TextStyle(color: isSuperOverInnings ? Colors.white : ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w900, fontSize: 15.sp, letterSpacing: 0.5),
+                        Expanded(
+                          child: Text(
+                            battingTeamName.toUpperCase(),
+                            style: TextStyle(
+                              color: isSuperOverInnings ? Colors.white : ThemeHelper.of(context).textPrimary,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 15.sp,
+                              letterSpacing: 0.5,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
                         ),
-                        Text(
-                          '${battingScore.runs}-${battingScore.wickets} (${battingScore.overs} OV)',
-                          style: TextStyle(color: isSuperOverInnings ? Colors.white : ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w900, fontSize: 16.sp),
+                        SizedBox(width: 8.w),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            '${battingScore.runs}-${battingScore.wickets} (${battingScore.overs} OV)',
+                            style: TextStyle(
+                              color: isSuperOverInnings ? Colors.white : ThemeHelper.of(context).textPrimary,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 16.sp,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -320,6 +441,8 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
                      child: Text(
                        '${bowlingTeamName.toUpperCase()} BOWLERS',
                        style: TextStyle(color: isSuperOverInnings ? Colors.white : ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w900, fontSize: 14.sp, letterSpacing: 0.5),
+                       overflow: TextOverflow.ellipsis,
+                       maxLines: 1,
                      ),
                    ),
                    
@@ -664,14 +787,6 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
            ));
         }
     }
-    
-    return calculated.reversed.toList(); // Show latest first? Or chronological? Usually chronological.
-    // Let's return reversed to show latest at top like Cricbuzz sometimes, or just standard.
-    // User asked for "not showing", standard is chronological list usually 1st wicket, 2nd wicket...
-    // But typically Partnership card shows *Active* partnership at top? 
-    // The UI iterates and displays them. I'll return in order (1st wkt, 2nd wkt...) 
-    // Wait, the UI loop is `...teamPartnerships.map`.
-    // I'll return chronological.
     return calculated;
   }
 
@@ -806,15 +921,21 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () => _navigateToPlayerProfile(b.playerId),
-              child: Text(
-                b.playerName, 
-                style: TextStyle(
-                  fontWeight: FontWeight.bold, 
-                  fontSize: 13.sp, 
-                  color: AppTheme.primaryOrange,
-                  decoration: TextDecoration.none,
-                ),
-                overflow: TextOverflow.ellipsis,
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      b.playerName, 
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold, 
+                        fontSize: 13.sp, 
+                        color: AppTheme.primaryOrange,
+                        decoration: TextDecoration.none,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -834,14 +955,18 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
       child: Row(
         children: [
           Expanded(
-            flex: 5,
+            flex: 4,
             child: Text('EXTRAS', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary)),
           ),
           Expanded(
-            flex: 6,
-            child: Text(
-              '${score.extras.total} (b ${score.extras.byes}, lb ${score.extras.legByes}, w ${score.extras.wides}, nb ${score.extras.noBalls}, p 0)',
-              style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w500),
+            flex: 7,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                '${score.extras.total} (b ${score.extras.byes}, lb ${score.extras.legByes}, w ${score.extras.wides}, nb ${score.extras.noBalls}, p 0)',
+                style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w500),
+              ),
             ),
           ),
         ],
@@ -860,14 +985,18 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
       child: Row(
         children: [
           Expanded(
-            flex: 5,
+            flex: 4,
             child: Text('TOTAL', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12.sp, color: AppTheme.primaryOrange)),
           ),
           Expanded(
-            flex: 6,
-            child: Text(
-              '${score.runs}-${score.wickets} (${score.overs} OV, RR: ${rr.toStringAsFixed(2)})',
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14.sp, color: ThemeHelper.of(context).textPrimary),
+            flex: 7,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                '${score.runs}-${score.wickets} (${score.overs} OV, RR: ${rr.toStringAsFixed(2)})',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14.sp, color: ThemeHelper.of(context).textPrimary),
+              ),
             ),
           ),
         ],

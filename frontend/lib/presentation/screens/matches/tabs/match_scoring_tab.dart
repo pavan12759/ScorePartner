@@ -617,7 +617,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
       // Only prompt for bowler change if innings is still going (not all out or overs complete)
       // FIX: Default to 10 wickets check
       final isAllOut = score.wickets >= 10;
-      final areOversComplete = score.overs >= match.oversPerSide;
+      final areOversComplete = !match.isUnlimitedOvers && match.oversPerSide > 0 && score.overs >= match.oversPerSide;
       if (isAllOut || areOversComplete) return; 
       
       _lastCompletedOver = match.currentOver;
@@ -728,14 +728,20 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
   static const Color _textSecondary = Color(0xFF8E8E93);
   static const Color _glassWhite = Color(0x1AFFFFFF);
 
-  String _getInningsLabel(int innings) {
+  String _getInningsLabel(int innings, [String? matchFormat]) {
     if (innings == 1) return '1ST INNINGS';
     if (innings == 2) return '2ND INNINGS';
+    if (matchFormat == 'Test') {
+      if (innings == 3) return '3RD INNINGS';
+      if (innings == 4) return '4TH INNINGS';
+    }
+    if (innings == 3) return 'SUPER OVER 1';
+    if (innings == 4) return 'SUPER OVER 2';
     return 'INNINGS $innings';
   }      
 
   Widget _buildScoreHeader(MatchModel match, String battingTeamName, String bowlingTeamName, TeamScore score) {
-    final crr = score.overs > 0 ? score.runs / score.overs : 0.0;
+    final crr = match.currentRunRate;
     
     return Padding(
       padding: EdgeInsets.fromLTRB(12, 16, 12, 0),
@@ -882,7 +888,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
                     boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 4, offset: Offset(0, 2))],
                   ),
                   child: Text(
-                    _getInningsLabel(match.currentInnings).toUpperCase(),
+                    _getInningsLabel(match.currentInnings, match.matchFormat).toUpperCase(),
                     style: TextStyle(color: ThemeHelper.of(context).cardBg, fontSize: 11.sp, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                   ),
                 ),
@@ -890,10 +896,30 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
             ],
           ),
           
-          if (match.currentInnings == 2 && match.target != null && match.matchFormat != 'Test') ...[
+          if ((match.currentInnings == 2 && match.target != null && match.matchFormat != 'Test') ||
+              (match.currentInnings == 4 && match.target != null && match.matchFormat == 'Test')) ...[
              SizedBox(height: 12.h),
              Builder(builder: (context) {
                final runsNeeded = match.target! - score.runs;
+               if (runsNeeded <= 0) return SizedBox.shrink();
+
+               if (match.matchFormat == 'Test') {
+                 return Container(
+                   padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                   decoration: BoxDecoration(
+                     color: Colors.white.withOpacity(0.9),
+                     borderRadius: BorderRadius.circular(20.r),
+                   ),
+                   child: Text(
+                     '$battingTeamName needs $runsNeeded runs to win',
+                     style: TextStyle(
+                       color: Color(0xFF064132),
+                       fontSize: 14.sp,
+                       fontWeight: FontWeight.bold,
+                     ),
+                   ),
+                 );
+               }
                
                // Calculate actual balls bowled in the current over
                final overStr = score.overs.toStringAsFixed(1);
@@ -905,7 +931,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
                final totalBalls = match.oversPerSide * 6;
                final ballsRemaining = totalBalls - ballsBowled;
                
-               if (runsNeeded <= 0 || ballsRemaining <= 0) return SizedBox.shrink();
+               if (ballsRemaining <= 0) return SizedBox.shrink();
                
                return Container(
                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
@@ -948,7 +974,10 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
                   subtext: '(B ${score.extras.byes}, LB ${score.extras.legByes}, WD ${score.extras.wides}, NB ${score.extras.noBalls})'
                 ),
                 Container(height: 36.h, width: 1.w, color: ThemeHelper.of(context).dividerColor),
-                _buildStatColumnCricbuzz('OVERS', '${match.oversPerSide}'),
+                if (match.matchFormat == 'Test')
+                  _buildTestMatchStatus(match)
+                else
+                  _buildStatColumnCricbuzz('OVERS', '${match.oversPerSide}'),
               ],
             ),
           ),
@@ -988,15 +1017,16 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
     String label = 'STATUS';
     String value = '-';
     
+    final isTeam1Batting = match.currentBattingTeam == 'team1';
+    final currentScore = isTeam1Batting ? match.team1Score : match.team2Score;
+    
     if (match.currentInnings == 1) {
       label = '1ST INNS';
       value = 'InProgress';
     } else if (match.currentInnings == 2) {
-      // Trail/Lead
-      final battingTeamScore = match.currentBattingTeam == 'team1' ? match.team1Score : match.team2Score;
-      final bowlingTeamScore = match.currentBattingTeam == 'team1' ? match.team2FirstInningsScore : match.team1FirstInningsScore; // Opponent 1st innings
-      
-      final diff = battingTeamScore.runs - (bowlingTeamScore?.runs ?? 0);
+      // Trail/Lead against opponent 1st innings
+      final opponent1stInn = (isTeam1Batting ? match.team2FirstInningsScore?.runs : match.team1FirstInningsScore?.runs) ?? 0;
+      final diff = currentScore.runs - opponent1stInn;
       if (diff < 0) {
         label = 'TRAIL BY';
         value = '${-diff}';
@@ -1005,14 +1035,11 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
         value = '$diff';
       }
     } else if (match.currentInnings == 3) {
-      // Inn 3: Team 1 batting (usually). 
-      // Lead = (T1_Inn1 + T1_Inn2_Current) - T2_Inn1
-      final t1Inn1 = match.team1FirstInningsScore?.runs ?? 0;
-      final t1Inn2 = match.team1Score.runs;
-      final t2Inn1 = match.team2FirstInningsScore?.runs ?? 0;
+      final batting1stInn = (isTeam1Batting ? match.team1FirstInningsScore?.runs : match.team2FirstInningsScore?.runs) ?? 0;
+      final opponent1stInn = (isTeam1Batting ? match.team2FirstInningsScore?.runs : match.team1FirstInningsScore?.runs) ?? 0;
       
-      final lead = (t1Inn1 + t1Inn2) - t2Inn1;
-       if (lead < 0) {
+      final lead = (batting1stInn + currentScore.runs) - opponent1stInn;
+      if (lead < 0) {
         label = 'TRAIL BY';
         value = '${-lead}';
       } else {
@@ -1020,15 +1047,13 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
         value = '$lead';
       }
     } else if (match.currentInnings == 4) {
-      // Inn 4: Chase
       final target = match.target ?? 0;
-      final runsInfo = match.requiredRunRate; // Not useful for Test
-      final runsNeeded = target - (match.currentBattingTeam == 'team1' ? match.team1Score.runs : match.team2Score.runs);
+      final runsNeeded = target > 0 ? target - currentScore.runs : 0;
       label = 'NEED';
-      value = '$runsNeeded';
+      value = '${runsNeeded > 0 ? runsNeeded : 0}';
     }
 
-    return _buildStatColumn(label, value);
+    return _buildStatColumnCricbuzz(label, value);
   }
   
   Widget _buildGlassStatCard(String label, String value, Color color) {
@@ -1705,13 +1730,16 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
     TeamScore battingScore,
     TeamScore bowlingScore,
   ) {
+    final isTestMatch = match.matchFormat == 'Test';
     // Check end conditions
-    final maxWickets = match.currentInnings > 2 ? 2 : 10; // Super Over = 2 wickets
+    final maxWickets = (!isTestMatch && match.currentInnings > 2) ? 2 : 10; // Super Over = 2 wickets
     final isAllOut = battingScore.wickets >= maxWickets;
-    final areOversComplete = battingScore.overs >= match.oversPerSide;
-    final targetReached = (match.currentInnings == 2 || match.currentInnings == 4) && battingScore.runs >= (match.target ?? 0);
+    final areOversComplete = !match.isUnlimitedOvers && match.oversPerSide > 0 && battingScore.overs >= match.oversPerSide;
+    final targetReached = (isTestMatch ? match.currentInnings == 4 : (match.currentInnings == 2 || match.currentInnings == 4)) &&
+        match.target != null &&
+        battingScore.runs >= match.target!;
     final matchFinished = match.status == 'completed';
-    final isSuperOver = match.currentInnings >= 3;
+    final isSuperOver = !isTestMatch && match.currentInnings >= 3;
     
     // Determine the result state for display
     if (matchFinished || isAllOut || areOversComplete || targetReached) {
@@ -1719,7 +1747,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
       
       // For 1st innings end, show innings complete
       if (match.currentInnings == 1 && (isAllOut || areOversComplete)) {
-        message = "INNINGS COMPLETE";
+        message = isTestMatch ? "1ST INNINGS COMPLETE" : "INNINGS COMPLETE";
         
         return Container(
           padding: EdgeInsets.all(24.w),
@@ -1744,9 +1772,77 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
           ),
         );
       }
+
+      // For Test match 2nd innings end
+      if (isTestMatch && match.currentInnings == 2 && isAllOut) {
+        final canFollowOn = match.canEnforceFollowOn;
+        message = "2ND INNINGS COMPLETE\n${battingScore.runs}/${battingScore.wickets}";
+
+        return Container(
+          padding: EdgeInsets.all(24.w),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [_cardDark, _stadiumBlack], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+            boxShadow: [BoxShadow(color: _glowOrange.withOpacity(0.1), blurRadius: 20, offset: Offset(0, -5))],
+          ),
+          child: Column(
+            children: [
+              Text(message, textAlign: TextAlign.center, style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold, color: _liveRed, letterSpacing: 2,
+                shadows: [Shadow(color: _liveRed.withOpacity(0.5), blurRadius: 12)])),
+              SizedBox(height: 20.h),
+              if (canFollowOn) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: _buildNeonButton(
+                    'ENFORCE FOLLOW-ON',
+                    () => provider.changeInnings(match, enforceFollowOn: true),
+                    Colors.amber,
+                  ),
+                ),
+                SizedBox(height: 12.h),
+              ],
+              SizedBox(
+                width: double.infinity,
+                child: _buildNeonButton(
+                  'START 3RD INNINGS',
+                  () => _showInningsEndDialog(context, match, battingScore),
+                  _glowOrange,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      // For Test match 3rd innings end
+      if (isTestMatch && match.currentInnings == 3 && isAllOut && !matchFinished) {
+        message = "3RD INNINGS COMPLETE\n${battingScore.runs}/${battingScore.wickets}";
+
+        return Container(
+          padding: EdgeInsets.all(24.w),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [_cardDark, _stadiumBlack], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+            boxShadow: [BoxShadow(color: _glowOrange.withOpacity(0.1), blurRadius: 20, offset: Offset(0, -5))],
+          ),
+          child: Column(
+            children: [
+              Text(message, textAlign: TextAlign.center, style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold, color: _liveRed, letterSpacing: 2,
+                shadows: [Shadow(color: _liveRed.withOpacity(0.5), blurRadius: 12)])),
+              SizedBox(height: 20.h),
+              SizedBox(
+                width: double.infinity,
+                child: _buildNeonButton(
+                  'START 4TH INNINGS (CHASE)',
+                  () => provider.changeInnings(match),
+                  _glowOrange,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
       
       // For Super Over 1st innings (innings 3) end
-      if (match.currentInnings == 3 && (isAllOut || areOversComplete)) {
+      if (!isTestMatch && match.currentInnings == 3 && (isAllOut || areOversComplete)) {
         message = "SUPER OVER\n${battingScore.runs}/${battingScore.wickets}";
         
         return Container(
@@ -1773,11 +1869,17 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
         );
       }
       
-      // For 2nd innings end or Super Over chase (innings 4)
+      // For completed matches or chase endings
       if (matchFinished && match.winnerTeam != null) {
-        message = match.winnerTeam == 'Match Tied'
-            ? "MATCH TIED"
-            : "${match.winnerTeam!.toUpperCase()} WON\nBY ${match.winningMargin.toUpperCase()}";
+        if (match.winnerTeam == 'Match Drawn') {
+          message = "MATCH DRAWN";
+        } else if (match.winnerTeam == 'Match Tied') {
+          message = "MATCH TIED";
+        } else if (match.winnerTeam == 'Match Abandoned') {
+          message = "MATCH ABANDONED";
+        } else {
+          message = "${match.winnerTeam!.toUpperCase()} WON\nBY ${match.winningMargin.toUpperCase()}";
+        }
       } else if (targetReached) {
         final winningTeam = match.currentBattingTeam == 'team1' ? match.team1Name : match.team2Name;
         final remainingWickets = maxWickets - battingScore.wickets;
@@ -1785,7 +1887,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
         message = "${winningTeam.toUpperCase()} WON\nBY $marginText";
       } else if (isAllOut || areOversComplete) {
         final target = match.target ?? 0;
-        if (battingScore.runs == target - 1) {
+        if (target > 0 && battingScore.runs == target - 1) {
           message = isSuperOver ? "SUPER OVER TIED" : "MATCH TIED";
         } else {
           final winningTeam = match.currentBattingTeam == 'team1' ? match.team2Name : match.team1Name;
@@ -2409,7 +2511,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
     final provider = context.read<ScoringProvider>();
     final match = widget.match;
     
-    if (match == null || !context.mounted) return;
+    if (!context.mounted) return;
     
     showModalBottomSheet(
       context: context,
@@ -2458,8 +2560,52 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
   
   void _showInningsChangeDialog(BuildContext context, ScoringProvider provider, MatchModel match) async {
     final isTeam1Batting = match.currentBattingTeam == 'team1';
+    final battingTeamName = isTeam1Batting ? match.team1Name : match.team2Name;
     final battingScore = isTeam1Batting ? match.team1Score : match.team2Score;
-    
+    final isTestMatch = match.matchFormat == 'Test';
+
+    if (isTestMatch) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: ThemeHelper.of(context).cardBg,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+          title: Row(
+            children: [
+              const Icon(Icons.flag, color: Colors.orange),
+              SizedBox(width: 8.w),
+              Text('Declare Innings', style: TextStyle(color: ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Text(
+            'Are you sure you want to declare $battingTeamName\'s innings at ${battingScore.runs}/${battingScore.wickets} (${battingScore.oversDisplay} Overs)?',
+            style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 14.sp),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('CANCEL', style: TextStyle(color: ThemeHelper.of(context).textSecondary)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryOrange),
+              child: const Text('DECLARE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm == true) {
+        await provider.changeInnings(match, isDeclaration: true);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Innings declared! Innings ${match.currentInnings + 1} started.')),
+          );
+        }
+      }
+      return;
+    }
+
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => InningsChangeDialog(
@@ -2485,10 +2631,74 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
     }
   }
   
-  void _showEndMatchDialog(BuildContext context, MatchModel match) {
-    // TODO: Implement end match dialog with result selection
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('End match functionality coming soon')),
+  void _showEndMatchDialog(BuildContext context, MatchModel match) async {
+    final provider = context.read<ScoringProvider>();
+    final isTest = match.matchFormat == 'Test';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: ThemeHelper.of(context).cardBg,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20.r))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('End Match & Set Result', style: TextStyle(color: ThemeHelper.of(context).textPrimary, fontSize: 18.sp, fontWeight: FontWeight.bold)),
+              SizedBox(height: 12.h),
+              if (isTest) ...[
+                ListTile(
+                  leading: const Icon(Icons.handshake, color: Colors.blue),
+                  title: const Text('Declare Match Drawn'),
+                  subtitle: const Text('Match ended with no time/overs left'),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    await provider.endMatchManually(match, resultType: 'draw');
+                  },
+                ),
+              ],
+              ListTile(
+                leading: const Icon(Icons.balance, color: Colors.amber),
+                title: const Text('Declare Match Tied'),
+                subtitle: const Text('Scores are level and match has ended'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await provider.endMatchManually(match, resultType: 'tie');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.emoji_events, color: AppTheme.primaryOrange),
+                title: Text('${match.team1Name} Won'),
+                subtitle: const Text('Declare Team 1 as winner'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await provider.endMatchManually(match, resultType: 'winner', winnerTeamId: match.team1Id);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.emoji_events, color: AppTheme.primaryOrange),
+                title: Text('${match.team2Name} Won'),
+                subtitle: const Text('Declare Team 2 as winner'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await provider.endMatchManually(match, resultType: 'winner', winnerTeamId: match.team2Id);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.cancel_outlined, color: Colors.red),
+                title: const Text('Abandon Match'),
+                subtitle: const Text('Rain, bad light or called off'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await provider.endMatchManually(match, resultType: 'abandoned');
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

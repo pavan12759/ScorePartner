@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:async';
 import 'package:scorepatner/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -7,12 +8,22 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../data/models/team_model.dart';
+import '../../../../data/models/user_model.dart';
 import '../../../../data/services/firebase_data_service.dart';
+import '../../../../data/services/player_search_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/team_logo_widget.dart';
+import '../../widgets/player_avatar_widget.dart';
 import '../../widgets/cricket_logo_generator.dart';
 import '../../widgets/invite_link_share_sheet.dart';
+import '../profile/player_profile_screen.dart';
+import 'dart:io';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
 import 'join_requests_screen.dart';
+import 'poster/team_poster_screen.dart';
 
 class TeamDetailsScreen extends StatefulWidget {
   final TeamModel team;
@@ -25,12 +36,55 @@ class TeamDetailsScreen extends StatefulWidget {
 
 class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
   final FirebaseDataService _dataService = FirebaseDataService.instance;
+  final ScreenshotController _qrScreenshotController = ScreenshotController();
+  bool _isSharingQr = false;
 
   @override
   void initState() {
     super.initState();
     // Recalculate team stats from completed matches on load
     _dataService.recalculateTeamStats(widget.team.id);
+  }
+
+  Future<void> _shareTeamQr(TeamModel team) async {
+    if (_isSharingQr) return;
+    setState(() => _isSharingQr = true);
+
+    try {
+      await Future.delayed(const Duration(milliseconds: 150));
+      await WidgetsBinding.instance.endOfFrame;
+
+      final image = await _qrScreenshotController.capture(
+        pixelRatio: 3.0,
+        delay: const Duration(milliseconds: 100),
+      );
+
+      if (image == null) throw Exception('Capture failed');
+
+      final safeName = team.name.replaceAll(RegExp(r'[^\w\s]'), '').replaceAll(' ', '_');
+      final fileName = 'team_${safeName}_qr.png';
+      final caption = '🏏 Join my cricket team *${team.name}* on ScorePartner!\n\n'
+          'Scan this QR code or enter Team ID: *${team.spTId}* to send a join request.\n\n'
+          'Download ScorePartner: The Cricket Scoring App 🏆';
+
+      final directory = await getTemporaryDirectory();
+      final filePath = '${directory.path}/$fileName';
+      final file = File(filePath);
+      await file.writeAsBytes(image);
+
+      await Share.shareXFiles([XFile(filePath)], text: caption);
+    } catch (e) {
+      debugPrint('❌ Error sharing QR code: $e');
+      if (mounted) {
+        Share.share(
+          '🏏 Join my cricket team *${team.name}* on ScorePartner!\n'
+          'Team ID: ${team.spTId}\n\n'
+          'Search for this ID in ScorePartner to join our squad!',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSharingQr = false);
+    }
   }
 
   /// Check if current user is the team admin (creator)
@@ -246,18 +300,20 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
         builder: (context, setDialogState) {
           
           Future<void> lookupPlayer() async {
-            final sppId = sppIdController.text.trim().toUpperCase();
-            if (sppId.isEmpty) return;
+            final query = sppIdController.text.trim();
+            if (query.isEmpty) return;
             
             lookedUpUserId = null; // Reset previous lookup result
             setDialogState(() => isLookingUp = true);
             
             try {
-              final user = await _dataService.getUserBySppId(sppId);
+              final result = await PlayerSearchService.instance.searchPlayer(query);
               
-              if (user != null) {
+              if (result.isSuccess && result.player != null) {
+                final user = result.player!;
                 nameController.text = user.name;
                 lookedUpUserId = user.uid;
+                sppIdController.text = user.spPId;
                 
                 // Try to map role
                 if (['Batsman', 'Bowler', 'All-rounder', 'Wicket Keeper'].contains(user.role)) {
@@ -265,11 +321,11 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                 }
                 
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('✅ Found: ${user.name}'), backgroundColor: Colors.green),
+                  SnackBar(content: Text('✅ Found: ${user.name} (${user.spPId})'), backgroundColor: Colors.green),
                 );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('❌ No player found'), backgroundColor: Colors.orange),
+                  SnackBar(content: Text('❌ ${result.errorMessage ?? "No registered player found"}'), backgroundColor: Colors.orange),
                 );
               }
             } catch (e) {
@@ -296,8 +352,8 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                         child: TextField(
                           controller: sppIdController,
                           decoration: const InputDecoration(
-                            labelText: 'SPP ID (Optional)',
-                            hintText: 'Search by ID',
+                            labelText: 'SPP ID or Mobile Number (Optional)',
+                            hintText: 'Enter SPP ID or mobile number',
                           ),
                           onSubmitted: (_) => lookupPlayer(),
                         ),
@@ -373,14 +429,32 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                   return;
                 }
 
+                final spPId = sppIdController.text.trim().toUpperCase();
+                final mobile = mobileController.text.trim();
+
+                // Check duplicate in team roster
+                final isDuplicate = widget.team.players.any((p) {
+                  if (lookedUpUserId != null && p.userId == lookedUpUserId) return true;
+                  if (spPId.isNotEmpty && p.spPId.isNotEmpty && p.spPId.toUpperCase() == spPId) return true;
+                  if (mobile.isNotEmpty && p.mobileNumber.isNotEmpty && p.mobileNumber == mobile) return true;
+                  return false;
+                });
+
+                if (isDuplicate) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Player is already in this team'), backgroundColor: Colors.orange),
+                  );
+                  return;
+                }
+
                 // Use looked up ID or generate random one for manual players
                 final userId = lookedUpUserId ?? 'manual_${DateTime.now().millisecondsSinceEpoch}';
                 
                 final newPlayer = TeamPlayer(
                   userId: userId,
-                  spPId: sppIdController.text.trim().toUpperCase(),
+                  spPId: spPId,
                   name: nameController.text.trim(),
-                  mobileNumber: mobileController.text.trim(),
+                  mobileNumber: mobile,
                   role: selectedRole,
                   battingStyle: selectedBatting,
                   bowlingStyle: selectedBowling,
@@ -677,6 +751,18 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
           appBar: AppBar(
             title: Text(team.name),
             actions: [
+              IconButton(
+                icon: const Icon(Icons.style_outlined),
+                tooltip: 'Team Poster',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TeamPosterScreen(team: team),
+                    ),
+                  );
+                },
+              ),
               if (canManage)
                 IconButton(
                   icon: Icon(Icons.link),
@@ -806,10 +892,10 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildRoleBadge('Captain', team.captainName, Colors.amber),
+                          _buildRoleBadge('Captain', team.captainName, Colors.amber, playerId: team.captainId),
                           SizedBox(width: 12.w),
                           if (team.viceCaptainName.isNotEmpty)
-                            _buildRoleBadge('Vice-Captain', team.viceCaptainName, Colors.blue),
+                            _buildRoleBadge('Vice-Captain', team.viceCaptainName, Colors.blue, playerId: team.viceCaptainId),
                         ],
                       ),
                       SizedBox(height: 16.h),
@@ -829,10 +915,127 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                 ),
               ),
 
+              // Team Poster Showcase Banner
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 0),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: ThemeHelper.of(context).isDark
+                          ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+                          : [Colors.white, const Color(0xFFFFF7ED)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16.r),
+                    border: Border.all(
+                      color: AppTheme.primaryOrange.withOpacity(0.35),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryOrange.withOpacity(0.1),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16.r),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => TeamPosterScreen(team: team),
+                          ),
+                        );
+                      },
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 46.w,
+                              height: 46.w,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [AppTheme.primaryOrange, Color(0xFFFFB703)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(12.r),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.primaryOrange.withOpacity(0.35),
+                                    blurRadius: 8,
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(Icons.style, color: Colors.white, size: 24),
+                            ),
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Team Squad Poster',
+                                        style: TextStyle(
+                                          fontSize: 15.sp,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      SizedBox(width: 6.w),
+                                      Container(
+                                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.primaryOrange.withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(6.r),
+                                        ),
+                                        child: Text(
+                                          'NEW',
+                                          style: TextStyle(
+                                            fontSize: 9.sp,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppTheme.primaryOrange,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 3.h),
+                                  Text(
+                                    'Create & share poster with all player photos & roles',
+                                    style: TextStyle(
+                                      fontSize: 11.sp,
+                                      color: ThemeHelper.of(context).textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: 6.w),
+                            Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              color: AppTheme.primaryOrange,
+                              size: 14.sp,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
               // Players Header
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(20, 24, 20, 12),
+                  padding: EdgeInsets.fromLTRB(20, 20, 20, 10),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -840,12 +1043,37 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                         'Team Members (${team.players.length})',
                         style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
                       ),
-                      if (canManage)
-                        TextButton.icon(
-                          onPressed: _showAddPlayerDialog,
-                          icon: Icon(Icons.add, size: 18.sp),
-                          label: const Text('Add Manual'),
-                        ),
+                      Row(
+                        children: [
+                          TextButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => TeamPosterScreen(team: team),
+                                ),
+                              );
+                            },
+                            icon: Icon(Icons.photo_library_outlined, size: 16.sp, color: AppTheme.primaryOrange),
+                            label: Text(
+                              'Poster',
+                              style: TextStyle(
+                                color: AppTheme.primaryOrange,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13.sp,
+                              ),
+                            ),
+                          ),
+                          if (canManage) ...[
+                            SizedBox(width: 4.w),
+                            TextButton.icon(
+                              onPressed: _showAddPlayerDialog,
+                              icon: Icon(Icons.add, size: 18.sp),
+                              label: const Text('Add Manual'),
+                            ),
+                          ],
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -865,52 +1093,234 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                 ),
               ),
 
-              // QR Code Section
+              // QR Code Section with Embedded App Logo & Share Capability
               SliverToBoxAdapter(
-                child: Container(
-                  margin: EdgeInsets.all(24.w),
-                  padding: EdgeInsets.all(24.w),
-                  decoration: BoxDecoration(
-                    color: ThemeHelper.of(context).cardBg,
-                    borderRadius: BorderRadius.circular(20.r),
-                    boxShadow: [
-                      BoxShadow(color: ThemeHelper.of(context).isDark ? Colors.transparent : Colors.black.withOpacity(0.05), blurRadius: 10),
-                    ],
-                  ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
                   child: Column(
                     children: [
-                      Text(
-                        'Team Share QR',
-                        style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(height: 8.h),
-                      Text(
-                        'Other players can scan this to join your team',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 13.sp),
-                      ),
-                      SizedBox(height: 20.h),
-                      QrImageView(
-                        data: team.spTId,
-                        version: QrVersions.auto,
-                        size: 180.0.sp,
-                        foregroundColor: AppTheme.primaryOrange,
-                      ),
-                      SizedBox(height: 16.h),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryOrange.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        child: Text(
-                          team.spTId,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                            fontSize: 18.sp,
+                      Screenshot(
+                        controller: _qrScreenshotController,
+                        child: Container(
+                          padding: EdgeInsets.all(22.w),
+                          decoration: BoxDecoration(
+                            color: ThemeHelper.of(context).cardBg,
+                            borderRadius: BorderRadius.circular(20.r),
+                            border: Border.all(
+                              color: ThemeHelper.of(context).isDark
+                                  ? Colors.white12
+                                  : Colors.black.withOpacity(0.06),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: ThemeHelper.of(context).isDark
+                                    ? Colors.transparent
+                                    : Colors.black.withOpacity(0.06),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  TeamLogoWidget(
+                                    teamName: team.name,
+                                    logoUrl: team.logoUrl,
+                                    size: 28.sp,
+                                  ),
+                                  SizedBox(width: 8.w),
+                                  Flexible(
+                                    child: Text(
+                                      team.name,
+                                      style: TextStyle(
+                                        fontSize: 17.sp,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 6.h),
+                              Text(
+                                'Scan to join squad on ScorePartner',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: ThemeHelper.of(context).textSecondary,
+                                  fontSize: 12.sp,
+                                ),
+                              ),
+                              SizedBox(height: 16.h),
+
+                              // QR Code with Logo in Center (Seamlessly Mixed)
+                              Container(
+                                padding: EdgeInsets.all(16.w),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20.r),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFFF6B35).withOpacity(0.18),
+                                      blurRadius: 18,
+                                      spreadRadius: 2,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    QrImageView(
+                                      data: team.spTId,
+                                      version: QrVersions.auto,
+                                      size: 200.0.sp,
+                                      padding: EdgeInsets.zero,
+                                      errorCorrectionLevel: QrErrorCorrectLevel.H,
+                                      eyeStyle: const QrEyeStyle(
+                                        eyeShape: QrEyeShape.circle,
+                                        color: Color(0xFFFF6B35),
+                                      ),
+                                      dataModuleStyle: const QrDataModuleStyle(
+                                        dataModuleShape: QrDataModuleShape.circle,
+                                        color: Color(0xFFFF6B35),
+                                      ),
+                                      embeddedImage: const AssetImage('assets/images/app_icon_foreground.png'),
+                                      embeddedImageStyle: QrEmbeddedImageStyle(
+                                        size: Size(54.sp, 54.sp),
+                                      ),
+                                    ),
+                                    // Clean seamlessly mixed center logo
+                                    IgnorePointer(
+                                      child: Container(
+                                        width: 52.sp,
+                                        height: 52.sp,
+                                        decoration: const BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        padding: EdgeInsets.all(4.w),
+                                        child: Image.asset(
+                                          'assets/images/app_icon_foreground.png',
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: 16.h),
+
+                              // Team ID Tag with Copy Feature
+                              InkWell(
+                                onTap: () {
+                                  Clipboard.setData(ClipboardData(text: team.spTId));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Team ID copied to clipboard! 📋'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(12.r),
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryOrange.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12.r),
+                                    border: Border.all(
+                                      color: AppTheme.primaryOrange.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        team.spTId,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.2,
+                                          fontSize: 17.sp,
+                                          color: AppTheme.primaryOrange,
+                                        ),
+                                      ),
+                                      SizedBox(width: 8.w),
+                                      Icon(
+                                        Icons.copy_rounded,
+                                        size: 16.sp,
+                                        color: AppTheme.primaryOrange,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                      ),
+                      SizedBox(height: 14.h),
+
+                      // Action Buttons: Copy ID & Share Team QR
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Clipboard.setData(ClipboardData(text: team.spTId));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Team ID copied! 📋'),
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                              },
+                              icon: Icon(Icons.copy_rounded, size: 16.sp),
+                              label: const Text('Copy ID'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: ThemeHelper.of(context).textPrimary,
+                                side: BorderSide(
+                                  color: ThemeHelper.of(context).isDark ? Colors.white24 : Colors.black12,
+                                ),
+                                padding: EdgeInsets.symmetric(vertical: 12.h),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 12.w),
+                          Expanded(
+                            flex: 2,
+                            child: ElevatedButton.icon(
+                              onPressed: _isSharingQr ? null : () => _shareTeamQr(team),
+                              icon: _isSharingQr
+                                  ? SizedBox(
+                                      width: 16.sp,
+                                      height: 16.sp,
+                                      child: const CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Icon(Icons.share_rounded, size: 18.sp),
+                              label: Text(
+                                _isSharingQr ? 'Sharing...' : 'Share Team QR',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primaryOrange,
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.symmetric(vertical: 12.h),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
+                                elevation: 2,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -925,37 +1335,77 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
     );
   }
 
-  Widget _buildRoleBadge(String label, String name, Color color) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: color.withOpacity(0.3)),
+  Future<void> _openPlayerProfile(String playerId) async {
+    if (playerId.isEmpty) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: AppTheme.primaryOrange),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            label == 'Captain' ? Icons.star : Icons.star_half,
-            color: color,
-            size: 16.sp,
-          ),
-          SizedBox(width: 6.w),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(fontSize: 10.sp, color: color, fontWeight: FontWeight.bold),
+    );
+    try {
+      final user = await _dataService.findUserByAnyId(playerId);
+      if (mounted) Navigator.pop(context);
+      if (user != null && mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => PlayerProfileScreen(player: user)),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Player profile not found or unregistered')),
+        );
+      }
+    } catch (_) {
+      if (mounted) Navigator.pop(context);
+    }
+  }
+
+  Widget _buildRoleBadge(String label, String name, Color color, {String? playerId}) {
+    return GestureDetector(
+      onTap: playerId != null && playerId.isNotEmpty ? () => _openPlayerProfile(playerId) : null,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (playerId != null && playerId.isNotEmpty) ...[
+              PlayerAvatarWidget(
+                playerId: playerId,
+                playerName: name,
+                size: 26.sp,
+                enableProfileView: false,
               ),
-              Text(
-                name,
-                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600),
+              SizedBox(width: 8.w),
+            ] else ...[
+              Icon(
+                label == 'Captain' ? Icons.star : Icons.star_half,
+                color: color,
+                size: 16.sp,
               ),
+              SizedBox(width: 6.w),
             ],
-          ),
-        ],
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(fontSize: 10.sp, color: color, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  name,
+                  style: TextStyle(fontSize: 12.5.sp, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -988,29 +1438,15 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12.r),
+        onTap: () => _openPlayerProfile(player.userId),
         onLongPress: canManage ? () => _showPlayerOptions(team, player) : null,
         child: ListTile(
-          leading: CircleAvatar(
-            backgroundColor: player.isCaptain
-                ? Colors.amber.withOpacity(0.2)
-                : player.isViceCaptain
-                    ? Colors.blue.withOpacity(0.15)
-                    : player.isRegistered
-                        ? AppTheme.primaryOrange.withOpacity(0.1)
-                        : ThemeHelper.of(context).dividerColor!,
-            child: Text(
-              player.name[0].toUpperCase(),
-              style: TextStyle(
-                color: player.isCaptain
-                    ? Colors.amber[800]
-                    : player.isViceCaptain
-                        ? Colors.blue[700]
-                        : player.isRegistered
-                            ? AppTheme.primaryOrange
-                            : ThemeHelper.of(context).textSecondary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+          leading: PlayerAvatarWidget(
+            profileImageUrl: player.profileImageUrl,
+            playerId: player.userId,
+            playerName: player.name,
+            size: 44.sp,
+            enableProfileView: true,
           ),
           title: Row(
             children: [
