@@ -5,12 +5,20 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 60
 
+    working_directory: frontend
+
     environment:
       flutter: stable
       xcode: latest
       cocoapods: default
 
     scripts:
+      - name: Check Flutter project
+        script: |
+          pwd
+          ls
+          test -f pubspec.yaml
+
       - name: Get Flutter packages
         script: flutter pub get
 
@@ -24,4 +32,4 @@ workflows:
             build/ScorePartner-ios-simulator.zip
 
     artifacts:
-      - build/ScorePartner-ios-simulator.zip
+      - frontend/build/ScorePartner-ios-simulator.zip
