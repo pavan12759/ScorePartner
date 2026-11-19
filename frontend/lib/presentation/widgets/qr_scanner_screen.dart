@@ -83,7 +83,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
             onDetect: _onDetect,
             overlayBuilder: (context, constraints) {
               return QrOverlay(
-                overlayColor: Colors.black.withOpacity(0.5),
+                overlayColor: Colors.black.withValues(alpha: 0.5),
                 borderColor: Colors.orange,
                 borderRadius: 10,
                 borderLength: 30,

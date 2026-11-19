@@ -1160,6 +1160,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
                           child: Row(
                             children: thisOverBalls.map((b) => _buildMiniBallCircle(b)).toList(),
                           ),
+          ),
                         ),
                       ),
                     ],
@@ -2093,10 +2094,11 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
       ),
       builder: (ctx) => Container(
         padding: EdgeInsets.all(20.w),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Wide Ball', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Wide Ball', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
             SizedBox(height: 16.h),
             Wrap(
               spacing: 10,
@@ -2127,6 +2129,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
             SizedBox(height: 20.h),
           ],
         ),
+          ),
       ),
     );
   }
@@ -2139,10 +2142,11 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
       ),
       builder: (ctx) => Container(
         padding: EdgeInsets.all(20.w),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('No Ball', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('No Ball', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
             SizedBox(height: 16.h),
             Wrap(
               spacing: 10,
@@ -2173,6 +2177,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
             SizedBox(height: 20.h),
           ],
         ),
+          ),
       ),
     );
   }
@@ -2188,10 +2193,11 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
       ),
       builder: (ctx) => Container(
         padding: EdgeInsets.all(20.w),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(title, style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(title, style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
             SizedBox(height: 16.h),
             Wrap(
               spacing: 10,
@@ -2234,6 +2240,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
             SizedBox(height: 20.h),
           ],
         ),
+          ),
       ),
     );
   }
@@ -2520,7 +2527,8 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
       ),
       builder: (ctx) => Container(
         padding: EdgeInsets.all(20.w),
-        child: Column(
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
@@ -2553,6 +2561,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
               },
             ),
           ],
+          ),
         ),
       ),
     );
@@ -2642,7 +2651,8 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-          child: Column(
+          child: SingleChildScrollView(
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -2696,6 +2706,7 @@ class _MatchScoringTabState extends State<MatchScoringTab> {
                 },
               ),
             ],
+            ),
           ),
         ),
       ),

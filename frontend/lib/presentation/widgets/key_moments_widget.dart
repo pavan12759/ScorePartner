@@ -312,41 +312,50 @@ class _KeyMomentsCardState extends State<KeyMomentsCard> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(7.w),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.12),
-                          shape: BoxShape.circle,
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(7.w),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.stars_rounded, color: Colors.orange, size: 20.sp),
                         ),
-                        child: Icon(Icons.stars_rounded, color: Colors.orange, size: 20.sp),
-                      ),
-                      SizedBox(width: 8.w),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'KEY MOMENTS & POSTERS 🏆',
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.black87,
-                              letterSpacing: 0.6,
-                            ),
+                        SizedBox(width: 8.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'KEY MOMENTS & POSTERS 🏆',
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.black87,
+                                  letterSpacing: 0.6,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                'Player profile photos, scores & performances',
+                                style: TextStyle(
+                                  fontSize: 9.5.sp,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey[600],
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
-                          Text(
-                            'Player profile photos, scores & performances',
-                            style: TextStyle(
-                              fontSize: 9.5.sp,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
+                  SizedBox(width: 8.w),
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
                     decoration: BoxDecoration(
@@ -494,13 +503,17 @@ class _KeyMomentsCardState extends State<KeyMomentsCard> {
                 children: [
                   Icon(Icons.timeline_rounded, color: AppTheme.primaryOrange, size: 22.sp),
                   SizedBox(width: 8.w),
-                  Text(
-                    'CHRONOLOGICAL MATCH TIMELINE ⏱️',
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.black87,
-                      letterSpacing: 0.8,
+                  Expanded(
+                    child: Text(
+                      'CHRONOLOGICAL MATCH TIMELINE ⏱️',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.black87,
+                        letterSpacing: 0.8,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -565,7 +578,7 @@ class _KeyMomentsCardState extends State<KeyMomentsCard> {
                                 child: Padding(
                                   padding: EdgeInsets.only(bottom: isLast ? 0 : 16.0),
                                   child: Container(
-                                    padding: EdgeInsets.all(12.w),
+                                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       borderRadius: BorderRadius.circular(16.r),
@@ -582,14 +595,14 @@ class _KeyMomentsCardState extends State<KeyMomentsCard> {
                                       ],
                                     ),
                                     child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         // Optional mini avatar if player exists
                                         if (moment.playerName != null && moment.playerName!.isNotEmpty) ...[
                                           PlayerAvatarWidget(
                                             playerId: moment.playerId,
                                             playerName: moment.playerName!,
-                                            size: 36.w,
+                                            size: 34.w,
                                             enableProfileView: true,
                                           ),
                                           SizedBox(width: 10.w),
@@ -598,27 +611,33 @@ class _KeyMomentsCardState extends State<KeyMomentsCard> {
                                         // Text Details
                                         Expanded(
                                           child: Column(
+                                            mainAxisSize: MainAxisSize.min,
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Row(
                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                 children: [
-                                                  Container(
-                                                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-                                                    decoration: BoxDecoration(
-                                                      color: moment.color.withOpacity(0.1),
-                                                      borderRadius: BorderRadius.circular(8.r),
-                                                    ),
-                                                    child: Text(
-                                                      moment.title.toUpperCase(),
-                                                      style: TextStyle(
-                                                        fontSize: 9.sp,
-                                                        fontWeight: FontWeight.w900,
-                                                        color: moment.color,
-                                                        letterSpacing: 0.5,
+                                                  Flexible(
+                                                    child: Container(
+                                                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                                                      decoration: BoxDecoration(
+                                                        color: moment.color.withOpacity(0.1),
+                                                        borderRadius: BorderRadius.circular(8.r),
+                                                      ),
+                                                      child: Text(
+                                                        moment.title.toUpperCase(),
+                                                        style: TextStyle(
+                                                          fontSize: 9.sp,
+                                                          fontWeight: FontWeight.w900,
+                                                          color: moment.color,
+                                                          letterSpacing: 0.5,
+                                                        ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
                                                       ),
                                                     ),
                                                   ),
+                                                  SizedBox(width: 6.w),
                                                   Text(
                                                     moment.overInfo,
                                                     style: TextStyle(
@@ -629,14 +648,14 @@ class _KeyMomentsCardState extends State<KeyMomentsCard> {
                                                   ),
                                                 ],
                                               ),
-                                              SizedBox(height: 6.h),
+                                              SizedBox(height: 4.h),
                                               Text(
                                                 moment.description,
                                                 style: TextStyle(
                                                   fontSize: 12.sp,
                                                   color: Colors.black87,
                                                   fontWeight: FontWeight.w600,
-                                                  height: 1.3,
+                                                  height: 1.0,
                                                 ),
                                               ),
                                             ],

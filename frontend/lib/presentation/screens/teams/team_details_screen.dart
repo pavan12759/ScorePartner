@@ -134,11 +134,12 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
       builder: (context) => SafeArea(
         child: Padding(
           padding: EdgeInsets.all(20.w),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40.w, height: 4.h,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40.w, height: 4.h,
                 decoration: BoxDecoration(color: ThemeHelper.of(context).dividerColor!, borderRadius: BorderRadius.circular(2.r)),
               ),
               SizedBox(height: 16.h),
@@ -165,6 +166,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                 onTap: () { Navigator.pop(context); _showCricketLogoChooser(team); },
               ),
             ],
+            ),
           ),
         ),
       ),
@@ -583,12 +585,13 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
       builder: (context) => SafeArea(
         child: Padding(
           padding: EdgeInsets.all(20.w),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40.w,
-                height: 4.h,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40.w,
+                  height: 4.h,
                 decoration: BoxDecoration(
                   color: ThemeHelper.of(context).dividerColor!,
                   borderRadius: BorderRadius.circular(2.r),
@@ -654,6 +657,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                   ),
                 ),
             ],
+            ),
           ),
         ),
       ),

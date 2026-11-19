@@ -119,11 +119,11 @@ class _OverlayThemeGalleryScreenState extends State<OverlayThemeGalleryScreen> {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? const Color(0xFFFF8D48)
-                      : Colors.white.withOpacity(0.06),
+                      : Colors.white.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(20),
                   border: isSelected
                       ? null
-                      : Border.all(color: Colors.white.withOpacity(0.1)),
+                      : Border.all(color: Colors.white.withValues(alpha: 0.1)),
                 ),
                 child: Text(
                   cat,
@@ -169,13 +169,13 @@ class _OverlayThemeGalleryScreenState extends State<OverlayThemeGalleryScreen> {
           border: Border.all(
             color: isSelected
                 ? const Color(0xFFFF8D48)
-                : Colors.white.withOpacity(0.08),
+                : Colors.white.withValues(alpha: 0.08),
             width: isSelected ? 2.5 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFFFF8D48).withOpacity(0.3),
+                    color: const Color(0xFFFF8D48).withValues(alpha: 0.3),
                     blurRadius: 12,
                   ),
                 ]
@@ -201,8 +201,8 @@ class _OverlayThemeGalleryScreenState extends State<OverlayThemeGalleryScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.black.withOpacity(0.3),
-                      Colors.black.withOpacity(0.7),
+                      Colors.black.withValues(alpha: 0.3),
+                      Colors.black.withValues(alpha: 0.7),
                     ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -229,7 +229,7 @@ class _OverlayThemeGalleryScreenState extends State<OverlayThemeGalleryScreen> {
                     child: Container(
                       padding: EdgeInsets.all(10.w),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,7 +301,7 @@ class _OverlayThemeGalleryScreenState extends State<OverlayThemeGalleryScreen> {
                       color: const Color(0xFFFF8D48),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFFF8D48).withOpacity(0.5),
+                          color: const Color(0xFFFF8D48).withValues(alpha: 0.5),
                           blurRadius: 8,
                         ),
                       ],
@@ -321,7 +321,7 @@ class _OverlayThemeGalleryScreenState extends State<OverlayThemeGalleryScreen> {
                       vertical: 2.h,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.purple.withOpacity(0.8),
+                      color: Colors.purple.withValues(alpha: 0.8),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -345,8 +345,8 @@ class _OverlayThemeGalleryScreenState extends State<OverlayThemeGalleryScreen> {
     return Container(
       padding: EdgeInsets.all(8.w),
       decoration: BoxDecoration(
-        color: theme.backgroundColor.withOpacity(
-          theme.transparency.clamp(0.3, 0.9),
+        color: theme.backgroundColor.withValues(
+          alpha: theme.transparency.clamp(0.3, 0.9),
         ),
         borderRadius: BorderRadius.circular(theme.cornerRadius.clamp(0, 16)),
         border: theme.borderWidth > 0
@@ -412,7 +412,7 @@ class _OverlayThemeGalleryScreenState extends State<OverlayThemeGalleryScreen> {
               Text(
                 'Team B',
                 style: TextStyle(
-                  color: theme.teamNameColor.withOpacity(0.6),
+                  color: theme.teamNameColor.withValues(alpha: 0.6),
                   fontSize: 9.sp,
                   fontWeight: FontWeight.w500,
                 ),
@@ -420,7 +420,7 @@ class _OverlayThemeGalleryScreenState extends State<OverlayThemeGalleryScreen> {
               Text(
                 '142/7',
                 style: TextStyle(
-                  color: theme.scoreColor.withOpacity(0.6),
+                  color: theme.scoreColor.withValues(alpha: 0.6),
                   fontSize: 11.sp,
                   fontWeight: FontWeight.w600,
                 ),

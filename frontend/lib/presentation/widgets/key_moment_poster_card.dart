@@ -1130,31 +1130,44 @@ class KeyMomentPosterCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Icon(poster.badgeIcon, size: 9.sp, color: theme.primary),
-                  SizedBox(width: 3.w),
-                  Text(
-                    'PERFORMANCE',
-                    style: TextStyle(
-                      fontSize: 7.5.sp,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white70,
-                      letterSpacing: 0.5,
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(poster.badgeIcon, size: 9.sp, color: theme.primary),
+                    SizedBox(width: 3.w),
+                    Flexible(
+                      child: Text(
+                        'PERFORMANCE',
+                        style: TextStyle(
+                          fontSize: 7.5.sp,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white70,
+                          letterSpacing: 0.5,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              if (poster.performanceSubtitle != null)
-                Text(
-                  poster.performanceSubtitle!,
-                  style: TextStyle(
-                    fontSize: 7.sp,
-                    fontWeight: FontWeight.w800,
-                    color: theme.accent,
-                    letterSpacing: 0.4,
+              if (poster.performanceSubtitle != null) ...[
+                SizedBox(width: 4.w),
+                Flexible(
+                  child: Text(
+                    poster.performanceSubtitle!,
+                    style: TextStyle(
+                      fontSize: 7.sp,
+                      fontWeight: FontWeight.w800,
+                      color: theme.accent,
+                      letterSpacing: 0.4,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+              ],
             ],
           ),
           SizedBox(height: 4.h),
@@ -2009,37 +2022,50 @@ class _KeyMomentPosterDialogState extends State<KeyMomentPosterDialog> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Icon(poster.badgeIcon, size: 12.sp, color: theme.primary),
-                  SizedBox(width: 5.w),
-                  Text(
-                    'MATCH PERFORMANCE MATRIX',
-                    style: TextStyle(
-                      fontSize: 9.sp,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white70,
-                      letterSpacing: 0.8,
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(poster.badgeIcon, size: 12.sp, color: theme.primary),
+                    SizedBox(width: 5.w),
+                    Flexible(
+                      child: Text(
+                        'MATCH PERFORMANCE MATRIX',
+                        style: TextStyle(
+                          fontSize: 9.sp,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white70,
+                          letterSpacing: 0.8,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              if (poster.performanceSubtitle != null)
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                  decoration: BoxDecoration(
-                    color: theme.primary.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(6.r),
-                  ),
-                  child: Text(
-                    poster.performanceSubtitle!,
-                    style: TextStyle(
-                      fontSize: 8.sp,
-                      fontWeight: FontWeight.w900,
-                      color: theme.accent,
+              if (poster.performanceSubtitle != null) ...[
+                SizedBox(width: 6.w),
+                Flexible(
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                    decoration: BoxDecoration(
+                      color: theme.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6.r),
+                    ),
+                    child: Text(
+                      poster.performanceSubtitle!,
+                      style: TextStyle(
+                        fontSize: 8.sp,
+                        fontWeight: FontWeight.w900,
+                        color: theme.accent,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),
+              ],
             ],
           ),
           SizedBox(height: 8.h),
@@ -2144,21 +2170,30 @@ class _KeyMomentPosterDialogState extends State<KeyMomentPosterDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'IMPACT ANALYSIS',
-                        style: TextStyle(
-                          fontSize: 7.sp,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white38,
-                          letterSpacing: 0.5,
+                      Flexible(
+                        child: Text(
+                          'IMPACT ANALYSIS',
+                          style: TextStyle(
+                            fontSize: 7.sp,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white38,
+                            letterSpacing: 0.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Text(
-                        poster.impactRatingText!,
-                        style: TextStyle(
-                          fontSize: 8.sp,
-                          fontWeight: FontWeight.w800,
-                          color: theme.accent,
+                      SizedBox(width: 4.w),
+                      Flexible(
+                        child: Text(
+                          poster.impactRatingText!,
+                          style: TextStyle(
+                            fontSize: 8.sp,
+                            fontWeight: FontWeight.w800,
+                            color: theme.accent,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],

@@ -245,13 +245,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icon(Icons.settings_outlined, color: ThemeHelper.of(context).textPrimary),
                     onPressed: () => _showSettingsSheet(context),
                   ),
-                  Text(
-                    user.name.isNotEmpty ? user.name : 'Player',
-                    style: TextStyle(
-                      color: ThemeHelper.of(context).textPrimary,
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1,
+                  Expanded(
+                    child: Text(
+                      user.name.isNotEmpty ? user.name : 'Player',
+                      style: TextStyle(
+                        color: ThemeHelper.of(context).textPrimary,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Row(

@@ -66,7 +66,7 @@ class TeamLogoWidget extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 8,
               offset: Offset(0, 3),
             ),
@@ -96,11 +96,11 @@ class TeamLogoWidget extends StatelessWidget {
           image: DecorationImage(
             image: imageProvider,
             fit: BoxFit.cover,
-            onError: (_, __) {},
+            onError: (_, _) {},
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 8,
               offset: Offset(0, 3),
             ),
@@ -158,7 +158,7 @@ class TeamLogoWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(size * 0.25),
         boxShadow: [
           BoxShadow(
-            color: gradient[0].withOpacity(0.4),
+            color: gradient[0].withValues(alpha: 0.4),
             blurRadius: 10,
             offset: Offset(0, 4),
           ),

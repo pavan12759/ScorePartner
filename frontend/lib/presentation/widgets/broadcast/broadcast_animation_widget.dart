@@ -266,7 +266,7 @@ class _BroadcastAnimationWidgetState extends State<BroadcastAnimationWidget>
             letterSpacing: 3,
             shadows: [
               Shadow(color: color, blurRadius: 20),
-              Shadow(color: color.withOpacity(0.5), blurRadius: 40),
+              Shadow(color: color.withValues(alpha: 0.5), blurRadius: 40),
               const Shadow(
                 color: Colors.black54,
                 blurRadius: 8,

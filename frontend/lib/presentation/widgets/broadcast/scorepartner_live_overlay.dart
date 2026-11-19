@@ -678,19 +678,24 @@ class _ScorePartnerLiveOverlayState extends State<ScorePartnerLiveOverlay>
                           ),
                         SizedBox(height: 3.h),
                         // This over balls row
-                        Row(
-                          children: [
-                            Text(
-                              'THIS OVER ',
-                              style: TextStyle(
-                                color: Colors.white24,
-                                fontSize: 6.sp,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'THIS OVER ',
+                                style: TextStyle(
+                                  color: Colors.white24,
+                                  fontSize: 6.sp,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.5,
+                                ),
                               ),
-                            ),
-                            ...recentBalls.take(6).map((b) => _buildBallEventPill(b)),
-                          ],
+                              ...recentBalls.take(6).map((b) => _buildBallEventPill(b)),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -745,61 +750,66 @@ class _ScorePartnerLiveOverlayState extends State<ScorePartnerLiveOverlay>
     required Color accentColor,
     required bool isBatting,
   }) {
-    return Row(
-      children: [
-        // Team color strip
-        Container(
-          width: 3.w,
-          height: 16.h,
-          decoration: BoxDecoration(
-            color: accentColor,
-            borderRadius: BorderRadius.circular(1.5),
-          ),
-        ),
-        SizedBox(width: 5.w),
-        // Batting indicator
-        if (isBatting)
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Team color strip
           Container(
-            width: 4.w,
-            height: 4.w,
-            margin: EdgeInsets.only(right: 3.w),
-            decoration: const BoxDecoration(
-              color: Color(0xFF22C55E),
-              shape: BoxShape.circle,
+            width: 3.w,
+            height: 16.h,
+            decoration: BoxDecoration(
+              color: accentColor,
+              borderRadius: BorderRadius.circular(1.5),
             ),
-          )
-        else
-          SizedBox(width: 7.w),
-        // Team code
-        Text(
-          _getTeamCode(teamName),
-          style: TextStyle(
-            color: isBatting ? Colors.white : Colors.white54,
-            fontSize: 9.sp,
-            fontWeight: FontWeight.w700,
           ),
-        ),
-        const Spacer(),
-        // Score
-        Text(
-          '${score.runs}/${score.wickets}',
-          style: TextStyle(
-            color: isBatting ? Colors.white : Colors.white70,
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w900,
+          SizedBox(width: 5.w),
+          // Batting indicator
+          if (isBatting)
+            Container(
+              width: 4.w,
+              height: 4.w,
+              margin: EdgeInsets.only(right: 3.w),
+              decoration: const BoxDecoration(
+                color: Color(0xFF22C55E),
+                shape: BoxShape.circle,
+              ),
+            )
+          else
+            SizedBox(width: 7.w),
+          // Team code
+          Text(
+            _getTeamCode(teamName),
+            style: TextStyle(
+              color: isBatting ? Colors.white : Colors.white54,
+              fontSize: 9.sp,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
-        SizedBox(width: 4.w),
-        // Overs
-        Text(
-          '(${score.oversDisplay})',
-          style: TextStyle(
-            color: isBatting ? accentColor : Colors.white30,
-            fontSize: 7.sp,
-            fontWeight: FontWeight.w700,
+          SizedBox(width: 6.w),
+          // Score
+          Text(
+            '${score.runs}/${score.wickets}',
+            style: TextStyle(
+              color: isBatting ? Colors.white : Colors.white70,
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w900,
+            ),
           ),
-        ),
-      ],
+          SizedBox(width: 4.w),
+          // Overs
+          Text(
+            '(${score.oversDisplay})',
+            style: TextStyle(
+              color: isBatting ? accentColor : Colors.white30,
+              fontSize: 7.sp,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

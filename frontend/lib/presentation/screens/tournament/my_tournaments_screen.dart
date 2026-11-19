@@ -250,8 +250,11 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. Header Row
-                Row(
+                // 1. Header Row (responsive wrap to prevent small screen overflow)
+                Wrap(
+                  spacing: 6.w,
+                  runSpacing: 6.h,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     // Status Pill
                     Container(
@@ -329,7 +332,7 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
                         ),
                       ),
                     ),
-                    const Spacer(),
+
                     // Organizer badge
                     if (isOrganizer)
                       Container(
@@ -389,19 +392,16 @@ class _MyTournamentsScreenState extends State<MyTournamentsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              tournament.name,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 16.sp,
-                                color: th.textPrimary,
-                                letterSpacing: -0.2,
-                              ),
-                              maxLines: 1,
+                          Text(
+                            tournament.name,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16.sp,
+                              color: th.textPrimary,
+                              letterSpacing: -0.2,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           SizedBox(height: 4.h),
                           Row(

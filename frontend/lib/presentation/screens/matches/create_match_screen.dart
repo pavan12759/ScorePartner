@@ -221,7 +221,8 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('Toss'),
-          content: Column(
+          content: SingleChildScrollView(
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text('Who won the toss?'),
@@ -230,7 +231,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                 children: [
                    Expanded(
                     child: ChoiceChip(
-                      label: Text(_team1NameController.text.isNotEmpty ? _team1NameController.text : 'Team 1'),
+                      label: Text(_team1NameController.text.isNotEmpty ? _team1NameController.text : 'Team 1', overflow: TextOverflow.ellipsis, maxLines: 1),
                       selected: tossWinner == 'team1',
                       onSelected: (val) => setDialogState(() => tossWinner = 'team1'),
                     ),
@@ -238,7 +239,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                   SizedBox(width: 8.w),
                   Expanded(
                     child: ChoiceChip(
-                      label: Text(_team2NameController.text.isNotEmpty ? _team2NameController.text : 'Team 2'),
+                      label: Text(_team2NameController.text.isNotEmpty ? _team2NameController.text : 'Team 2', overflow: TextOverflow.ellipsis, maxLines: 1),
                       selected: tossWinner == 'team2',
                       onSelected: (val) => setDialogState(() => tossWinner = 'team2'),
                     ),
@@ -247,7 +248,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
               ),
               if (tossWinner != null) ...[
                 SizedBox(height: 24.h),
-                Text('${tossWinner == 'team1' ? _team1NameController.text : _team2NameController.text} elected to:'),
+                Text('${tossWinner == 'team1' ? _team1NameController.text : _team2NameController.text} elected to:', overflow: TextOverflow.ellipsis, maxLines: 2),
                 SizedBox(height: 16.h),
                 Row(
                   children: [
@@ -270,6 +271,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                 ),
               ],
             ],
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),

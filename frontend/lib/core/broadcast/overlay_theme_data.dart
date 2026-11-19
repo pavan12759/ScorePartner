@@ -346,7 +346,7 @@ class OverlayThemes {
     primaryColor: Color(0xFFFFD700),
     secondaryColor: Color(0xFFC5A059),
     accentColor: Color(0xFFFFE57F),
-    backgroundColor: Color(0xF111111),
+    backgroundColor: Color(0x0f111111),
     textColor: Color(0xFFF5F5F5),
     scoreColor: Color(0xFFFFD700),
     teamNameColor: Color(0xFFFFFFFF),

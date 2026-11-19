@@ -184,7 +184,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                 backgroundColor: ThemeHelper.of(context).scaffoldBg,
                 foregroundColor: Colors.black,
                 elevation: 0,
-                title: Text(player.name, style: TextStyle(fontWeight: FontWeight.bold)),
+                title: Text(player.name, style: TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
               ),
               
               // Profile Header

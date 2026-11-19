@@ -398,7 +398,7 @@ class _GroundProfileScreenState extends State<GroundProfileScreen>
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 24.h),
         itemCount: matches.length,
-        separatorBuilder: (_, __) => SizedBox(height: 10.h),
+        separatorBuilder: (_, _) => SizedBox(height: 10.h),
         itemBuilder: (context, index) => _buildGroundMatchCard(matches[index]),
       ),
     );

@@ -254,15 +254,29 @@ class _MatchInitializationDialogState extends State<MatchInitializationDialog> {
   Widget _buildSectionTitle(String title, String teamName) {
     return Row(
       children: [
-        Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp)),
-        const Spacer(),
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(10.r),
+        Flexible(
+          child: Text(
+            title,
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          child: Text(teamName, style: TextStyle(fontSize: 12.sp, color: Colors.grey[700])),
+        ),
+        SizedBox(width: 8.w),
+        Flexible(
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+            child: Text(
+              teamName,
+              style: TextStyle(fontSize: 12.sp, color: Colors.grey[700]),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ),
       ],
     );
@@ -337,8 +351,10 @@ class _MatchInitializationDialogState extends State<MatchInitializationDialog> {
                   padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
                   child: Row(
                     children: [
-                      Text('Select $label', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
-                      const Spacer(),
+                      Expanded(
+                        child: Text('Select $label', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ),
+                      SizedBox(width: 8.w),
                       IconButton(onPressed: () => Navigator.pop(context), icon: Icon(Icons.close)),
                     ],
                   ),

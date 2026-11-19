@@ -526,16 +526,27 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      '${match.team1Name.toUpperCase()}  vs  ${match.team2Name.toUpperCase()}',
-                                      style: TextStyle(
-                                        fontSize: 12.sp,
-                                        fontWeight: FontWeight.w900,
-                                        color: th.textPrimary,
-                                        letterSpacing: 0.5,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
+                                    LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        return FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          alignment: Alignment.centerLeft,
+                                          child: ConstrainedBox(
+                                            constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+                                            child: Text(
+                                              '${match.team1Name.toUpperCase()}  vs  ${match.team2Name.toUpperCase()}',
+                                              style: TextStyle(
+                                                fontSize: 12.sp,
+                                                fontWeight: FontWeight.w900,
+                                                color: th.textPrimary,
+                                                letterSpacing: 0.5,
+                                              ),
+                                              maxLines: 2,
+                                              softWrap: true,
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     ),
                                     SizedBox(height: 4.h),
                                     // Match type & location integrated here
@@ -668,25 +679,36 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                             children: [
                               // Batting team (left)
                               Expanded(
-                                flex: 6,
+                                flex: 1,
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
                                       children: [
                                         Flexible(
-                                          child: Text(
-                                            battingTeamName,
-                                            style: TextStyle(
-                                              fontSize: 12.sp,
-                                              fontWeight: FontWeight.w600,
-                                              color: th.textPrimary,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
+                                          child: LayoutBuilder(
+                                            builder: (context, constraints) {
+                                              return FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                alignment: Alignment.centerLeft,
+                                                child: ConstrainedBox(
+                                                  constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+                                                  child: Text(
+                                                    battingTeamName,
+                                                    style: TextStyle(
+                                                      fontSize: 12.sp,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: th.textPrimary,
+                                                    ),
+                                                    maxLines: 2,
+                                                    softWrap: true,
+                                                  ),
+                                                ),
+                                              );
+                                            },
                                           ),
                                         ),
-                                        SizedBox(width: 6.w),
+                                        SizedBox(width: 4.w),
                                         Icon(Icons.sports_cricket, size: 14.sp, color: AppTheme.primaryOrange),
                                       ],
                                     ),
@@ -742,7 +764,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
 
                               // Bowling team (right)
                               Expanded(
-                                flex: 5,
+                                flex: 1,
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
@@ -750,18 +772,29 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                       mainAxisAlignment: MainAxisAlignment.end,
                                       children: [
                                         Icon(Icons.sports_baseball, size: 14.sp, color: AppTheme.primaryOrange),
-                                        SizedBox(width: 6.w),
+                                        SizedBox(width: 4.w),
                                         Flexible(
-                                          child: Text(
-                                            bowlingTeamName,
-                                            style: TextStyle(
-                                              fontSize: 12.sp,
-                                              fontWeight: FontWeight.w600,
-                                              color: th.textPrimary,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
-                                            textAlign: TextAlign.right,
+                                          child: LayoutBuilder(
+                                            builder: (context, constraints) {
+                                              return FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                alignment: Alignment.centerRight,
+                                                child: ConstrainedBox(
+                                                  constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+                                                  child: Text(
+                                                    bowlingTeamName,
+                                                    style: TextStyle(
+                                                      fontSize: 12.sp,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: th.textPrimary,
+                                                    ),
+                                                    maxLines: 2,
+                                                    softWrap: true,
+                                                    textAlign: TextAlign.right,
+                                                  ),
+                                                ),
+                                              );
+                                            },
                                           ),
                                         ),
                                       ],
@@ -821,14 +854,22 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                                        ),
                                        SizedBox(width: 8.w),
                                        Column(
-                                         crossAxisAlignment: CrossAxisAlignment.start,
-                                         children: [
-                                           Text('PLAYER OF THE MATCH', style: TextStyle(fontSize: 9.sp, color: th.textSecondary, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
-                                           SizedBox(height: 2.h),
-                                           Text(mvp.playerName, style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: th.textPrimary)),
-                                         ],
+                                       Expanded(
+                                         child: Column(
+                                           crossAxisAlignment: CrossAxisAlignment.start,
+                                           children: [
+                                             Text('PLAYER OF THE MATCH', style: TextStyle(fontSize: 9.sp, color: th.textSecondary, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+                                             SizedBox(height: 2.h),
+                                             Text(
+                                               mvp.playerName,
+                                               style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: th.textPrimary),
+                                               maxLines: 1,
+                                               overflow: TextOverflow.ellipsis,
+                                             ),
+                                           ],
+                                         ),
                                        ),
-                                       Spacer(),
+                                       SizedBox(width: 8.w),
                                        Text(
                                          parts.join(' • '),
                                          style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800, color: th.textSecondary),
@@ -1576,8 +1617,8 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
             fontWeight: FontWeight.w900,
             letterSpacing: 0.8,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+          maxLines: 2,
+          softWrap: true,
           textAlign: isTeam1 ? TextAlign.left : TextAlign.right,
         ),
         SizedBox(height: 6.h),

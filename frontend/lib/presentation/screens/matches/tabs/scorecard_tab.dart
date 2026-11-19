@@ -552,6 +552,8 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
                        onTap: () => _navigateToPlayerProfile(fow['playerId'] ?? ''),
                        child: Text(
                          "${fow['player']}",
+                         maxLines: 1,
+                         overflow: TextOverflow.ellipsis,
                          style: TextStyle(
                            fontSize: 14.sp, fontWeight: FontWeight.w600, color: ThemeHelper.of(context).textPrimary,
                            decoration: TextDecoration.underline,
@@ -691,8 +693,22 @@ class _ScorecardTabState extends State<ScorecardTab> with SingleTickerProviderSt
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('${pp.name} (${pp.startOver}-${pp.endOver})', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.sp)),
-                Text(pp.description ?? 'Mandatory', style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp)),
+                Flexible(
+                  child: Text(
+                    '${pp.name} (${pp.startOver}-${pp.endOver})',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.sp),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                Flexible(
+                  child: Text(
+                    pp.description ?? 'Mandatory',
+                    style: TextStyle(color: ThemeHelper.of(context).textSecondary, fontSize: 12.sp),
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                  ),
+                ),
               ],
             ),
           )).toList(),

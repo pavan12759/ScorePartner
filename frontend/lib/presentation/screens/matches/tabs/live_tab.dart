@@ -90,9 +90,21 @@ class _LiveTabState extends State<LiveTab> with SingleTickerProviderStateMixin {
                       border: Border(top: BorderSide(color: Color(0xFFF5F5F5), width: 1.w)),
                     ),
                     child: Row(
-                      children: [
-                        Text('EXTRAS', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary, letterSpacing: 1)),
-                        Spacer(),
+                      child: Row(
+                        children: [
+                          Text('EXTRAS', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11.sp, color: ThemeHelper.of(context).textSecondary, letterSpacing: 1)),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: Text(
+                              '${battingTeam.extras.total} (b ${battingTeam.extras.byes}, lb ${battingTeam.extras.legByes}, w ${battingTeam.extras.wides}, nb ${battingTeam.extras.noBalls}, p 0)',
+                              textAlign: TextAlign.end,
+                              style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w600),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                         Text(
                           '${battingTeam.extras.total} (b ${battingTeam.extras.byes}, lb ${battingTeam.extras.legByes}, w ${battingTeam.extras.wides}, nb ${battingTeam.extras.noBalls}, p 0)',
                           style: TextStyle(fontSize: 12.sp, color: ThemeHelper.of(context).textPrimary, fontWeight: FontWeight.w600),

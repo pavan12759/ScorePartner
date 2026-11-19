@@ -30,7 +30,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ThemeHelper.of(context).dividerColor!,
+      backgroundColor: ThemeHelper.of(context).dividerColor,
       appBar: AppBar(
         title: const Text('Leaderboard'),
         backgroundColor: AppTheme.primaryOrange,
@@ -149,11 +149,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     if (rank == 1) {
       rankColor = Colors.amber;
     } else if (rank == 2) {
-      rankColor = ThemeHelper.of(context).textSecondary!;
+      rankColor = ThemeHelper.of(context).textSecondary;
     } else if (rank == 3) {
       rankColor = Colors.brown[300]!;
     } else {
-      rankColor = ThemeHelper.of(context).dividerColor!;
+      rankColor = ThemeHelper.of(context).dividerColor;
     }
 
     String statLabel;
